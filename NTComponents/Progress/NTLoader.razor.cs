@@ -95,7 +95,9 @@ public partial class NTLoader : NTDisposableComponentBase, INTPageScriptComponen
     public string? JsModulePath => LoaderJsModulePath;
 
     /// <inheritdoc />
-    public DotNetObjectReference<NTLoader>? DotNetObjectRef { get; private set; }
+    private DotNetObjectReference<NTLoader>? DotNetObjectRef { get; set; }
+
+    DotNetObjectReference<NTLoader>? INTPageScriptComponent<NTLoader>.DotNetObjectRef => DotNetObjectRef;
 
     /// <inheritdoc />
     public IJSObjectReference? IsolatedJsModule { get; private set; }

@@ -94,7 +94,8 @@ public partial class TnTWeekView< TEventType> where TEventType : TnTEvent {
     /// <inheritdoc />
     protected override DateTimeOffset CalculateDateTimeOffset(double pointerYOffset, DateOnly date) {
         var time = TimeOnly.FromTimeSpan(TimeSpan.FromHours(pointerYOffset / _cellHeight));
-        return Floor(new DateTimeOffset(date, time, TimeZoneInfo.Local.GetUtcOffset(DateTimeOffset.UtcNow)), TimeSpan.FromMinutes(15));
+        // Use the offset in effect on the target date, not today's, so slots in weeks across a DST change land on the clicked hour.
+        return Floor(new DateTimeOffset(date, time, TimeZoneInfo.Local.GetUtcOffset(date.ToDateTime(time))), TimeSpan.FromMinutes(15));
     }
 
     /// <inheritdoc />

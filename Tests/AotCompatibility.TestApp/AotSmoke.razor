@@ -15,7 +15,12 @@
         <NTForm Model="_model" BindOnInput="true">
             <NTInputText @bind-Value="_model.Name" Label="Name" Placeholder="Enter a name" SupportingText="AOT-bound text input" />
             <NTInputText @bind-Value="_model.Phone" Label="Phone" SupportingText="Second bound text input" />
+            <NTTextArea @bind-Value="_model.Notes" Label="Notes" />
+            <NTRichTextEditor @bind-Value="_model.Body" Label="Body" />
+            <NTInputSelect TInputType="string" @bind-Value="_model.Status" Label="Status"><option value="open">Open</option></NTInputSelect>
         </NTForm>
+        <NTLoader />
+        <TnTInputFile />
     </section>
 
     <section>
@@ -107,6 +112,9 @@
     private sealed class SmokeModel {
         public string? Name { get; set; }
         public string? Phone { get; set; }
+        public string? Notes { get; set; }
+        public string? Body { get; set; }
+        public string? Status { get; set; }
     }
 
     private sealed record SmokeRow(int Id, string Name, decimal Amount, string Status);

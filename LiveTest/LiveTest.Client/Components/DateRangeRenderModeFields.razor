@@ -1,0 +1,45 @@
+@using NTComponents
+
+<div class="date-time-render-mode-fields" data-testid="@($"{ModeKey}-range-fields")">
+    <section class="date-time-render-mode-field-group" aria-labelledby="@($"{ModeKey}-range-heading")">
+        <h3 id="@($"{ModeKey}-range-heading")">Date range</h3>
+
+        <NTInputDateRange Label="Trip dates"
+                          SupportingText="Pick a start, then an end."
+                          StartElementName="@($"{ModeKey}-trip-start")"
+                          EndElementName="@($"{ModeKey}-trip-end")"
+                          @bind-StartDate="_start"
+                          @bind-EndDate="_end" />
+        <p data-testid="@($"{ModeKey}-range-value")">@(_start?.ToString("yyyy-MM-dd") ?? "none") to @(_end?.ToString("yyyy-MM-dd") ?? "none")</p>
+
+        <NTInputDateRange Label="Next 30 days only"
+                          Min="_today"
+                          Max="_today.AddDays(30)"
+                          StartElementName="@($"{ModeKey}-limited-start")"
+                          EndElementName="@($"{ModeKey}-limited-end")"
+                          @bind-StartDate="_limitedStart"
+                          @bind-EndDate="_limitedEnd" />
+
+        <NTInputDateRange Label="Disabled"
+                          Disabled="true"
+                          StartElementName="@($"{ModeKey}-disabled-start")"
+                          EndElementName="@($"{ModeKey}-disabled-end")"
+                          @bind-StartDate="_disabledStart"
+                          @bind-EndDate="_disabledEnd" />
+    </section>
+</div>
+
+@code {
+    [Parameter]
+    public string ModeName { get; set; } = "Date range";
+
+    private readonly DateOnly _today = DateOnly.FromDateTime(DateTime.Today);
+    private DateOnly? _start;
+    private DateOnly? _end;
+    private DateOnly? _limitedStart;
+    private DateOnly? _limitedEnd;
+    private DateOnly? _disabledStart = DateOnly.FromDateTime(DateTime.Today);
+    private DateOnly? _disabledEnd = DateOnly.FromDateTime(DateTime.Today.AddDays(3));
+
+    private string ModeKey => ModeName.ToLowerInvariant().Replace(" ", "-", StringComparison.Ordinal);
+}

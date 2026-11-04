@@ -32,6 +32,30 @@
             <DateTimeRenderModeFields ModeName="WASM" @rendermode="InteractiveWebAssembly" />
         </article>
 
+        <article class="date-time-render-modes-demo" data-testid="date-range-render-mode-ssr">
+            <header>
+                <h2>Date range: Static SSR</h2>
+                <p>Hidden inputs and display text update from script without a Blazor circuit.</p>
+            </header>
+            <DateRangeRenderModeFields ModeName="Range SSR" />
+        </article>
+
+        <article class="date-time-render-modes-demo" data-testid="date-range-render-mode-server">
+            <header>
+                <h2>Date range: InteractiveServer</h2>
+                <p>Both bindings update through the server circuit.</p>
+            </header>
+            <DateRangeRenderModeFields ModeName="Range Server" @rendermode="InteractiveServer" />
+        </article>
+
+        <article class="date-time-render-modes-demo" data-testid="date-range-render-mode-wasm">
+            <header>
+                <h2>Date range: InteractiveWebAssembly</h2>
+                <p>Both bindings update in the browser after WebAssembly loads.</p>
+            </header>
+            <DateRangeRenderModeFields ModeName="Range WASM" @rendermode="InteractiveWebAssembly" />
+        </article>
+
         <article class="date-time-render-modes-demo" data-testid="intersect-restriction-form-demo">
             <header>
                 <h2>Intersect restriction form</h2>

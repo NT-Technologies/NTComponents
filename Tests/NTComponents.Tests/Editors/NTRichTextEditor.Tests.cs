@@ -156,6 +156,134 @@ public class NTRichTextEditor_Tests : BunitContext {
     }
 
     [Fact]
+    public void Interactive_Surface_Renders_ReadOnly_Until_The_Script_Enables_It() {
+        var cut = RenderEditor();
+
+        cut.Find(".tnt-rich-text-editor-surface").GetAttribute("contenteditable").Should().Be("false");
+        cut.Find("nt-rich-text-editor").GetAttribute("data-editable").Should().Be("true");
+        cut.Find("nt-rich-text-editor").GetAttribute("data-interactive").Should().Be("true");
+    }
+
+    [Fact]
+    public void Toolbar_And_Accessibility_State_Render_ReadOnly_Until_The_Script_Enables_Them() {
+        var cut = RenderEditor();
+
+        cut.Find(".tnt-rich-text-editor-surface").GetAttribute("aria-readonly").Should().Be("true");
+        cut.FindAll(".tnt-rich-text-editor-toolbar-button").Should().OnlyContain(button => button.HasAttribute("disabled"));
+    }
+
+    [Fact]
+    public void Static_Render_Lets_The_Script_Enable_The_Surface_Without_DotNet() {
+        SetRendererInfo(new RendererInfo("Static", false));
+
+        var cut = RenderEditor();
+
+        cut.Find(".tnt-rich-text-editor-surface").GetAttribute("contenteditable").Should().Be("false");
+        cut.Find("nt-rich-text-editor").GetAttribute("data-interactive").Should().Be("false");
+    }
+
+    [Fact]
+    public void AdditionalAttributes_Cannot_Override_Script_Contract_Attributes() {
+        var cut = RenderEditor(parameters => parameters
+            .AddUnmatched("data-interactive", "false")
+            .AddUnmatched("data-received-value-count", "99"));
+
+        cut.Find("nt-rich-text-editor").GetAttribute("data-interactive").Should().Be("true");
+        cut.Find("nt-rich-text-editor").GetAttribute("data-received-value-count").Should().Be("0");
+    }
+
+    [Fact]
+    public async Task Render_Reports_Every_Value_Received_From_JavaScript() {
+        var cut = RenderEditor(parameters => parameters.Add(x => x.BindOnInput, true));
+
+        await cut.InvokeAsync(() => cut.Instance.UpdateValueFromJs("<p>A</p>", "<p>A</p>"));
+        await cut.InvokeAsync(() => cut.Instance.CommitValueFromJs("<p>AB</p>", "<p>AB</p>"));
+
+        cut.Find("nt-rich-text-editor").GetAttribute("data-received-value-count").Should().Be("2");
+    }
+
+    [Fact]
+    public async Task CommitValueFromJs_During_Disposal_Still_Delivers_The_Value_To_The_Parent() {
+        var boundValue = "<p>Start</p>";
+        var model = new RichTextEditorModel();
+        var cut = Render<NTRichTextEditor>(parameters => parameters
+            .Add(x => x.ValueExpression, () => model.Value)
+            .Add(x => x.Value, boundValue)
+            .Add(x => x.ValueChanged, EventCallback.Factory.Create<string?>(this, value => boundValue = value ?? string.Empty)));
+        var pendingOnDispose = _module.SetupVoid("onDispose", _ => true);
+
+        var disposal = cut.InvokeAsync(async () => await cut.Instance.DisposeAsync());
+        await cut.InvokeAsync(() => cut.Instance.CommitValueFromJs("<p>Unsaved</p>", "<p>Unsaved</p>"));
+        pendingOnDispose.SetVoidResult();
+        await disposal;
+
+        boundValue.Should().Be("<p>Unsaved</p>");
+    }
+
+    [Fact]
+    public async Task CommitValueFromJs_During_Disposal_Skips_A_Binding_That_Moved_To_Another_Record() {
+        var holder = new SelectedNote { Note = new RichTextEditorModel { Value = "<p>First</p>" } };
+        var delivered = new List<string?>();
+        var cut = Render<NTRichTextEditor>(parameters => parameters
+            .Add(x => x.ValueExpression, () => holder.Note!.Value)
+            .Add(x => x.Value, holder.Note!.Value)
+            .Add(x => x.ValueChanged, EventCallback.Factory.Create<string?>(this, delivered.Add)));
+        var pendingOnDispose = _module.SetupVoid("onDispose", _ => true);
+
+        var disposal = cut.InvokeAsync(async () => await cut.Instance.DisposeAsync());
+        holder.Note = new RichTextEditorModel { Value = "<p>Second</p>" };
+        await cut.InvokeAsync(() => cut.Instance.CommitValueFromJs("<p>Unsaved</p>", "<p>Unsaved</p>"));
+        pendingOnDispose.SetVoidResult();
+        await disposal;
+
+        delivered.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CommitValueFromJs_During_Disposal_Skips_A_Binding_That_No_Longer_Resolves() {
+        var holder = new SelectedNote { Note = new RichTextEditorModel { Value = "<p>First</p>" } };
+        var delivered = new List<string?>();
+        var cut = Render<NTRichTextEditor>(parameters => parameters
+            .Add(x => x.ValueExpression, () => holder.Note!.Value)
+            .Add(x => x.Value, holder.Note!.Value)
+            .Add(x => x.ValueChanged, EventCallback.Factory.Create<string?>(this, delivered.Add)));
+        var pendingOnDispose = _module.SetupVoid("onDispose", _ => true);
+
+        var disposal = cut.InvokeAsync(async () => await cut.Instance.DisposeAsync());
+        holder.Note = null;
+        await cut.InvokeAsync(() => cut.Instance.CommitValueFromJs("<p>Unsaved</p>", "<p>Unsaved</p>"));
+        pendingOnDispose.SetVoidResult();
+        await disposal;
+
+        delivered.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CommitValueFromJs_Before_Disposal_Follows_A_Retargeted_Binding() {
+        var holder = new SelectedNote { Note = new RichTextEditorModel { Value = "<p>First</p>" } };
+        var delivered = new List<string?>();
+        var cut = Render<NTRichTextEditor>(parameters => parameters
+            .Add(x => x.ValueExpression, () => holder.Note!.Value)
+            .Add(x => x.Value, holder.Note!.Value)
+            .Add(x => x.ValueChanged, EventCallback.Factory.Create<string?>(this, delivered.Add)));
+
+        holder.Note = new RichTextEditorModel { Value = "<p>Second</p>" };
+        await cut.InvokeAsync(() => cut.Instance.CommitValueFromJs("<p>Typed</p>", "<p>Typed</p>"));
+
+        delivered.Should().ContainSingle().Which.Should().Be("<p>Typed</p>");
+    }
+
+    [Fact]
+    public void Script_That_Fails_To_Load_Shows_An_Error_Instead_Of_Crashing_The_Renderer() {
+        _module.SetupVoid("onLoad", _ => true).SetException(new JSException("Failed to fetch dynamically imported module"));
+
+        var cut = RenderEditor();
+
+        cut.WaitForAssertion(() => cut.Find(".nt-input-error-text").TextContent.Should().Contain("could not load"));
+        cut.Find(".tnt-rich-text-editor-surface").GetAttribute("contenteditable").Should().Be("false");
+    }
+
+    [Fact]
     public async Task UpdateValueFromJs_Updates_Value_And_Fires_BindAfter_When_BindOnInput_Is_True() {
         var bindAfterValue = string.Empty;
         var markupValue = string.Empty;
@@ -456,14 +584,14 @@ public class NTRichTextEditor_Tests : BunitContext {
         var cut = RenderEditor();
         var instance = cut.Instance;
 
-        instance.DotNetObjectRef.Should().NotBeNull();
+        DotNetRef(instance).Should().NotBeNull();
         instance.IsolatedJsModule.Should().NotBeNull();
 
         await instance.DisposeAsync();
 
         JSInterop.Invocations.Should().Contain(invocation => invocation.Identifier == "onDispose");
         instance.IsolatedJsModule.Should().BeNull();
-        instance.DotNetObjectRef.Should().BeNull();
+        DotNetRef(instance).Should().BeNull();
     }
 
     [Fact]
@@ -490,12 +618,12 @@ public class NTRichTextEditor_Tests : BunitContext {
     public async Task DisposeAsync_Without_Module_Still_Clears_DotNetObjectReference() {
         var instance = new NTRichTextEditor(Services.GetRequiredService<IJSRuntime>());
 
-        instance.DotNetObjectRef.Should().NotBeNull();
+        DotNetRef(instance).Should().NotBeNull();
         instance.IsolatedJsModule.Should().BeNull();
 
         await instance.DisposeAsync();
 
-        instance.DotNetObjectRef.Should().BeNull();
+        DotNetRef(instance).Should().BeNull();
     }
 
     [Fact]
@@ -503,27 +631,27 @@ public class NTRichTextEditor_Tests : BunitContext {
         var cut = RenderEditor();
         var instance = cut.Instance;
 
-        instance.DotNetObjectRef.Should().NotBeNull();
+        DotNetRef(instance).Should().NotBeNull();
 
         ((IDisposable)instance).Dispose();
 
-        instance.DotNetObjectRef.Should().BeNull();
+        DotNetRef(instance).Should().BeNull();
     }
 
     [Fact]
     public void Dispose_False_Does_Not_Clear_DotNetObjectReference() {
         var instance = new TestableRichTextEditor(Services.GetRequiredService<IJSRuntime>());
 
-        instance.DotNetObjectRef.Should().NotBeNull();
+        DotNetRef(instance).Should().NotBeNull();
 
         instance.InvokeDispose(disposing: false);
-        instance.DotNetObjectRef.Should().NotBeNull();
+        DotNetRef(instance).Should().NotBeNull();
 
         instance.InvokeDispose(disposing: true);
-        instance.DotNetObjectRef.Should().BeNull();
+        DotNetRef(instance).Should().BeNull();
 
         instance.InvokeDispose(disposing: true);
-        instance.DotNetObjectRef.Should().BeNull();
+        DotNetRef(instance).Should().BeNull();
     }
 
     [Fact]
@@ -565,7 +693,7 @@ public class NTRichTextEditor_Tests : BunitContext {
         var act = () => cut.Instance.DisposeAsync().AsTask();
 
         await act.Should().NotThrowAsync();
-        cut.Instance.DotNetObjectRef.Should().BeNull();
+        DotNetRef(cut.Instance).Should().BeNull();
         cut.Instance.IsolatedJsModule.Should().BeNull();
     }
 
@@ -616,6 +744,10 @@ public class NTRichTextEditor_Tests : BunitContext {
         public string? Value { get; set; }
     }
 
+    private sealed class SelectedNote {
+        public RichTextEditorModel? Note { get; set; }
+    }
+
     private sealed class TestToolbarButton : INTRichTextEditorButton {
         public bool IsDivider => false;
         public string? Action { get; init; }
@@ -652,6 +784,9 @@ public class NTRichTextEditor_Tests : BunitContext {
         public ValueTask<TValue> InvokeAsync<TValue>(string identifier, CancellationToken cancellationToken, object?[]? args) =>
             ValueTask.FromException<TValue>(new JSDisconnectedException("Disconnected"));
     }
+
+    private static DotNetObjectReference<NTRichTextEditor>? DotNetRef(NTRichTextEditor editor) =>
+        ((NTComponents.Interfaces.INTPageScriptComponent<NTRichTextEditor>)editor).DotNetObjectRef;
 
     private IRenderedComponent<NTRichTextEditor> RenderEditor(Action<ComponentParameterCollectionBuilder<NTRichTextEditor>>? configure = null) {
         var model = new RichTextEditorModel();

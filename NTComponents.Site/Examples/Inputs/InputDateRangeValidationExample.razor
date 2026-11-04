@@ -1,0 +1,34 @@
+<NTForm Model="_model" OnValidSubmit="Submit" class="docs-fill">
+    <DataAnnotationsValidator />
+    <NTFormSectionView MaxColumns="1">
+        <NTInputDateRange Label="Stay"
+                          SupportingText="Required. The end must not be before the start."
+                          @bind-StartDate="_model.Start"
+                          @bind-EndDate="_model.End" />
+        <div class="docs-row">
+            <NTButton Type="ButtonType.Submit" Label="Book" />
+        </div>
+    </NTFormSectionView>
+</NTForm>
+<p>Status: <output>@_status</output></p>
+
+@code {
+    private readonly Stay _model = new();
+    private string _status = "Waiting";
+
+    private void Submit() => _status = $"Booked {_model.Start} to {_model.End}";
+
+    private sealed class Stay : System.ComponentModel.DataAnnotations.IValidatableObject {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Choose a start date.")]
+        public DateOnly? Start { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Choose an end date.")]
+        public DateOnly? End { get; set; }
+
+        public IEnumerable<System.ComponentModel.DataAnnotations.ValidationResult> Validate(System.ComponentModel.DataAnnotations.ValidationContext validationContext) {
+            if (Start is { } start && End is { } end && end < start) {
+                yield return new("The end date must not be before the start date.", [nameof(End)]);
+            }
+        }
+    }
+}

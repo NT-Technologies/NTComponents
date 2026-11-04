@@ -33,8 +33,10 @@ public partial class NTRichTextEditor : INTPageScriptComponent<NTRichTextEditor>
         "data-bind-on-input",
         "data-editable",
         "data-empty",
+        "data-interactive",
         "data-maxlength",
         "data-placeholder",
+        "data-received-value-count",
         "id",
         "lang",
         "maxlength",
@@ -53,16 +55,23 @@ public partial class NTRichTextEditor : INTPageScriptComponent<NTRichTextEditor>
         "value"
     };
 
+    private const string ScriptLoadErrorText = "The editor could not load. Reload the page to edit this field.";
+
     private static readonly ConcurrentDictionary<string, string> _ariaKeyShortcuts = new(StringComparer.Ordinal);
 
     private readonly IJSRuntime _jsRuntime;
     private readonly NTDisposalState _disposalState = new();
     private ElementReference _editorElement;
+    private long _receivedValueCount;
+    private object? _boundModel;
+    private bool _scriptLoadFailed;
 
     /// <summary>
     /// Gets the .NET object reference used for JavaScript interop.
     /// </summary>
-    public DotNetObjectReference<NTRichTextEditor>? DotNetObjectRef { get; private set; }
+    private DotNetObjectReference<NTRichTextEditor>? DotNetObjectRef { get; set; }
+
+    DotNetObjectReference<NTRichTextEditor>? INTPageScriptComponent<NTRichTextEditor>.DotNetObjectRef => DotNetObjectRef;
 
     /// <summary>
     /// Gets the isolated JavaScript module used by the component.
@@ -310,6 +319,10 @@ public partial class NTRichTextEditor : INTPageScriptComponent<NTRichTextEditor>
 
         base.OnParametersSet();
 
+        if (ValueExpression is not null) {
+            _boundModel = FieldIdentifier.Create(ValueExpression).Model;
+        }
+
         var activeTools = new List<INTRichTextEditorTool>();
         foreach (var tool in Tools ?? DefaultTools) {
             if (HasToolbarAction(tool.Action)) {
@@ -387,6 +400,10 @@ public partial class NTRichTextEditor : INTPageScriptComponent<NTRichTextEditor>
             catch (JSDisconnectedException) {
                 // JS runtime was disconnected, safe to ignore during render.
             }
+            catch (Exception exception) when (firstRender && exception is JSException or OperationCanceledException) {
+                _scriptLoadFailed = true;
+                StateHasChanged();
+            }
         }
     }
 
@@ -404,6 +421,7 @@ public partial class NTRichTextEditor : INTPageScriptComponent<NTRichTextEditor>
     /// <param name="html">The current HTML value.</param>
     [JSInvokable]
     public async Task UpdateValueFromJs(string value, string html) {
+        _receivedValueCount++;
         CurrentValueAsString = value;
         await SetMarkupValueAsync(html);
 
@@ -420,6 +438,11 @@ public partial class NTRichTextEditor : INTPageScriptComponent<NTRichTextEditor>
     /// <param name="html">The current HTML value.</param>
     [JSInvokable]
     public async Task CommitValueFromJs(string value, string html) {
+        _receivedValueCount++;
+        if (DisposalStarted && IsBindingRetargeted()) {
+            return;
+        }
+
         var previousValue = CurrentValueAsString ?? string.Empty;
 
         CurrentValueAsString = value;
@@ -472,6 +495,20 @@ public partial class NTRichTextEditor : INTPageScriptComponent<NTRichTextEditor>
     }
 
     private bool DisposalStarted => _disposalState.HasStarted;
+
+    // @bind reads its target when invoked, so a flush after the parent moved on would write this text to the wrong record.
+    private bool IsBindingRetargeted() {
+        if (ValueExpression is null) {
+            return false;
+        }
+
+        try {
+            return !ReferenceEquals(FieldIdentifier.Create(ValueExpression).Model, _boundModel);
+        }
+        catch (Exception exception) when (exception is ArgumentException or NullReferenceException or InvalidOperationException) {
+            return true;
+        }
+    }
 
     private bool TryGetInteropReferences([NotNullWhen(true)] out IJSObjectReference? module, [NotNullWhen(true)] out DotNetObjectReference<NTRichTextEditor>? dotNetRef) {
         module = IsolatedJsModule;

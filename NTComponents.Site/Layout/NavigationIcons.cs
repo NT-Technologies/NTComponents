@@ -38,6 +38,7 @@ public static class NavigationIcons {
         ["NTInputCheckbox"] = () => MaterialIcon.CheckBox,
         ["NTInputColor"] = () => MaterialIcon.ColorLens,
         ["NTInputCurrency"] = () => MaterialIcon.AttachMoney,
+        ["NTInputDateRange"] = () => MaterialIcon.DateRange,
         ["NTInputDateTime"] = () => MaterialIcon.Schedule,
         ["NTInputNumeric"] = () => MaterialIcon.Numbers,
         ["NTInputRadioGroup"] = () => MaterialIcon.RadioButtonChecked,

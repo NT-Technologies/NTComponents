@@ -1,0 +1,22 @@
+<NTFormFieldGridView class="docs-fill" MaxColumns="2">
+    <NTInputDateRange Label="Trip dates"
+                      SupportingText="Pick a start, then an end."
+                      @bind-StartDate="_start"
+                      @bind-EndDate="_end" />
+    <NTInputDateRange Label="This month only"
+                      Min="_first"
+                      Max="_last"
+                      @bind-StartDate="_monthStart"
+                      @bind-EndDate="_monthEnd" />
+</NTFormFieldGridView>
+<p>Trip: <output>@_start to @_end</output></p>
+
+@code {
+    private static readonly DateOnly _today = DateOnly.FromDateTime(DateTime.Today);
+    private readonly DateOnly _first = new(_today.Year, _today.Month, 1);
+    private readonly DateOnly _last = new(_today.Year, _today.Month, DateTime.DaysInMonth(_today.Year, _today.Month));
+    private DateOnly? _start = _today;
+    private DateOnly? _end = _today.AddDays(4);
+    private DateOnly? _monthStart;
+    private DateOnly? _monthEnd;
+}

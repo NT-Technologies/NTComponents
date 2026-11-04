@@ -1,0 +1,241 @@
+@use 'sass:map';
+@use '../Styles/_Variables/_colors.scss' as colors;
+@use '../Styles/_Variables/_corner-radius.scss' as corners;
+@use '../Styles/_Variables/_elevation.scss' as elevation;
+@use '../Styles/_Variables/_motion.scss' as motion;
+@use '../Styles/_Variables/_typescale.scss' as typescale;
+@use '../Buttons/buttonFocusRing' as focus;
+
+$nt-input-date-range-motion: motion.$nt-motion-duration-short_3 motion.$nt-motion-easing-standard;
+$nt-input-date-range-width: 320px;
+$nt-input-date-range-touch-target: 40px;
+$nt-input-date-range-day-size: 34px;
+$nt-input-date-range-popover-gap: 4px;
+$nt-input-date-range-popover-edge: 8px;
+$nt-input-date-range-band: color-mix(in srgb, colors.$nt-color-primary 16%, transparent);
+$nt-input-date-range-hover: color-mix(in srgb, colors.$nt-color-on-surface 8%, transparent);
+$nt-input-date-range-band-preview: color-mix(in srgb, colors.$nt-color-primary 8%, transparent);
+
+// Last resort when the popover fits neither below nor above the field: pin it to the bottom of the viewport.
+@position-try --nt-input-date-range-viewport {
+    top: auto;
+    bottom: #{$nt-input-date-range-popover-edge};
+    left: anchor(left);
+}
+
+.nt-input-date-range {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+
+    ::deep .nt-input {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    ::deep .nt-input-container-overflow {
+        anchor-name: var(--nt-input-date-range-anchor);
+    }
+
+    ::deep .nt-input-control {
+        caret-color: transparent;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &:not([data-readonly='true']) ::deep .nt-input.nt-input-readonly {
+        .nt-input-container,
+        .nt-input-control {
+            cursor: pointer;
+        }
+    }
+
+    ::deep .popover {
+        position-anchor: var(--nt-input-date-range-anchor);
+        position: fixed;
+        inset: auto;
+        top: calc(anchor(bottom) + #{$nt-input-date-range-popover-gap});
+        left: anchor(left);
+        position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline, --nt-input-date-range-viewport;
+        box-sizing: border-box;
+        width: $nt-input-date-range-width;
+        max-width: calc(100vw - #{$nt-input-date-range-popover-edge * 2});
+        max-height: calc(100dvh - #{$nt-input-date-range-popover-edge * 2});
+        margin: 0;
+        padding: 12px 12px 8px;
+        overflow: auto;
+        border: 0;
+        border-radius: corners.$nt-corner-radius-large;
+        background: colors.$nt-color-surface-container-high;
+        color: colors.$nt-color-on-surface;
+        box-shadow: map.get(elevation.$nt-elevation-shadows, 3);
+    }
+
+    ::deep .segments {
+        display: flex;
+        gap: 8px;
+        margin-block-end: 8px;
+    }
+
+    ::deep .segment {
+        display: grid;
+        flex: 1;
+        min-width: 0;
+        margin: 0;
+        padding: 6px 12px;
+        border: 1px solid colors.$nt-color-outline-variant;
+        border-radius: corners.$nt-corner-radius-medium;
+        background-color: transparent;
+        color: colors.$nt-color-on-surface;
+        text-align: start;
+        cursor: pointer;
+        transition: background-color $nt-input-date-range-motion, border-color $nt-input-date-range-motion;
+
+        &:hover {
+            background-color: $nt-input-date-range-hover;
+        }
+
+        &:focus-visible {
+            @include focus.nt-button-focus-ring;
+        }
+
+        &.active {
+            border-color: colors.$nt-color-primary;
+            background-color: colors.$nt-color-primary-container;
+            color: colors.$nt-color-on-primary-container;
+        }
+
+        .segment-label {
+            color: colors.$nt-color-on-surface-variant;
+            @include typescale.tnt-label-small;
+        }
+
+        &.active .segment-label {
+            color: inherit;
+        }
+
+        .segment-value {
+            @include typescale.tnt-title-small;
+        }
+    }
+
+    ::deep .month-nav {
+        display: grid;
+        grid-template-columns: $nt-input-date-range-touch-target 1fr $nt-input-date-range-touch-target;
+        align-items: center;
+        gap: 4px;
+    }
+
+    ::deep .month-label {
+        text-align: center;
+        @include typescale.tnt-title-medium;
+    }
+
+    ::deep .nav-button {
+        display: inline-grid;
+        place-items: center;
+        width: $nt-input-date-range-touch-target;
+        height: $nt-input-date-range-touch-target;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-radius: corners.$nt-corner-radius-full;
+        background-color: transparent;
+        color: colors.$nt-color-on-surface-variant;
+        cursor: pointer;
+
+        &:hover {
+            background-color: $nt-input-date-range-hover;
+            color: colors.$nt-color-on-surface;
+        }
+
+        &:focus-visible {
+            @include focus.nt-button-focus-ring;
+        }
+    }
+
+    ::deep .week {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+
+    ::deep .weekday {
+        padding: 1px 0;
+        text-align: center;
+        color: colors.$nt-color-on-surface-variant;
+        @include typescale.tnt-label-small;
+    }
+
+    ::deep .day-cell {
+        display: grid;
+        place-items: center;
+        height: $nt-input-date-range-day-size;
+
+        &.in-range {
+            background-color: $nt-input-date-range-band;
+        }
+
+        &.band-start {
+            background: linear-gradient(to right, transparent 50%, $nt-input-date-range-band 50%);
+        }
+
+        &.band-end {
+            background: linear-gradient(to right, $nt-input-date-range-band 50%, transparent 50%);
+        }
+
+        &.preview.in-range {
+            background-color: $nt-input-date-range-band-preview;
+        }
+
+        &.preview.band-end {
+            background: linear-gradient(to right, $nt-input-date-range-band-preview 50%, transparent 50%);
+        }
+    }
+
+    ::deep .day {
+        width: $nt-input-date-range-day-size;
+        height: $nt-input-date-range-day-size;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-radius: corners.$nt-corner-radius-full;
+        background-color: transparent;
+        color: colors.$nt-color-on-surface;
+        cursor: pointer;
+        transition: background-color $nt-input-date-range-motion, color $nt-input-date-range-motion;
+        @include typescale.tnt-label-medium;
+
+        &:hover {
+            background-color: $nt-input-date-range-band;
+        }
+
+        &:focus-visible {
+            @include focus.nt-button-focus-ring;
+        }
+
+        &.outside {
+            color: color-mix(in srgb, colors.$nt-color-on-surface-variant 55%, transparent);
+        }
+
+        &.today {
+            outline: 1px solid colors.$nt-color-primary;
+            outline-offset: -1px;
+        }
+
+        &.selected {
+            background-color: colors.$nt-color-primary;
+            color: colors.$nt-color-on-primary;
+        }
+
+        &:disabled {
+            cursor: not-allowed;
+            opacity: 0.35;
+        }
+    }
+
+    ::deep .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding-block-start: 4px;
+    }
+}

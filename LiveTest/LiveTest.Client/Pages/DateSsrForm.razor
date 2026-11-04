@@ -1,0 +1,28 @@
+@page "/date-ssr-form"
+@using LiveTest.Client.Internal
+@using NTComponents
+
+<main class="date-ssr-form-page">
+    <h1>Static SSR date form</h1>
+    <p data-testid="date-ssr-form-runtime">Runtime: @(RendererInfo.IsInteractive ? "interactive" : "static")</p>
+
+    <EditForm Model="Model" FormName="date-ssr-form" OnValidSubmit="OnValidSubmit" data-testid="date-ssr-form">
+        <DataAnnotationsValidator />
+        <NTInputDateRange Label="Trip dates" @bind-StartDate="Model.Start" @bind-EndDate="Model.End" />
+        <NTInputDateTime DateTimeType="DateOnly?" @bind-Value="Model.Departure" ElementId="date-ssr-form-departure" Label="Departure" EnableCustomPicker="true" />
+        <button type="submit">Submit</button>
+    </EditForm>
+
+    <p data-testid="date-ssr-form-result">@_result</p>
+</main>
+
+@code {
+    private string? _result;
+
+    [SupplyParameterFromForm]
+    private SsrDateFormModel? Model { get; set; }
+
+    protected override void OnInitialized() => Model ??= new();
+
+    private void OnValidSubmit() => _result = $"{Model!.Start:yyyy-MM-dd} to {Model.End:yyyy-MM-dd}, departure {Model.Departure:yyyy-MM-dd}";
+}

@@ -63,6 +63,7 @@ interface PickerState {
     onTriggerClick: (event: MouseEvent) => void;
     onTriggerMouseDown: (event: MouseEvent) => void;
     openOnFocus: boolean;
+    openValue: string;
     picker: HTMLElement;
     suppressEnterKeySequence: boolean;
     trigger: HTMLButtonElement | null;
@@ -935,6 +936,21 @@ function setInputValue(state: PickerState, value: string): void {
     state.input.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
+// Writes the draft to the input as soon as it changes so selections never wait for OK.
+function commitDraft(state: PickerState): boolean {
+    state.draft = clampDraftToConstraints(state, state.draft);
+    if (isDraftDisabled(state, state.draft)) {
+        return false;
+    }
+
+    const value = formatDraft(state.mode, state.draft, state.input.getAttribute('format'));
+    if (value !== state.input.value) {
+        setInputValue(state, value);
+    }
+
+    return true;
+}
+
 function setInputParseError(state: PickerState, message: string | null): void {
     const field = state.input.closest('.nt-input');
     if (message) {
@@ -1627,6 +1643,7 @@ function openPicker(state: Maybe<PickerState>): void {
     state.dateView = 'calendar';
     updateDisabledSets(state);
     syncDraftFromInputValue(state);
+    state.openValue = state.input.value;
     state.picker.classList.add('tnt-dtp-open');
     state.picker.setAttribute('aria-hidden', 'false');
     state.isOpen = true;
@@ -1663,6 +1680,11 @@ function handleDaySelection(state: PickerState, button: Maybe<HTMLButtonElement>
     state.draft.day = toInt(button.dataset.tntDtpDay, state.draft.day);
     state.viewYear = state.draft.year;
     state.viewMonth = state.draft.month;
+    if (commitDraft(state) && state.mode === 'date') {
+        closePicker(state);
+        return;
+    }
+
     renderPicker(state);
 }
 
@@ -1692,10 +1714,13 @@ function handlePickerAction(state: PickerState, action: Maybe<string>): void {
         case 'set-pm':
             state.meridiem = action === 'set-pm' ? 'pm' : 'am';
             state.draft.hour = toTwentyFourHour(toTwelveHour(state.draft.hour).hour, state.meridiem);
-            state.draft = clampDraftToConstraints(state, state.draft);
+            commitDraft(state);
             break;
         case 'cancel':
             if (!isSubSelectionView(state)) {
+                if (state.input.value !== state.openValue) {
+                    setInputValue(state, state.openValue);
+                }
                 closePicker(state);
                 return;
             }
@@ -1703,9 +1728,7 @@ function handlePickerAction(state: PickerState, action: Maybe<string>): void {
             state.dateView = 'calendar';
             break;
         case 'confirm':
-            state.draft = clampDraftToConstraints(state, state.draft);
-            if (!isDraftDisabled(state, state.draft)) {
-                setInputValue(state, formatDraft(state.mode, state.draft, state.input.getAttribute('format')));
+            if (commitDraft(state)) {
                 closePicker(state);
                 return;
             }
@@ -1731,7 +1754,7 @@ function syncDraftFromTimeFields(state: PickerState): void {
     state.draft.hour = toTwentyFourHour(hour12, selectedMeridiem);
     state.draft.minute = clamp(toInt(minuteInput.value, state.draft.minute), 0, 59);
     state.draft.second = 0;
-    state.draft = clampDraftToConstraints(state, state.draft);
+    commitDraft(state);
     state.meridiem = toTwelveHour(state.draft.hour).meridiem;
     renderPicker(state);
 }
@@ -1811,6 +1834,7 @@ function createPickerState(input: HTMLInputElement, picker: HTMLElement): Picker
         onTriggerClick: () => { },
         onTriggerMouseDown: () => { },
         openOnFocus: true,
+        openValue: '',
         picker,
         suppressEnterKeySequence: false,
         trigger: null,
@@ -1954,6 +1978,10 @@ function createPickerState(input: HTMLInputElement, picker: HTMLElement): Picker
             state.draft.month = toInt(monthButton.dataset.tntDtpMonth, state.draft.month);
             state.viewYear = state.draft.year;
             state.viewMonth = state.draft.month;
+            if (state.mode === 'month' && commitDraft(state)) {
+                closePicker(state);
+                return;
+            }
             if (state.mode === 'date' || state.mode === 'datetime') {
                 state.dateView = 'calendar';
             }

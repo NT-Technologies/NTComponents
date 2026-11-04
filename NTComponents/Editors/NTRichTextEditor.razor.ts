@@ -84,13 +84,15 @@ interface TableHtmlOptions {
 interface EditorState extends RichTextEditorToolEditorState {
     dotNetRef: DotNetEditorRef | null;
     isDisposed: boolean;
-    blurTimeoutId: number | null;
     pendingSyncFrameId: number | null;
+    hasUncommittedEdit: boolean;
     requiresInitialRender: boolean;
     toolbarButtons: HTMLButtonElement[];
     toolCommands: string[];
     lastValue: string;
     lastHtml: string;
+    renderedValue: string;
+    sentValueCount: number;
     sourceMode: boolean;
     onInput: () => void;
     onSourceInput: () => void;
@@ -98,7 +100,7 @@ interface EditorState extends RichTextEditorToolEditorState {
     onWindowResize: () => void;
     onFocus: () => void;
     onFocusIn: () => void;
-    onBlur: () => void;
+    onFocusOut: (event: FocusEvent) => void;
     onKeyUp: () => void;
     onMouseUp: () => void;
     onKeyDown: (event: KeyboardEvent) => void;
@@ -120,7 +122,9 @@ const defaultTableBorderColor = '#94a3b8';
 const defaultTextColor = '#1d4ed8';
 const editorElements = new Set<HTMLElement>();
 let selectionChangeRegistered = false;
+let uncommittedEditHandlersRegistered = false;
 let activeEditor: HTMLElement | null = null;
+let prerenderFocusedEditorIndex = -1;
 
 export function setRichTextEditorToolRegistryChangedCallback(callback: (() => void) | null): void {
     richTextEditorToolRegistry.onChange = callback;
@@ -200,15 +204,6 @@ function isTableRowElement(value: unknown): value is HTMLTableRowElement {
 
 function getTableCells(row: Maybe<HTMLTableRowElement>): HTMLTableCellElement[] {
     return toArray(row?.children).filter(isTableCellElement);
-}
-
-function clearBlurTimeout(state: Maybe<EditorState>): void {
-    if (!state || state.blurTimeoutId === null) {
-        return;
-    }
-
-    window.clearTimeout(state.blurTimeoutId);
-    state.blurTimeoutId = null;
 }
 
 function clearPendingSync(state: Maybe<EditorState>): void {
@@ -399,8 +394,28 @@ function getToolbarButtons(element: Maybe<ParentNode>): HTMLButtonElement[] {
     return toArray(element?.querySelectorAll?.('.tnt-rich-text-editor-toolbar .tnt-rich-text-editor-toolbar-button')).filter(isHtmlButtonElement);
 }
 
+function isAwaitingDotNet(element: Maybe<HTMLElement>): boolean {
+    return element?.dataset.interactive === 'true' && !editorState.get(element)?.dotNetRef;
+}
+
+// An interactive editor stays read-only until .NET can receive its value; the page script may start the module first.
 function isEditorEditable(element: Maybe<HTMLElement>): boolean {
-    return element?.dataset.editable === 'true';
+    return element?.dataset.editable === 'true' && !isAwaitingDotNet(element);
+}
+
+function getEditorIndex(element: HTMLElement): number {
+    return toArray(document.querySelectorAll('nt-rich-text-editor')).indexOf(element);
+}
+
+// Interactivity replaces the prerendered DOM, so focus taken while waiting has to be carried over to the new surface.
+function shouldTakeFocus(element: HTMLElement, surface: HTMLElement): boolean {
+    const wasFocusedWhilePrerendered = prerenderFocusedEditorIndex === getEditorIndex(element)
+        && (document.activeElement === document.body || document.activeElement === null);
+    if (wasFocusedWhilePrerendered) {
+        prerenderFocusedEditorIndex = -1;
+    }
+
+    return wasFocusedWhilePrerendered || document.activeElement === surface;
 }
 
 function setActiveEditor(element: Maybe<HTMLElement>): void {
@@ -429,6 +444,19 @@ function invokeDotNetVoid(
     Promise.resolve(invocation)
         .catch(() => {
             // Ignore late/disconnected interop failures from fire-and-forget editor sync paths.
+        });
+}
+
+function sendValue(state: EditorState, methodName: 'UpdateValueFromJs' | 'CommitValueFromJs', value: string, html: string): void {
+    if (!state.dotNetRef) {
+        return;
+    }
+
+    state.sentValueCount++;
+    Promise.resolve(state.dotNetRef.invokeMethodAsync(methodName, value, html))
+        .catch(() => {
+            // A call that never reached .NET must not make later renders look stale.
+            state.sentValueCount--;
         });
 }
 
@@ -2436,12 +2464,8 @@ function surfaceToValue(_element: HTMLElement, surface: HTMLElement): string {
     return flattenEditorHtml(surface.innerHTML);
 }
 
+// The value span belongs to Blazor: replacing its text node here would hide every later render from this script.
 function updateSourceValue(element: HTMLElement, value: string): void {
-    const sourceValueElement = getSourceValueElement(element);
-    if (sourceValueElement) {
-        sourceValueElement.textContent = value;
-    }
-
     const hiddenInput = getHiddenInput(element);
     if (hiddenInput) {
         hiddenInput.value = value;
@@ -2532,8 +2556,15 @@ function syncValueFromSurface(element: HTMLElement, notifyDotNet: boolean): void
     updateSourceValue(element, value);
     updateToolbarState(element);
 
-    if (notifyDotNet && didValueChange && state.dotNetRef) {
-        invokeDotNetVoid(state.dotNetRef, 'UpdateValueFromJs', value, html);
+    state.hasUncommittedEdit ||= didValueChange;
+    if (notifyDotNet && didValueChange) {
+        sendValue(state, 'UpdateValueFromJs', value, html);
+    }
+}
+
+function commitUncommittedEdit(element: HTMLElement): void {
+    if (editorState.get(element)?.hasUncommittedEdit) {
+        commitValue(element);
     }
 }
 
@@ -2569,12 +2600,13 @@ function commitValue(element: HTMLElement): void {
     const value = html;
     state.lastValue = value;
     state.lastHtml = html;
+    state.hasUncommittedEdit = false;
     updateEmptyState(surface);
     updateLength(element, value);
     updateSourceValue(element, value);
     updateToolbarState(element);
 
-    invokeDotNetVoid(state.dotNetRef, 'CommitValueFromJs', value, html);
+    sendValue(state, 'CommitValueFromJs', value, html);
 }
 
 function updateToolbarState(element: HTMLElement): void {
@@ -3026,8 +3058,8 @@ function ensureState(element: Maybe<HTMLElement>, dotNetRef: DotNetEditorRef | n
     const state: EditorState = {
         dotNetRef,
         isDisposed: false,
-        blurTimeoutId: null,
         pendingSyncFrameId: null,
+        hasUncommittedEdit: false,
         requiresInitialRender: true,
         toolbarButtons: [],
         toolCommands: [],
@@ -3035,8 +3067,11 @@ function ensureState(element: Maybe<HTMLElement>, dotNetRef: DotNetEditorRef | n
         toolStates: new Map<string, unknown>(),
         lastValue: getSourceValueElement(element)?.textContent ?? '',
         lastHtml: '',
+        renderedValue: '',
+        sentValueCount: 0,
         sourceMode: false,
         onInput: () => {
+            state.hasUncommittedEdit = true;
             const shouldNotify = element.dataset.bindOnInput === 'true';
             if (shouldNotify) {
                 syncValueFromSurface(element, true);
@@ -3061,12 +3096,13 @@ function ensureState(element: Maybe<HTMLElement>, dotNetRef: DotNetEditorRef | n
                 hiddenInput.value = html;
             }
 
+            state.hasUncommittedEdit = true;
             if (element.dataset.bindOnInput === 'true') {
                 if (html !== state.lastValue || html !== state.lastHtml) {
                     state.lastValue = html;
                     state.lastHtml = html;
                     updateSourceValue(element, html);
-                    invokeDotNetVoid(state.dotNetRef, 'UpdateValueFromJs', html, html);
+                    sendValue(state, 'UpdateValueFromJs', html, html);
                 }
             }
         },
@@ -3083,7 +3119,10 @@ function ensureState(element: Maybe<HTMLElement>, dotNetRef: DotNetEditorRef | n
             }
         },
         onFocus: () => {
-            clearBlurTimeout(state);
+            if (isAwaitingDotNet(element)) {
+                prerenderFocusedEditorIndex = getEditorIndex(element);
+            }
+
             setActiveEditor(element);
             updateToolbarState(element);
         },
@@ -3091,23 +3130,17 @@ function ensureState(element: Maybe<HTMLElement>, dotNetRef: DotNetEditorRef | n
             setActiveEditor(element);
             updateToolbarState(element);
         },
-        onBlur: () => {
-            clearBlurTimeout(state);
-            state.blurTimeoutId = window.setTimeout(() => {
-                state.blurTimeoutId = null;
+        onFocusOut: (event: FocusEvent) => {
+            // Commit before this event ends: a click handler that removes the editor can run before deferred work would.
+            const isMovingWithinEditor = event.relatedTarget instanceof Node && element.contains(event.relatedTarget);
+            const isWindowLosingFocus = !document.hasFocus() && element.contains(document.activeElement);
+            if (isMovingWithinEditor || isWindowLosingFocus) {
+                return;
+            }
 
-                if (state.isDisposed || !element.isConnected) {
-                    return;
-                }
-
-                if (element.contains(document.activeElement)) {
-                    return;
-                }
-
-                clearActiveEditor(element);
-                updateToolbarState(element);
-                commitValue(element);
-            }, 0);
+            clearActiveEditor(element);
+            updateToolbarState(element);
+            commitValue(element);
         },
         onKeyUp: () => {
             updateToolbarState(element);
@@ -3125,15 +3158,14 @@ function ensureState(element: Maybe<HTMLElement>, dotNetRef: DotNetEditorRef | n
 
     surface.addEventListener('input', state.onInput);
     surface.addEventListener('focus', state.onFocus);
-    surface.addEventListener('blur', state.onBlur);
     surface.addEventListener('keyup', state.onKeyUp);
     surface.addEventListener('mouseup', state.onMouseUp);
     surface.addEventListener('keydown', state.onKeyDown);
     getHtmlSource(element)?.addEventListener('input', state.onSourceInput);
     getHtmlSource(element)?.addEventListener('scroll', state.onSourceScroll);
-    getHtmlSource(element)?.addEventListener('blur', state.onBlur);
     window.addEventListener('resize', state.onWindowResize);
     element.addEventListener('focusin', state.onFocusIn);
+    element.addEventListener('focusout', state.onFocusOut);
 
     state.toolCommands = collectToolCommands(element, state.toolbarButtons);
     bindToolbarButtons(element, state);
@@ -3157,7 +3189,12 @@ function synchronizeElement(element: Maybe<HTMLElement>, dotNetRef: DotNetEditor
     state.dotNetRef = dotNetRef ?? state.dotNetRef;
 
     const value = flattenEditorHtml(getSourceValueElement(element)?.textContent ?? '');
-    if (state.requiresInitialRender || value !== state.lastValue) {
+    const didRenderNewValue = value !== state.renderedValue;
+    state.renderedValue = value;
+
+    // Typed text wins until it is committed, and a render that has not seen everything sent to .NET carries older text.
+    const isStaleRender = Number(element.dataset.receivedValueCount ?? 0) < state.sentValueCount;
+    if (state.requiresInitialRender || (didRenderNewValue && !state.hasUncommittedEdit && !isStaleRender && value !== state.lastValue)) {
         applySourceToSurface(element, value);
         if (state.sourceMode) {
             const source = getHtmlSource(element);
@@ -3168,17 +3205,26 @@ function synchronizeElement(element: Maybe<HTMLElement>, dotNetRef: DotNetEditor
         }
         state.requiresInitialRender = false;
     } else {
-        updateLength(element, value);
+        updateLength(element, state.lastValue);
         updateEmptyState(getSurface(element));
         if (!state.sourceMode) {
-            updateSourceValue(element, value);
+            updateSourceValue(element, state.lastValue);
         }
     }
 
-    const isEditable = element.dataset.editable === 'true';
+    const isEditable = isEditorEditable(element);
     const surface = getSurface(element);
     if (surface) {
+        const becameEditable = isEditable && surface.getAttribute('contenteditable') !== 'true';
         surface.setAttribute('contenteditable', isEditable ? 'true' : 'false');
+        surface.setAttribute('aria-readonly', isEditable ? 'false' : 'true');
+        if (isAwaitingDotNet(element) && document.activeElement === surface) {
+            prerenderFocusedEditorIndex = getEditorIndex(element);
+        }
+
+        if (becameEditable && shouldTakeFocus(element, surface)) {
+            placeCaretAtEnd(surface);
+        }
     }
     const source = getHtmlSource(element);
     if (source) {
@@ -3254,12 +3300,41 @@ function registerSelectionChangeHandler(): void {
     });
 }
 
+function commitAllUncommittedEdits(): void {
+    editorElements.forEach(commitUncommittedEdit);
+}
+
+function registerUncommittedEditHandlers(): void {
+    if (uncommittedEditHandlersRegistered) {
+        return;
+    }
+
+    uncommittedEditHandlersRegistered = true;
+
+    // A script or assistive-technology click moves no focus, and the app handler that runs next may switch records.
+    window.addEventListener('click', (event) => {
+        if (activeEditor && !(event.target instanceof Node && activeEditor.contains(event.target))) {
+            commitUncommittedEdit(activeEditor);
+        }
+    }, true);
+
+    // beforeunload gives a Server commit a head start on the circuit teardown; pagehide covers browsers that skip it.
+    window.addEventListener('beforeunload', commitAllUncommittedEdits, true);
+    window.addEventListener('pagehide', commitAllUncommittedEdits, true);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            commitAllUncommittedEdits();
+        }
+    });
+}
+
 export function focusEditor(element: Maybe<HTMLElement>): void {
     getSurface(getLifecycleEditorElement(element))?.focus();
 }
 
 export function onLoad(element: Maybe<HTMLElement>, dotNetRef: DotNetEditorRef | null): void {
     registerSelectionChangeHandler();
+    registerUncommittedEditHandlers();
 
     const editorElement = getLifecycleEditorElement(element);
     if (!editorElement) {
@@ -3289,16 +3364,15 @@ export function onDispose(element: Maybe<HTMLElement>): void {
     const state = editorState.get(editorElement);
     const surface = getSurface(editorElement);
     if (state) {
+        commitUncommittedEdit(editorElement);
         state.isDisposed = true;
         state.dotNetRef = null;
-        clearBlurTimeout(state);
         clearPendingSync(state);
     }
 
     if (state && surface) {
         surface.removeEventListener('input', state.onInput);
         surface.removeEventListener('focus', state.onFocus);
-        surface.removeEventListener('blur', state.onBlur);
         surface.removeEventListener('keyup', state.onKeyUp);
         surface.removeEventListener('mouseup', state.onMouseUp);
         surface.removeEventListener('keydown', state.onKeyDown);
@@ -3307,12 +3381,12 @@ export function onDispose(element: Maybe<HTMLElement>): void {
     if (state) {
         getHtmlSource(editorElement)?.removeEventListener('input', state.onSourceInput);
         getHtmlSource(editorElement)?.removeEventListener('scroll', state.onSourceScroll);
-        getHtmlSource(editorElement)?.removeEventListener('blur', state.onBlur);
         window.removeEventListener('resize', state.onWindowResize);
     }
 
     if (state) {
         editorElement.removeEventListener('focusin', state.onFocusIn);
+        editorElement.removeEventListener('focusout', state.onFocusOut);
     }
 
     unbindToolbarButtons(state?.toolbarButtons ?? getToolbarButtons(editorElement), state);
@@ -3343,7 +3417,6 @@ export const __testHooks = {
     isTableCellElement,
     isTableRowElement,
     getTableCells,
-    clearBlurTimeout,
     clearPendingSync,
     placeCaretAtEnd,
     getSurface,

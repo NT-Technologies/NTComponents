@@ -4,7 +4,7 @@
 @implements NTComponents.Interfaces.INTPageScriptComponent<NTRichTextEditor>
 
 @{
-    var errorText = CurrentErrorText;
+    var errorText = _scriptLoadFailed ? ScriptLoadErrorText : CurrentErrorText;
     var hasErrorText = !string.IsNullOrWhiteSpace(errorText);
     var supportingText = hasErrorText ? null : CurrentSupportingText;
     var hasSupportingText = !string.IsNullOrWhiteSpace(supportingText);
@@ -19,6 +19,8 @@
 	                         class="nt-input-container"
 	                         data-bind-on-input="@(BindOnInput ? "true" : "false")"
 	                         data-editable="@editableText"
+	                         data-interactive="@(RendererInfo.IsInteractive || AssignedRenderMode is not null ? "true" : "false")"
+	                         data-received-value-count="@_receivedValueCount"
 	                         title="@ElementTitle"
 	                         lang="@ElementLang"
 	                         @ref="_editorElement">
@@ -80,7 +82,7 @@
 						                    aria-keyshortcuts="@GetToolbarButtonAriaKeyShortcuts(toolbarButton)"
 						                    title="@GetToolbarButtonTitle(toolbarButton)"
 						                    aria-pressed="false"
-						                    disabled="@(!isEditable)">
+						                    disabled>
 							            @if (toolbarButton.Icon is not null) {
 								            @toolbarButton.Icon.Render("tnt-rich-text-editor-toolbar-icon", suppressTitle: true)
 							            }
@@ -104,7 +106,8 @@
 			                  data-placeholder="@RichTextPlaceholder"
 			                  data-empty="@(string.IsNullOrWhiteSpace(CurrentValueAsString) ? "true" : "false")"
 			                  data-maxlength="@MaxLength"
-			                  contenteditable="@editableText"
+			                  contenteditable="false"
+			                  aria-readonly="true"
 			                  tabindex="@(FieldDisabled ? "-1" : "0")"
 			                  role="textbox"
 			                  aria-multiline="true"

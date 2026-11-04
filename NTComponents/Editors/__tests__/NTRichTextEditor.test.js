@@ -54,8 +54,8 @@ function keydown(element, key, options = {}) {
   element.dispatchEvent(event);
 }
 
-function blur(element) {
-  element.dispatchEvent(new FocusEvent('blur', { bubbles: false, cancelable: false }));
+function blur(element, relatedTarget = null) {
+  element.dispatchEvent(new FocusEvent('focusout', { bubbles: true, cancelable: false, relatedTarget }));
 }
 
 async function settleAsync() {
@@ -308,7 +308,8 @@ describe('NTRichTextEditor runtime behavior', () => {
     fixture.surface.dispatchEvent(new Event('input', { bubbles: true }));
 
     expect(fixture.hiddenInput.value).toBe('<p>World</p>');
-    expect(fixture.sourceValue.textContent).toBe('<p>World</p>');
+    expect(fixture.hiddenInput.value).toBe('<p>World</p>');
+    expect(fixture.sourceValue.textContent).toBe('<p>Hello</p>');
     expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith(
       'UpdateValueFromJs',
       '<p>World</p>',
@@ -525,6 +526,383 @@ describe('NTRichTextEditor runtime behavior', () => {
       '<p>Committed</p>',
       '<p>Committed</p>'
     );
+  });
+
+  test('an interactive editor started by the page script stays read-only until .NET connects', () => {
+    const fixture = createEditorFixture({ value: '<p>Bound</p>' });
+    fixture.element.dataset.interactive = 'true';
+    fixture.surface.setAttribute('contenteditable', 'false');
+    const pageScript = document.createElement('tnt-page-script');
+    document.body.appendChild(pageScript);
+
+    editorModule.onLoad(pageScript);
+
+    expect(fixture.surface.textContent).toBe('Bound');
+    expect(fixture.surface.getAttribute('contenteditable')).toBe('false');
+    expect(fixture.element.querySelector('[data-command="bold"]').disabled).toBe(true);
+
+    editorModule.onLoad(fixture.element, createDotNetRef());
+
+    expect(fixture.surface.getAttribute('contenteditable')).toBe('true');
+    expect(fixture.element.querySelector('[data-command="bold"]').disabled).toBe(false);
+  });
+
+  test('a static editor becomes editable without a .NET reference', () => {
+    const fixture = createEditorFixture({ value: '<p>Bound</p>' });
+    fixture.element.dataset.interactive = 'false';
+    fixture.surface.setAttribute('contenteditable', 'false');
+
+    editorModule.onLoad(document.createElement('tnt-page-script'));
+
+    expect(fixture.surface.getAttribute('contenteditable')).toBe('true');
+  });
+
+  test('blur commits before the event returns so a following click cannot remove the editor first', () => {
+    const fixture = createEditorFixture({ value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+    setSurfaceContent(fixture.surface, '<p>Typed</p>');
+
+    blur(fixture.surface);
+
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', '<p>Typed</p>', '<p>Typed</p>');
+  });
+
+  test('blur does not commit when focus moves inside the editor', () => {
+    const fixture = createEditorFixture({ value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+
+    blur(fixture.surface, fixture.element.querySelector('[data-command="bold"]'));
+
+    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.anything(), expect.anything());
+  });
+
+  test('blur does not commit when only the browser window loses focus', () => {
+    const fixture = createEditorFixture({ value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+    fixture.surface.focus();
+    const hasFocus = jest.spyOn(document, 'hasFocus').mockReturnValue(false);
+
+    blur(fixture.surface);
+    hasFocus.mockRestore();
+
+    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.anything(), expect.anything());
+  });
+
+  test('onDispose flushes an edit that has not reached .NET', () => {
+    const fixture = createEditorFixture({ value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+    setSurfaceContent(fixture.surface, '<p>Unsaved</p>');
+    fixture.surface.dispatchEvent(new Event('input', { bubbles: true }));
+
+    editorModule.onDispose(fixture.element);
+
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', '<p>Unsaved</p>', '<p>Unsaved</p>');
+  });
+
+  test('onDispose does not rewrite the value of an untouched editor', () => {
+    const fixture = createEditorFixture({ value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+
+    editorModule.onDispose(fixture.element);
+
+    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.anything(), expect.anything());
+  });
+
+  test('onDispose removes the focus listener with the others', () => {
+    const fixture = createEditorFixture({ value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+    editorModule.onDispose(fixture.element);
+    dotNetRef.invokeMethodAsync.mockClear();
+
+    blur(fixture.surface);
+
+    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalled();
+  });
+
+  test('onDispose does not repeat a value already committed on blur', () => {
+    const fixture = createEditorFixture({ value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+    setSurfaceContent(fixture.surface, '<p>Typed</p>');
+    fixture.surface.dispatchEvent(new Event('input', { bubbles: true }));
+    blur(fixture.surface);
+
+    editorModule.onDispose(fixture.element);
+
+    expect(dotNetRef.invokeMethodAsync.mock.calls.filter(([method]) => method === 'CommitValueFromJs')).toHaveLength(1);
+  });
+
+  test('a render older than the last value sent to .NET does not reset the surface', () => {
+    const fixture = createEditorFixture({ bindOnInput: true, value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+    const typeText = (html) => {
+      setSurfaceContent(fixture.surface, html);
+      fixture.surface.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    typeText('<p>A</p>');
+    typeText('<p>AB</p>');
+
+    fixture.element.dataset.receivedValueCount = '1';
+    fixture.sourceValue.textContent = '<p>A</p>';
+    fixture.hiddenInput.value = '<p>A</p>';
+    editorModule.onUpdate(fixture.element, dotNetRef);
+
+    expect(fixture.surface.innerHTML).toBe('<p>AB</p>');
+    expect(fixture.hiddenInput.value).toBe('<p>AB</p>');
+  });
+
+  test('a committed edit lets a render that has seen every sent value replace the surface', () => {
+    const fixture = createEditorFixture({ bindOnInput: true, value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+    setSurfaceContent(fixture.surface, '<p>Typed</p>');
+    fixture.surface.dispatchEvent(new Event('input', { bubbles: true }));
+    blur(fixture.surface);
+
+    fixture.element.dataset.receivedValueCount = '2';
+    fixture.sourceValue.textContent = '<p>Normalized</p>';
+    editorModule.onUpdate(fixture.element, dotNetRef);
+
+    expect(fixture.surface.innerHTML).toBe('<p>Normalized</p>');
+  });
+
+  test('a commit that never reached .NET does not make later renders look stale', async () => {
+    const fixture = createEditorFixture({ value: '<p>Start</p>' });
+    const dotNetRef = { invokeMethodAsync: jest.fn(() => Promise.reject(new Error('Disconnected'))) };
+    editorModule.onLoad(fixture.element, dotNetRef);
+    setSurfaceContent(fixture.surface, '<p>Typed</p>');
+    fixture.surface.dispatchEvent(new Event('input', { bubbles: true }));
+    blur(fixture.surface);
+    await settleAsync();
+
+    fixture.sourceValue.textContent = '<p>Set from .NET</p>';
+    editorModule.onUpdate(fixture.element, dotNetRef);
+
+    expect(fixture.surface.innerHTML).toBe('<p>Set from .NET</p>');
+  });
+
+  test.each([false, true])('a caught-up render with a new value keeps an uncommitted edit (bindOnInput %s)', (bindOnInput) => {
+    const fixture = createEditorFixture({ bindOnInput, value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+    setSurfaceContent(fixture.surface, '<p>Typed</p>');
+    const typedParagraph = fixture.surface.firstChild;
+    fixture.surface.dispatchEvent(new Event('input', { bubbles: true }));
+
+    fixture.element.dataset.receivedValueCount = bindOnInput ? '1' : '0';
+    fixture.sourceValue.textContent = '<p>Pushed</p>';
+    fixture.hiddenInput.value = '<p>Pushed</p>';
+    editorModule.onUpdate(fixture.element, dotNetRef);
+
+    expect(fixture.surface.firstChild).toBe(typedParagraph);
+    expect(fixture.hiddenInput.value).toBe(bindOnInput ? '<p>Typed</p>' : '<p>Start</p>');
+  });
+
+  test('a late debounced value does not revert newer text while editing', () => {
+    const fixture = createEditorFixture({ bindOnInput: true, value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+    const typeText = (html) => {
+      setSurfaceContent(fixture.surface, html);
+      fixture.surface.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    typeText('<p>A</p>');
+    typeText('<p>AB</p>');
+
+    fixture.element.dataset.receivedValueCount = '2';
+    fixture.sourceValue.textContent = '<p>A</p>';
+    editorModule.onUpdate(fixture.element, dotNetRef);
+
+    expect(fixture.surface.innerHTML).toBe('<p>AB</p>');
+  });
+
+  test('an edited value commits over a value ignored during the edit', () => {
+    const fixture = createEditorFixture({ value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+    setSurfaceContent(fixture.surface, '<p>Typed</p>');
+    fixture.surface.dispatchEvent(new Event('input', { bubbles: true }));
+    fixture.sourceValue.textContent = '<p>Pushed</p>';
+    editorModule.onUpdate(fixture.element, dotNetRef);
+
+    blur(fixture.surface);
+
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', '<p>Typed</p>', '<p>Typed</p>');
+  });
+
+  test('a focused editor without edits accepts a new value', () => {
+    const fixture = createEditorFixture({ value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+    fixture.surface.focus();
+
+    fixture.sourceValue.textContent = '<p>Another item</p>';
+    editorModule.onUpdate(fixture.element, dotNetRef);
+
+    expect(fixture.surface.innerHTML).toBe('<p>Another item</p>');
+  });
+
+  test('focus leaving through a tool panel commits the edit', () => {
+    const fixture = createEditorFixture({ value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+    setSurfaceContent(fixture.surface, '<p>Typed</p>');
+    fixture.surface.dispatchEvent(new Event('input', { bubbles: true }));
+    const panelInput = fixture.element.querySelector('[data-role="link-url"]');
+
+    blur(fixture.surface, panelInput);
+    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.anything(), expect.anything());
+
+    blur(panelInput);
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', '<p>Typed</p>', '<p>Typed</p>');
+  });
+
+  test('a rerender with an unchanged bound value keeps an uncommitted edit', () => {
+    const fixture = createEditorFixture({ value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+    setSurfaceContent(fixture.surface, '<p>Typed</p>');
+    fixture.surface.dispatchEvent(new Event('input', { bubbles: true }));
+    editorModule.__testHooks.syncValueFromSurface(fixture.element, false);
+
+    editorModule.onUpdate(fixture.element, dotNetRef);
+
+    expect(fixture.surface.innerHTML).toBe('<p>Typed</p>');
+  });
+
+  test('aria-readonly follows whether the surface can be edited', () => {
+    const fixture = createEditorFixture({ value: '<p>Bound</p>' });
+    fixture.element.dataset.interactive = 'true';
+    fixture.surface.setAttribute('contenteditable', 'false');
+    fixture.surface.setAttribute('aria-readonly', 'true');
+
+    editorModule.onLoad(document.createElement('tnt-page-script'));
+    expect(fixture.surface.getAttribute('aria-readonly')).toBe('true');
+
+    editorModule.onLoad(fixture.element, createDotNetRef());
+    expect(fixture.surface.getAttribute('aria-readonly')).toBe('false');
+  });
+
+  test('a click outside that moves no focus commits before app handlers run', () => {
+    const fixture = createEditorFixture({ value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+    fixture.surface.focus();
+    setSurfaceContent(fixture.surface, '<p>Typed</p>');
+    fixture.surface.dispatchEvent(new Event('input', { bubbles: true }));
+    const outside = document.createElement('button');
+    document.body.appendChild(outside);
+    let commitsSeenByApp = -1;
+    outside.addEventListener('click', () => {
+      commitsSeenByApp = dotNetRef.invokeMethodAsync.mock.calls.filter(([method]) => method === 'CommitValueFromJs').length;
+    });
+
+    outside.click();
+
+    expect(commitsSeenByApp).toBe(1);
+  });
+
+  test('a click inside the editor does not commit', () => {
+    const fixture = createEditorFixture({ value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+    fixture.surface.focus();
+    setSurfaceContent(fixture.surface, '<p>Typed</p>');
+    fixture.surface.dispatchEvent(new Event('input', { bubbles: true }));
+
+    fixture.element.querySelector('[data-role="link-url"]').click();
+
+    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.anything(), expect.anything());
+  });
+
+  test.each(['beforeunload', 'pagehide'])('%s commits an uncommitted edit', (eventName) => {
+    const fixture = createEditorFixture({ value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+    setSurfaceContent(fixture.surface, '<p>Typed</p>');
+    fixture.surface.dispatchEvent(new Event('input', { bubbles: true }));
+
+    window.dispatchEvent(new Event(eventName));
+
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', '<p>Typed</p>', '<p>Typed</p>');
+  });
+
+  test('hiding the page commits an uncommitted edit but showing it does not', () => {
+    const fixture = createEditorFixture({ value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+    setSurfaceContent(fixture.surface, '<p>Typed</p>');
+    fixture.surface.dispatchEvent(new Event('input', { bubbles: true }));
+    const visibilityState = jest.spyOn(document, 'visibilityState', 'get');
+
+    visibilityState.mockReturnValue('visible');
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.anything(), expect.anything());
+
+    visibilityState.mockReturnValue('hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+    visibilityState.mockRestore();
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', '<p>Typed</p>', '<p>Typed</p>');
+  });
+
+  test('pagehide leaves an untouched editor alone', () => {
+    const fixture = createEditorFixture({ value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+
+    window.dispatchEvent(new Event('pagehide'));
+
+    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.anything(), expect.anything());
+  });
+
+  const createPrerenderedEditor = () => {
+    const fixture = createEditorFixture({ value: '<p>Start</p>' });
+    fixture.element.dataset.interactive = 'true';
+    fixture.surface.setAttribute('contenteditable', 'false');
+    return fixture;
+  };
+
+  test('focus taken while prerendered moves to the surface that replaces it', () => {
+    const prerendered = createPrerenderedEditor();
+    editorModule.onLoad(document.createElement('tnt-page-script'));
+    prerendered.surface.focus();
+
+    const interactive = createPrerenderedEditor();
+    editorModule.onLoad(interactive.element, createDotNetRef());
+
+    expect(document.activeElement).toBe(interactive.surface);
+  });
+
+  test('focus taken before the script loaded moves to the surface that replaces it', () => {
+    const prerendered = createPrerenderedEditor();
+    prerendered.surface.focus();
+    editorModule.onLoad(document.createElement('tnt-page-script'));
+
+    const interactive = createPrerenderedEditor();
+    editorModule.onLoad(interactive.element, createDotNetRef());
+
+    expect(document.activeElement).toBe(interactive.surface);
+  });
+
+  test('prerender focus is not taken back from a control the user moved to', () => {
+    const prerendered = createPrerenderedEditor();
+    editorModule.onLoad(document.createElement('tnt-page-script'));
+    prerendered.surface.focus();
+
+    const interactive = createPrerenderedEditor();
+    const other = document.createElement('button');
+    document.body.appendChild(other);
+    other.focus();
+    editorModule.onLoad(interactive.element, createDotNetRef());
+
+    expect(document.activeElement).toBe(other);
   });
 
   test('disabled editors disable toolbar and tool controls and block toolbar execution', () => {
@@ -769,10 +1147,6 @@ describe('NTRichTextEditor runtime behavior', () => {
     expect(hooks.isTableRowElement(row)).toBe(true);
     expect(hooks.getTableCells(row)).toHaveLength(1);
 
-    const blurState = { blurTimeoutId: setTimeout(() => {}, 50) };
-    hooks.clearBlurTimeout(blurState);
-    expect(blurState.blurTimeoutId).toBeNull();
-    hooks.clearBlurTimeout(null);
 
     const pendingState = { pendingSyncFrameId: setTimeout(() => {}, 50) };
     hooks.clearPendingSync(pendingState);
@@ -881,7 +1255,8 @@ describe('NTRichTextEditor runtime behavior', () => {
 
     hooks.updateSourceValue(fixture.element, 'Updated');
     expect(fixture.hiddenInput.value).toBe('Updated');
-    expect(fixture.sourceValue.textContent).toBe('Updated');
+    expect(fixture.hiddenInput.value).toBe('Updated');
+    expect(fixture.sourceValue.textContent).toBe('Start');
 
     hooks.updateEmptyState(fixture.surface);
     expect(fixture.surface.dataset.empty).toBe('false');

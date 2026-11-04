@@ -57,7 +57,9 @@ public partial class NTInputSelect<[DynamicallyAccessedMembers(DynamicallyAccess
     /// <summary>
     ///     Gets the .NET reference used by JavaScript interop.
     /// </summary>
-    public DotNetObjectReference<NTInputSelect<TInputType>>? DotNetObjectRef { get; private set; }
+    private DotNetObjectReference<NTInputSelect<TInputType>>? DotNetObjectRef { get; set; }
+
+    DotNetObjectReference<NTInputSelect<TInputType>>? INTPageScriptComponent<NTInputSelect<TInputType>>.DotNetObjectRef => DotNetObjectRef;
 
     /// <summary>
     ///     Gets the isolated JS module for this component.

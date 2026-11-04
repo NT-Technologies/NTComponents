@@ -1,0 +1,32 @@
+@page "/rich-text-editor-lifecycle"
+@using LiveTest.Client.Components
+@using Microsoft.AspNetCore.Components.Web
+
+<main class="rich-text-editor-page">
+    <header class="rich-text-editor-page-header">
+        <h1>Rich text editor lifecycle</h1>
+        <p>Removes the editor from the page and changes its value from .NET, so pending text can be checked across render modes.</p>
+    </header>
+
+    <section aria-label="Rich text editor lifecycle demos">
+        <article data-testid="lifecycle-server">
+            <h2>InteractiveServer</h2>
+            <RichTextEditorLifecycleDemo @rendermode="InteractiveServer" />
+        </article>
+
+        <article data-testid="lifecycle-wasm">
+            <h2>InteractiveWebAssembly</h2>
+            <RichTextEditorLifecycleDemo @rendermode="InteractiveWebAssembly" />
+        </article>
+
+        <article data-testid="lifecycle-server-no-prerender">
+            <h2>InteractiveServer without prerendering</h2>
+            <RichTextEditorLifecycleDemo @rendermode="new InteractiveServerRenderMode(prerender: false)" />
+        </article>
+
+        <article data-testid="lifecycle-wasm-no-prerender">
+            <h2>InteractiveWebAssembly without prerendering</h2>
+            <RichTextEditorLifecycleDemo @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
+        </article>
+    </section>
+</main>

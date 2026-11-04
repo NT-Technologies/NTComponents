@@ -1,0 +1,36 @@
+@using NTComponents
+
+<div @onkeydown="HandleShortcut">
+    @if (_showEditor) {
+        <NTRichTextEditor @bind-Value="_selected.Body"
+                          Label="Lifecycle notes"
+                          BindOnInput="BindOnInput"
+                          BindAfter="RecordCommit" />
+    }
+</div>
+
+<div class="rich-text-editor-actions">
+    <NTButton Type="ButtonType.Button"
+              Label="Select another item"
+              Variant="NTButtonVariant.Outlined"
+              OnClickCallback="ToggleEditor" />
+    <NTButton Type="ButtonType.Button"
+              Label="Open second note"
+              Variant="NTButtonVariant.Outlined"
+              OnClickCallback="OpenSecondNote" />
+    <NTButton Type="ButtonType.Button"
+              Label="Set value"
+              Variant="NTButtonVariant.Outlined"
+              OnClickCallback="SetValue" />
+    <NTButton Type="ButtonType.Button"
+              Label="@(BindOnInput ? "Commit on blur" : "Bind on input")"
+              Variant="NTButtonVariant.Outlined"
+              OnClickCallback="ToggleBindOnInput" />
+</div>
+
+<p>F8 opens the second note and F9 sets the value, both without moving focus.</p>
+
+<output data-testid="bound-value">@_selected.Body</output>
+<output data-testid="first-note">@_firstNote.Body</output>
+<output data-testid="second-note">@_secondNote.Body</output>
+<output data-testid="commit-log">@string.Join(" ", _commits)</output>

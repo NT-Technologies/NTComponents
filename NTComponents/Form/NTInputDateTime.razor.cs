@@ -50,6 +50,8 @@ public partial class NTInputDateTime<DateTimeType> {
     /// <remarks>
     ///     When enabled, the native input still posts and binds the value while the custom picker provides the docked or
     ///     modal visual interaction. On small screens and down, the picker is presented as a centered modal dialog.
+    ///     Selections write to the field immediately: date and month pickers close after a pick, date-time and time
+    ///     pickers stay open for further edits, and Cancel restores the value the field had when the picker opened.
     /// </remarks>
     [Parameter]
     public bool EnableCustomPicker { get; set; }

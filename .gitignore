@@ -398,6 +398,7 @@ coverlet.runsettings
 /NTComponents/Form/NTBrowserTimeZone.razor.js
 /NTComponents/Form/NTCombobox.razor.js
 /NTComponents/Form/NTInputDateTime.razor.js
+/NTComponents/Form/NTInputDateRange.razor.js
 /NTComponents/Form/NTInputRangeSlider.razor.js
 /NTComponents/Form/NTInputSlider.razor.js
 /NTComponents/Form/NTTextArea.razor.js

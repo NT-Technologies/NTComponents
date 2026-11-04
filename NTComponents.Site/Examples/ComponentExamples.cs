@@ -31,6 +31,7 @@ public static class ComponentExamples {
         ["NTInputCurrency"] = Render<InputCurrencyExamples>(),
         ["NTColorPicker"] = Render<ColorPickerExamples>(),
         ["NTInputColor"] = Render<InputColorExamples>(),
+        ["NTInputDateRange"] = Render<InputDateRangeExamples>(),
         ["NTInputDateTime"] = Render<InputDateTimeExamples>(),
         ["NTBrowserTimeZone"] = Render<BrowserTimeZoneExamples>(),
         ["NTInputCheckbox"] = Render<InputCheckboxExamples>(),

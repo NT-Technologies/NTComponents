@@ -898,8 +898,8 @@ describe('NTInputDateTime picker behavior', () => {
         expect(formKeyDownHandler).not.toHaveBeenCalled();
     });
 
-    test('confirm emits input and change events with the selected form value', () => {
-        const { confirmButton, input, picker, trigger } = createPickerFixture({ mode: 'date', value: '2026-03-15' });
+    test('selecting a date fills the field without OK and closes the date picker', () => {
+        const { input, picker, trigger } = createPickerFixture({ mode: 'date', value: '2026-03-15' });
         const inputHandler = jest.fn();
         const changeHandler = jest.fn();
         input.addEventListener('input', inputHandler);
@@ -907,11 +907,63 @@ describe('NTInputDateTime picker behavior', () => {
 
         openPicker(trigger);
         picker.querySelector('[data-tnt-dtp-year="2026"][data-tnt-dtp-month="2"][data-tnt-dtp-day="16"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
-        confirmButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
         expect(input.value).toBe('2026-03-16');
         expect(inputHandler).toHaveBeenCalledTimes(1);
         expect(changeHandler).toHaveBeenCalledTimes(1);
+        expect(picker.classList.contains('tnt-dtp-open')).toBe(false);
+    });
+
+    test('selecting a datetime day fills the field and keeps the picker open for time edits', () => {
+        const { input, minuteInput, picker, trigger } = createPickerFixture({ mode: 'datetime', value: '2026-03-15T14:05:00' });
+
+        openPicker(trigger);
+        picker.querySelector('[data-tnt-dtp-year="2026"][data-tnt-dtp-month="2"][data-tnt-dtp-day="16"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+        expect(input.value).toBe('2026-03-16T14:05');
+        expect(picker.classList.contains('tnt-dtp-open')).toBe(true);
+
+        minuteInput.value = '30';
+        minuteInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+        expect(input.value).toBe('2026-03-16T14:30');
+    });
+
+    test('changing the time fills the field without OK', () => {
+        const { hourInput, input, picker, trigger } = createPickerFixture({ mode: 'time', value: '09:15:00' });
+
+        openPicker(trigger);
+        hourInput.value = '11';
+        hourInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+        expect(input.value).toBe('11:15:00');
+        expect(picker.classList.contains('tnt-dtp-open')).toBe(true);
+    });
+
+    test('selecting a month fills the month field and closes the picker', () => {
+        const { input, picker, trigger } = createPickerFixture({ mode: 'month', value: '2026-03' });
+
+        openPicker(trigger);
+        picker.querySelector('[data-tnt-dtp-month-index][data-tnt-dtp-month="5"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+        expect(input.value).toBe('2026-06');
+        expect(picker.classList.contains('tnt-dtp-open')).toBe(false);
+    });
+
+    test('cancel restores the value the field had when the picker opened', () => {
+        const { cancelButton, input, minuteInput, picker, trigger } = createPickerFixture({ mode: 'datetime', value: '2026-03-15T14:05:00' });
+
+        openPicker(trigger);
+        const openValue = input.value;
+        picker.querySelector('[data-tnt-dtp-year="2026"][data-tnt-dtp-month="2"][data-tnt-dtp-day="20"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        minuteInput.value = '45';
+        minuteInput.dispatchEvent(new Event('input', { bubbles: true }));
+        expect(input.value).not.toBe(openValue);
+
+        cancelButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+        expect(input.value).toBe(openValue);
+        expect(picker.classList.contains('tnt-dtp-open')).toBe(false);
     });
 
     test('picker controls are removed from tab order', () => {

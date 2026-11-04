@@ -56,7 +56,9 @@ public partial class NTTextArea : INTPageScriptComponent<NTTextArea> {
     /// <summary>
     ///     Gets the .NET object reference used by JavaScript interop after an interactive renderer is attached.
     /// </summary>
-    public DotNetObjectReference<NTTextArea>? DotNetObjectRef { get; private set; }
+    private DotNetObjectReference<NTTextArea>? DotNetObjectRef { get; set; }
+
+    DotNetObjectReference<NTTextArea>? INTPageScriptComponent<NTTextArea>.DotNetObjectRef => DotNetObjectRef;
 
     /// <summary>
     ///     Gets the isolated JavaScript module used by the interactive renderer.

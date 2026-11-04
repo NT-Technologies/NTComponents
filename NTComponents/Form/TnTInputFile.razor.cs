@@ -72,7 +72,9 @@ public partial class TnTInputFile {
     /// <summary>
     ///     Gets the .NET object reference for JS interop.
     /// </summary>
-    public DotNetObjectReference<TnTInputFile>? DotNetObjectRef { get; private set; }
+    private DotNetObjectReference<TnTInputFile>? DotNetObjectRef { get; set; }
+
+    DotNetObjectReference<TnTInputFile>? INTPageScriptComponent<TnTInputFile>.DotNetObjectRef => DotNetObjectRef;
 
     /// <summary>
     ///     Gets the CSS class string for the input element.

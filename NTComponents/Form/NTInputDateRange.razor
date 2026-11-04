@@ -1,0 +1,56 @@
+@namespace NTComponents
+
+<div class="nt-input-date-range"
+     style="--nt-input-date-range-anchor: --nt-input-date-range-@_instanceId;"
+     data-nt-input-date-range="true"
+     data-readonly="@(IsReadOnly ? "true" : null)"
+     data-min="@FormatValue(Min)"
+     data-max="@FormatValue(Max)"
+     data-first-day="@FirstDayOfWeek">
+    <NTInputText @attributes="AdditionalAttributes"
+                 Value="@DisplayText"
+                 ValueExpression="@(() => DisplayText)"
+                 ElementId="@InputId"
+                 Label="@Label"
+                 Appearance="Appearance"
+                 Density="Density"
+                 Disabled="IsDisabled"
+                 ReadOnly="true"
+                 SubmitValue="false"
+                 Placeholder="@Placeholder"
+                 SupportingText="@SupportingText"
+                 ErrorText="@CurrentErrorText"
+                 TrailingIcon="MaterialIcon.DateRange"
+                 aria-haspopup="dialog"
+                 aria-expanded="false"
+                 aria-controls="@PopoverId"
+                 data-nt-input-date-range-input="true" />
+
+    @HiddenValue(StartDate, OnStartChangedAsync, StartDateExpression ?? (() => StartDate), StartElementName, "data-nt-input-date-range-start")
+    @HiddenValue(EndDate, OnEndChangedAsync, EndDateExpression ?? (() => EndDate), EndElementName, "data-nt-input-date-range-end")
+
+    <div id="@PopoverId" class="popover" popover="auto" role="dialog" aria-label="Choose dates" data-nt-input-date-range-popover="true">
+        <div class="segments">
+            <button type="button" class="segment" aria-pressed="false" data-nt-input-date-range-segment="start">
+                <span class="segment-label">Start</span>
+                <span class="segment-value" data-nt-input-date-range-segment-value="start"></span>
+            </button>
+            <button type="button" class="segment" aria-pressed="false" data-nt-input-date-range-segment="end">
+                <span class="segment-label">End</span>
+                <span class="segment-value" data-nt-input-date-range-segment-value="end"></span>
+            </button>
+        </div>
+        <div class="month-nav">
+            <button type="button" class="nav-button" aria-label="Previous month" data-nt-input-date-range-action="prev">@(MaterialIcon.ChevronLeft.Render())</button>
+            <div id="@MonthId" class="month-label" aria-live="polite" data-nt-input-date-range-month="true"></div>
+            <button type="button" class="nav-button" aria-label="Next month" data-nt-input-date-range-action="next">@(MaterialIcon.ChevronRight.Render())</button>
+        </div>
+        <div class="grid" role="grid" aria-labelledby="@MonthId" data-nt-input-date-range-grid="true"></div>
+        <div class="actions">
+            <NTButton Variant="NTButtonVariant.Text" Label="Clear" data-nt-input-date-range-action="clear" />
+            <NTButton Variant="NTButtonVariant.Text" Label="Done" data-nt-input-date-range-action="done" />
+        </div>
+    </div>
+
+    <NTPageScript Src="@JsModulePath" />
+</div>
