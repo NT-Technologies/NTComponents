@@ -31,6 +31,35 @@
     }
 </NTTabView>
 
+@* A height-bounded tab view: tab content sized with height: 100% must fill the panel the same whether it is an NTTab or a docked NTPopoutTab. *@
+<style>
+    nt-tab-view[name='popout-tab-sizing'] .nt-tab-view-panels {
+        height: 240px;
+    }
+
+    nt-tab-view[name='popout-tab-sizing'] .nt-tab-view-panel {
+        box-sizing: border-box;
+        height: 100%;
+        min-height: 0;
+        overflow: auto;
+    }
+</style>
+
+<NTTabView Name="popout-tab-sizing" AriaLabel="Sized panels">
+    <NTTab Label="Plain fill" Value="plain-fill">
+        <div data-testid="plain-fill" style="height: 100%;"></div>
+    </NTTab>
+    <NTPopoutTab Label="Docked fill" Value="docked-fill">
+        <div data-testid="docked-fill" style="height: 100%;"></div>
+    </NTPopoutTab>
+    <NTTab Label="Plain tall" Value="plain-tall">
+        <div data-testid="plain-tall" style="height: 600px;"></div>
+    </NTTab>
+    <NTPopoutTab Label="Docked tall" Value="docked-tall">
+        <div data-testid="docked-tall" style="height: 600px;"></div>
+    </NTPopoutTab>
+</NTTabView>
+
 @if (RendererInfo.IsInteractive) {
     <output data-testid="interactive-renderer">@RendererInfo.Name</output>
 }

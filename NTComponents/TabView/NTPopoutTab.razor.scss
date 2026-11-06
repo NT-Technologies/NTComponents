@@ -2,6 +2,13 @@
     position: relative;
 }
 
+// Docked, the body is the last wrapper between the tab panel and the content (NTWindow sizes the two above it), so it
+// fills the panel too. Floating windows drop data-nt-tab-panel, which keeps this off them.
+[data-nt-tab-panel] > .nt-window-content-frame > .nt-window-content > .nt-popout-tab-body {
+    block-size: 100%;
+    min-block-size: 0;
+}
+
 // Top-end is the default corner; the modifier classes move it to the other corners.
 .nt-popout-tab-action {
     position: absolute;

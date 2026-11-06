@@ -13,6 +13,15 @@ $nt-window-dock-margin: 16px;
 $nt-window-minimized-block-size: 48px;
 $nt-window-minimized-inline-size: 360px;
 
+// A docked NTPopoutTab renders this section as its tab panel (data-nt-tab-panel is set only while docked, never with
+// .nt-window). The content wrappers then pass the panel's size through, so height: 100% and minmax(0, 1fr) layouts in
+// the tab resolve against the panel exactly as NTTab content does, and the panel keeps owning scrolling.
+[data-nt-tab-panel] > .nt-window-content-frame,
+[data-nt-tab-panel] > .nt-window-content-frame > .nt-window-content {
+    block-size: 100%;
+    min-block-size: 0;
+}
+
 .nt-window {
     animation: nt-window-enter motion.$nt-motion-duration-medium_3 motion.$nt-motion-easing-emphasized-decelerate;
     background: var(--nt-window-background-color, #{colors.$nt-color-surface-container-high});

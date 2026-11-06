@@ -1,3 +1,10 @@
+# Unreleased
+
+
+### Bug Fixes
+
+* **tabs:** docked NTPopoutTab content fills the tab panel height, matching NTTab
+
 # [1.48.0](https://github.com/Notallthatevil/NTComponents/compare/v1.47.0...v1.48.0) (2026-04-15)
 
 

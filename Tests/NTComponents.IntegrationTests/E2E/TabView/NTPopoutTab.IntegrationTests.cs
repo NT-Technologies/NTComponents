@@ -86,6 +86,76 @@ public sealed class NTPopoutTab_IntegrationTests : IAsyncLifetime {
         await Assertions.Expect(tabView.Locator("[role='tab'][aria-selected='true']")).ToHaveCountAsync(1);
     }
 
+    [Fact]
+    public async Task DockedPopoutTab_ContentFillsBoundedPanel_LikeNTTab_BeforeAndAfterPopout() {
+        var tabView = await LoadSizingAsync();
+        await GetTab(tabView, "Plain fill").ClickAsync();
+        var plain = await MeasureFillAsync("plain-fill");
+
+        await GetTab(tabView, "Docked fill").ClickAsync();
+        var docked = await MeasureFillAsync("docked-fill");
+
+        await tabView.GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { Name = "Open Docked fill in a window" }).ClickAsync();
+        var window = _page!.GetByRole(AriaRole.Dialog, new PageGetByRoleOptions { Name = "Docked fill" });
+        await Assertions.Expect(window).ToBeVisibleAsync();
+        await window.GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { Name = "Close Docked fill" }).ClickAsync();
+        await Assertions.Expect(window).ToHaveCountAsync(0);
+        await GetTab(tabView, "Docked fill").ClickAsync();
+        var returned = await MeasureFillAsync("docked-fill");
+
+        plain.Content.Should().BeGreaterThan(100).And.BeApproximately(plain.Panel, 0.5);
+        docked.Content.Should().BeApproximately(docked.Panel, 0.5).And.BeApproximately(plain.Content, 0.5);
+        returned.Content.Should().BeApproximately(returned.Panel, 0.5).And.BeApproximately(plain.Content, 0.5);
+    }
+
+    [Theory]
+    [InlineData("Plain tall", "plain-tall")]
+    [InlineData("Docked tall", "docked-tall")]
+    public async Task TallTabContent_ScrollsInsideTheBoundedPanel(string tabName, string testId) {
+        var tabView = await LoadSizingAsync();
+        await GetTab(tabView, tabName).ClickAsync();
+        await WaitForFramesAsync();
+
+        // Scroll the panel to its end: it must be the scroll container, and the whole content must be reachable in it.
+        var scroll = await _page!.EvaluateAsync<double[]>(
+            """
+            testId => {
+                const content = document.querySelector(`[data-testid="${testId}"]`);
+                const panel = content.closest('[role="tabpanel"]');
+                panel.scrollTop = panel.scrollHeight;
+                return [panel.clientHeight, panel.scrollHeight, panel.scrollTop, panel.getBoundingClientRect().bottom - content.getBoundingClientRect().bottom];
+            }
+            """,
+            testId);
+
+        scroll[1].Should().BeGreaterThan(scroll[0] + 300);
+        scroll[2].Should().BeGreaterThan(300);
+        scroll[3].Should().BeGreaterThanOrEqualTo(-0.5);
+    }
+
+    private async Task<ILocator> LoadSizingAsync() {
+        await LoadAsync();
+        var tabView = _page!.Locator("nt-tab-view[name='popout-tab-sizing']");
+        await tabView.EvaluateAsync("tabView => new Promise(resolve => { const check = () => tabView.__ntTabViewState ? resolve() : requestAnimationFrame(check); check(); })");
+        return tabView;
+    }
+
+    // The content's rendered height and the panel's content-box height (panel height without its padding).
+    private async Task<(double Content, double Panel)> MeasureFillAsync(string testId) {
+        await WaitForFramesAsync();
+        var sizes = await _page!.EvaluateAsync<double[]>(
+            """
+            testId => {
+                const content = document.querySelector(`[data-testid="${testId}"]`);
+                const panel = content.closest('[role="tabpanel"]');
+                const style = getComputedStyle(panel);
+                return [content.getBoundingClientRect().height, panel.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)];
+            }
+            """,
+            testId);
+        return (sizes[0], sizes[1]);
+    }
+
     private async Task<ILocator> LoadAsync() {
         ArgumentNullException.ThrowIfNull(_fixture);
         ArgumentNullException.ThrowIfNull(_page);
