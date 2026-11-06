@@ -993,6 +993,24 @@ function setupDragScroll() {
 // The listeners do not depend on Blazor, so attach them as soon as the module loads.
 setupDragScroll();
 
+// A static SSR NTFileUpload has no .NET handler to show the chosen files, so show their names here as the interactive
+// component does. Only the static input is marked, so Blazor-rendered text is never touched.
+function onStaticFileUploadChange(event) {
+    const input = event.target;
+    const display = input instanceof HTMLInputElement && input.matches('[data-nt-file-upload-static]')
+        ? input.closest('.nt-file-upload')?.querySelector('.nt-file-upload-value')
+        : null;
+    if (!(display instanceof HTMLElement)) {
+        return;
+    }
+
+    display.dataset.ntEmptyText ??= display.textContent ?? '';
+    const names = Array.from(input.files ?? [], (file) => file.name);
+    display.textContent = names.length ? names.join(', ') : display.dataset.ntEmptyText;
+}
+
+document.addEventListener('change', onStaticFileUploadChange);
+
 function startBlazorComponents(blazor) {
     setupPageScriptElement();
     setupEnhancedNavigation(blazor);

@@ -34,6 +34,17 @@ public class NTFileUpload_Tests : BunitContext {
         input.GetAttribute("aria-labelledby").Should().Be("resume-label");
         input.GetAttribute("aria-describedby").Should().Contain("resume-supporting");
         cut.Find("#resume-supporting").TextContent.Should().Be("Attach a PDF");
+        // The library module shows the chosen file names for marked static inputs, since no .NET handler runs.
+        input.GetAttribute("data-nt-file-upload-static").Should().Be("true");
+    }
+
+    [Fact]
+    public void Interactive_Renderer_Does_Not_Mark_File_Input_As_Static() {
+        SetRendererInfo(new RendererInfo("WebAssembly", true));
+
+        var cut = RenderFileUpload(new TestModel(), parameters => parameters.Add(p => p.Label, "Resume"));
+
+        cut.Find("input[type=file]").HasAttribute("data-nt-file-upload-static").Should().BeFalse();
     }
 
     [Fact]
