@@ -74,6 +74,22 @@ public class NTContextMenu_Tests : BunitContext {
     }
 
     [Fact]
+    public void Render_Renders_TargetSelector_Only_When_Set() {
+        var cut = Render<NTContextMenu>(parameters => parameters
+            .Add(x => x.AriaLabel, "Cell actions")
+            .Add(x => x.TargetElementId, "surface")
+            .Add(x => x.TargetSelector, "td, th"));
+
+        cut.Find("nt-context-menu").GetAttribute("data-target-selector").Should().Be("td, th");
+
+        var plain = Render<NTContextMenu>(parameters => parameters
+            .Add(x => x.AriaLabel, "Row actions")
+            .Add(x => x.TargetContent, builder => builder.AddContent(0, "Target")));
+
+        plain.Find("nt-context-menu").HasAttribute("data-target-selector").Should().BeFalse();
+    }
+
+    [Fact]
     public void Render_Passes_MenuContent_And_Visual_Parameters_To_NTMenu() {
         var cut = Render<NTContextMenu>(parameters => parameters
             .Add(x => x.AriaLabel, "Row actions")

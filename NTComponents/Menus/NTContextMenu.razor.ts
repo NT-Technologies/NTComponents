@@ -157,6 +157,27 @@ export class NTContextMenu extends HTMLElement {
         return this.querySelector<PointMenuElement>(':scope > nt-menu');
     }
 
+    // With data-target-selector, only gestures on (or, for the keyboard, with the selection inside) a matching element within the target open the menu.
+    private getSource(node: Maybe<EventTarget>): Element | null {
+        const source = node instanceof Element ? node : this.target;
+        const selector = this.dataset.targetSelector?.trim();
+        if (!selector) {
+            return source;
+        }
+
+        const match = source?.closest(selector) ?? null;
+        return match && this.target?.contains(match) ? match : null;
+    }
+
+    private getKeyboardSource(event: KeyboardEvent): Element | null {
+        if (!this.dataset.targetSelector?.trim()) {
+            return this.getSource(event.target);
+        }
+
+        const anchor = window.getSelection?.()?.anchorNode;
+        return this.getSource(anchor instanceof Element ? anchor : anchor?.parentElement);
+    }
+
     private handleContextMenu(event: MouseEvent): void {
         if (this.shouldSuppressNativeEvent()) {
             event.preventDefault();
@@ -168,9 +189,14 @@ export class NTContextMenu extends HTMLElement {
             return;
         }
 
+        const source = this.getSource(event.target);
+        if (!source) {
+            return;
+        }
+
         event.preventDefault();
         event.stopPropagation();
-        this.openAt(event.clientX, event.clientY, event.target instanceof Element ? event.target : this.target);
+        this.openAt(event.clientX, event.clientY, source);
     }
 
     private handleKeyDown(event: KeyboardEvent): void {
@@ -183,9 +209,9 @@ export class NTContextMenu extends HTMLElement {
             return;
         }
 
-        const source = event.target instanceof Element ? event.target : this.target;
+        const source = this.getKeyboardSource(event);
         const rect = (source instanceof HTMLElement ? source : this.target)?.getBoundingClientRect();
-        if (!rect) {
+        if (!source || !rect) {
             return;
         }
 
@@ -199,6 +225,11 @@ export class NTContextMenu extends HTMLElement {
             return;
         }
 
+        const source = this.getSource(event.target);
+        if (!source) {
+            return;
+        }
+
         this.cancelLongPress();
         event.stopPropagation();
         this.longPressStartX = event.clientX;
@@ -206,7 +237,7 @@ export class NTContextMenu extends HTMLElement {
         this.longPressTimer = window.setTimeout(() => {
             this.longPressTimer = null;
             this.suppressFollowUpNativeEvents();
-            this.openAt(this.longPressStartX, this.longPressStartY, event.target instanceof Element ? event.target : this.target);
+            this.openAt(this.longPressStartX, this.longPressStartY, source);
             this.removeTransientListeners();
         }, this.getLongPressDelay());
 

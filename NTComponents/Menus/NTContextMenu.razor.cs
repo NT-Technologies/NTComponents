@@ -113,6 +113,12 @@ public partial class NTContextMenu {
     public string? TargetElementId { get; set; }
 
     /// <summary>
+    ///     Gets or sets an optional CSS selector that limits invocation to matching elements inside the target. Gestures elsewhere in the target leave the native context menu alone.
+    /// </summary>
+    [Parameter]
+    public string? TargetSelector { get; set; }
+
+    /// <summary>
     ///     Gets or sets the target content that receives context menu gestures. Provide either this or <see cref="TargetElementId" />.
     /// </summary>
     [Parameter]

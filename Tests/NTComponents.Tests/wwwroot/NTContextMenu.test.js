@@ -133,6 +133,55 @@ describe('NTContextMenu custom element', () => {
       expect(menu.openAt).toHaveBeenCalledWith(40, 130, target);
    });
 
+   test('target selector opens only for matching descendants and leaves other right-clicks native', () => {
+      const { contextMenu, menu, target } = createContextMenu();
+      contextMenu.dataset.targetSelector = 'td';
+      target.innerHTML = '<p>Plain</p><table><tbody><tr><td><b>Cell</b></td></tr></tbody></table>';
+      const cellText = target.querySelector('b');
+
+      const plain = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+      target.querySelector('p').dispatchEvent(plain);
+      expect(plain.defaultPrevented).toBe(false);
+      expect(menu.openAt).not.toHaveBeenCalled();
+
+      const direct = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+      target.dispatchEvent(direct);
+      expect(direct.defaultPrevented).toBe(false);
+      expect(menu.openAt).not.toHaveBeenCalled();
+
+      const matching = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 5, clientY: 6 });
+      cellText.dispatchEvent(matching);
+      expect(matching.defaultPrevented).toBe(true);
+      expect(menu.openAt).toHaveBeenCalledWith(5, 6, target.querySelector('td'));
+   });
+
+   test('target selector keyboard invocation requires the selection inside a matching element', () => {
+      const { contextMenu, menu, target } = createContextMenu();
+      contextMenu.dataset.targetSelector = 'td';
+      target.innerHTML = '<p>Plain</p><table><tbody><tr><td>Cell</td></tr></tbody></table>';
+      const cell = target.querySelector('td');
+      cell.getBoundingClientRect = jest.fn(() => rect({ bottom: 70, height: 20, left: 12, right: 60, top: 50, width: 48 }));
+      const select = (node) => {
+         const range = document.createRange();
+         range.selectNodeContents(node);
+         range.collapse(true);
+         window.getSelection().removeAllRanges();
+         window.getSelection().addRange(range);
+      };
+
+      select(target.querySelector('p'));
+      const outside = new KeyboardEvent('keydown', { key: 'ContextMenu', bubbles: true, cancelable: true });
+      target.dispatchEvent(outside);
+      expect(outside.defaultPrevented).toBe(false);
+      expect(menu.openAt).not.toHaveBeenCalled();
+
+      select(cell);
+      const inside = new KeyboardEvent('keydown', { key: 'F10', shiftKey: true, bubbles: true, cancelable: true });
+      target.dispatchEvent(inside);
+      expect(inside.defaultPrevented).toBe(true);
+      expect(menu.openAt).toHaveBeenCalledWith(12, 70, cell);
+   });
+
    test('outside click dismisses the menu while clicks inside its content do not', () => {
       const { menu, target } = createContextMenu();
       target.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
