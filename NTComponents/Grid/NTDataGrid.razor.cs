@@ -347,6 +347,12 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     public bool VirtualizationRevalidateCachedItems { get; set; }
 
     /// <summary>
+    /// Gets or sets how long, in milliseconds, scrolling must settle before virtualized rows that are not cached are requested. Set to 0 to request on every window change.
+    /// </summary>
+    [Parameter]
+    public int VirtualizationScrollDebounceMilliseconds { get; set; } = 500;
+
+    /// <summary>
     /// Gets or sets the first server-rendered request size for provider-backed virtual grids.
     /// </summary>
     [Parameter]

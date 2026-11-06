@@ -1821,6 +1821,17 @@ public class NTDataGrid_Tests : BunitContext {
     }
 
     [Fact]
+    public void Virtualized_Grid_Forwards_Scroll_Debounce_To_Virtualizer() {
+        var cut = Render<NTDataGrid<TestGridItem>>(parameters => parameters
+            .Add(grid => grid.ItemsProvider, _ => ValueTask.FromResult(new NTItemsProviderResult<TestGridItem>()))
+            .Add(grid => grid.Virtualize, true)
+            .Add(grid => grid.VirtualizationScrollDebounceMilliseconds, 250)
+            .Add(grid => grid.ChildContent, DefaultColumns));
+
+        cut.FindComponent<NTVirtualize<TestGridItem>>().Instance.ScrollDebounceMilliseconds.Should().Be(250);
+    }
+
+    [Fact]
     public void Invalid_Source_Combinations_Throw() {
         var bothSources = () => Render<NTDataGrid<TestGridItem>>(parameters => parameters
             .Add(grid => grid.Items, _items)

@@ -209,6 +209,7 @@ public class NTVirtualize_Tests : BunitContext {
 
         var cut = Render<NTVirtualize<string>>(p => p
             .Add(c => c.ItemsProvider, provider)
+            .Add(c => c.ScrollDebounceMilliseconds, 0)
             .Add(c => c.PlaceholderPreloadWindowCount, 0)
             .Add(c => c.ItemTemplate, item => builder => builder.AddContent(0, $"-{item}-"))
             .Add(c => c.LoadingTemplate, context => builder => {
@@ -262,6 +263,75 @@ public class NTVirtualize_Tests : BunitContext {
             cut.Markup.Should().Contain("-Item 3-");
             cut.Markup.Should().Contain("-Item 4-");
         });
+    }
+
+    [Fact]
+    public async Task LoadItems_Waits_For_Scroll_To_Settle_And_Requests_Only_The_Final_Window() {
+        var items = Enumerable.Range(1, 100).Select(i => $"Item {i}").ToList();
+        var captured = new List<NTVirtualizeItemsProviderRequest<string>>();
+        NTVirtualizeItemsProvider<string> provider = request => {
+            captured.Add(request);
+            var resultItems = items.Skip(request.StartIndex).Take(request.Count ?? items.Count).ToList();
+            return new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(resultItems, items.Count));
+        };
+
+        var cut = Render<NTVirtualize<string>>(p => p
+            .Add(c => c.ItemsProvider, provider)
+            .Add(c => c.ScrollDebounceMilliseconds, 300)
+            .Add(c => c.PlaceholderPreloadWindowCount, 0)
+            .Add(c => c.BackgroundPreloadWindowCount, 0)
+            .Add(c => c.ItemTemplate, item => builder => builder.AddContent(0, $"-{item}-"))
+            .Add(c => c.LoadingTemplate, context => builder => {
+                builder.OpenElement(0, "div");
+                builder.AddAttribute(1, "class", "missing-placeholder");
+                builder.CloseElement();
+            }));
+
+        // The first window loads immediately; only later scroll-driven windows wait.
+        await cut.InvokeAsync(() => cut.Instance.LoadItems(0, 4750, 0, 5));
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("-Item 5-"));
+        captured.Should().ContainSingle();
+
+        await cut.InvokeAsync(() => cut.Instance.LoadItems(1000, 3750, 20, 5));
+        await cut.InvokeAsync(() => cut.Instance.LoadItems(2000, 2750, 40, 5));
+
+        captured.Should().ContainSingle();
+        cut.FindAll(".missing-placeholder").Should().HaveCount(5);
+
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("-Item 41-"));
+        captured.Should().HaveCount(2);
+        captured[1].StartIndex.Should().Be(40);
+    }
+
+    [Fact]
+    public async Task BackgroundPreload_While_Scrolling_Cached_Rows_Waits_For_Scroll_To_Settle() {
+        var items = Enumerable.Range(1, 100).Select(i => $"Item {i}").ToList();
+        var captured = new List<NTVirtualizeItemsProviderRequest<string>>();
+        NTVirtualizeItemsProvider<string> provider = request => {
+            captured.Add(request);
+            var resultItems = items.Skip(request.StartIndex).Take(request.Count ?? items.Count).ToList();
+            return new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(resultItems, items.Count));
+        };
+
+        var cut = Render<NTVirtualize<string>>(p => p
+            .Add(c => c.ItemsProvider, provider)
+            .Add(c => c.ScrollDebounceMilliseconds, 300)
+            .Add(c => c.PlaceholderPreloadWindowCount, 1)
+            .Add(c => c.BackgroundPreloadWindowCount, 1)
+            .Add(c => c.ItemTemplate, item => builder => builder.AddContent(0, $"-{item}-")));
+
+        // The preload after a completed load is not delayed.
+        await cut.InvokeAsync(() => cut.Instance.LoadItems(0, 4750, 0, 5));
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("-Item 10-"));
+        captured.Select(request => request.StartIndex).Should().Equal(0, 5);
+
+        // Rows 3-7 are cached, so only the preload of rows 10-12 remains and it waits for the scroll to settle.
+        await cut.InvokeAsync(() => cut.Instance.LoadItems(150, 4600, 3, 5));
+        captured.Should().HaveCount(2);
+        cut.Markup.Should().NotContain("-Item 11-");
+
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("-Item 13-"));
+        captured.Select(request => request.StartIndex).Should().Equal(0, 5, 10);
     }
 
     [Fact]
@@ -322,6 +392,7 @@ public class NTVirtualize_Tests : BunitContext {
 
         var cut = Render<NTVirtualize<string>>(p => p
             .Add(c => c.ItemsProvider, provider)
+            .Add(c => c.ScrollDebounceMilliseconds, 0)
             .Add(c => c.PlaceholderPreloadWindowCount, 0)
             .Add(c => c.BackgroundPreloadWindowCount, 0)
             .Add(c => c.RevalidateCachedItems, true)
@@ -859,6 +930,7 @@ public class NTVirtualize_Tests : BunitContext {
         _module.SetupVoid("restoreAnchor", _ => true).SetVoidResult();
         var cut = Render<NTVirtualize<Tuple<int, string>>>(parameters => parameters
             .Add(component => component.ItemsProvider, provider)
+            .Add(component => component.ScrollDebounceMilliseconds, 0)
             .Add(component => component.AnchorMode, NTVirtualizeAnchorMode.Start)
             .Add(component => component.ItemKey, value => value.Item1)
             .Add(component => component.PlaceholderPreloadWindowCount, 0)
@@ -929,6 +1001,7 @@ public class NTVirtualize_Tests : BunitContext {
         };
         var cut = Render<NTVirtualize<string>>(parameters => parameters
             .Add(component => component.ItemsProvider, provider)
+            .Add(component => component.ScrollDebounceMilliseconds, 0)
             .Add(component => component.PlaceholderPreloadWindowCount, 0)
             .Add(component => component.BackgroundPreloadWindowCount, 0)
             .Add(component => component.RevalidateCachedItems, true)

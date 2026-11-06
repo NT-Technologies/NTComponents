@@ -65,7 +65,8 @@ public class NTDataGridExpansion_IntegrationTests : IAsyncLifetime {
         var scroll = page.Locator("main > .nt-data-grid > .nt-data-grid-scroll");
         await Expect(scroll.Locator(":scope > table > tbody > .nt-data-grid-row").First).ToContainTextAsync("CLM-0001");
         await scroll.EvaluateAsync("element => { element.scrollTop = 3000; element.dispatchEvent(new Event('scroll')); }");
-        await Expect(scroll.Locator(":scope > table > tbody > .nt-data-grid-row").First).Not.ToContainTextAsync("CLM-0001");
+        // Placeholder rows also carry nt-data-grid-row; wait for the debounced load to replace them.
+        await Expect(scroll.Locator(":scope > table > tbody > .nt-data-grid-row:not(.nt-data-grid-row-placeholder)").First).ToContainTextAsync(new System.Text.RegularExpressions.Regex("CLM-(?!0001)"));
         // Allow the measured window and its spacer update to reach the next paint.
         await page.EvaluateAsync("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
         var claim = await scroll.EvaluateAsync<string>("""

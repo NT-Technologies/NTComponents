@@ -131,6 +131,13 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
     public bool RevalidateCachedItems { get; set; }
 
     /// <summary>
+    ///     Gets or sets how long, in milliseconds, scrolling must settle before rows that are not cached are requested. Placeholders render immediately while scrolling, and each window
+    ///     change restarts the wait. Background preloads and revalidation started while scrolling through cached rows wait the same amount. Set to 0 to request on every window change. Defaults to 500.
+    /// </summary>
+    [Parameter]
+    public int ScrollDebounceMilliseconds { get; set; } = 500;
+
+    /// <summary>
     ///     Gets or sets the key used to preserve this virtualizer's scroll position in the current browser history entry.
     /// </summary>
     [Parameter]
@@ -216,7 +223,7 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
             _spacerAfterSize = resolvedSpacerAfterSize;
             _prefetchCts?.Cancel();
             _revalidateCts?.Cancel();
-            var refreshTask = RefreshDataCoreAsync(renderOnSuccess: true);
+            var refreshTask = RefreshDataCoreAsync(renderOnSuccess: true, debounce: _hasLoadedItems);
 
             if (!refreshTask.IsCompleted) {
                 _ = InvokeAsync(StateHasChanged);
@@ -347,6 +354,8 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
         LoadingTemplate ??= DefaultPlaceholder;
     }
 
+    private TimeSpan ScrollDebounceDelay => TimeSpan.FromMilliseconds(Math.Max(0, ScrollDebounceMilliseconds));
+
     private float GetAdjustedSpacerAfterSize(int preloadedPlaceholderCount) =>
         Math.Max(0, _spacerAfterSize - Math.Max(0, preloadedPlaceholderCount) * _itemSize);
 
@@ -460,7 +469,7 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
         builder.CloseComponent();
     };
 
-    private async ValueTask RefreshDataCoreAsync(bool renderOnSuccess, bool forceRefresh = false, CancellationToken cancellationToken = default, bool countChangeReload = false) {
+    private async ValueTask RefreshDataCoreAsync(bool renderOnSuccess, bool forceRefresh = false, CancellationToken cancellationToken = default, bool countChangeReload = false, bool debounce = false) {
         CancelAndDispose(ref _refreshCts);
         _countChangeReloaded = countChangeReload;
 
@@ -471,8 +480,10 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
         var missingCount = count;
         if (!forceRefresh && !TryGetMissingRange(startIndex, _hasLoadedItems ? Math.Min(count, Math.Max(0, _itemCount - startIndex)) : count, out missingStartIndex, out missingCount)) {
             _loading = false;
-            StartBackgroundPreload();
-            StartBackgroundRevalidation(startIndex, count);
+            // Scrolling through cached rows would otherwise start a background request on every window change.
+            var backgroundDelay = debounce ? ScrollDebounceDelay : TimeSpan.Zero;
+            StartBackgroundPreload(backgroundDelay);
+            StartBackgroundRevalidation(startIndex, count, backgroundDelay);
             if (renderOnSuccess) {
                 await InvokeAsync(StateHasChanged);
             }
@@ -499,6 +510,11 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
         };
 
         try {
+            // Scroll-driven loads wait for the window to settle; the next window change cancels this wait.
+            if (debounce) {
+                await Task.Delay(ScrollDebounceDelay, refreshToken);
+            }
+
             NTVirtualizeAnchorSnapshot? anchor = null;
             var anchorItem = default(TItem);
             var hasAnchorItem = false;
@@ -567,7 +583,7 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
                     await InvokeAsync(StateHasChanged);
                 }
 
-                StartBackgroundPreload();
+                StartBackgroundPreload(TimeSpan.Zero);
             }
         }
         catch (OperationCanceledException) when (refreshToken.IsCancellationRequested) {
@@ -612,7 +628,7 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
         return -1;
     }
 
-    private void StartBackgroundPreload() {
+    private void StartBackgroundPreload(TimeSpan delay) {
         if (_loading || ItemsProvider is null || _itemCount <= 0 || _visibleItemCapacity <= 0) {
             return;
         }
@@ -625,11 +641,12 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
 
         CancelAndDispose(ref _prefetchCts);
         _prefetchCts = new CancellationTokenSource();
-        _ = InvokeAsync(() => PreloadItemsAsync(missingStartIndex, missingCount, _prefetchCts.Token));
+        _ = InvokeAsync(() => PreloadItemsAsync(missingStartIndex, missingCount, delay, _prefetchCts.Token));
     }
 
-    private async Task PreloadItemsAsync(int startIndex, int count, CancellationToken cancellationToken) {
+    private async Task PreloadItemsAsync(int startIndex, int count, TimeSpan delay, CancellationToken cancellationToken) {
         try {
+            await Task.Delay(delay, cancellationToken);
             var result = await ItemsProvider!(new NTVirtualizeItemsProviderRequest<TItem> {
                 Count = count,
                 StartIndex = startIndex,
@@ -667,7 +684,7 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
         return true;
     }
 
-    private void StartBackgroundRevalidation(int startIndex, int count) {
+    private void StartBackgroundRevalidation(int startIndex, int count, TimeSpan delay) {
         if (!RevalidateCachedItems || _loading || ItemsProvider is null || _itemCount <= 0 || count <= 0) {
             return;
         }
@@ -686,11 +703,12 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
         _revalidateCts = new CancellationTokenSource();
         _revalidatingStartIndex = resolvedStartIndex;
         _revalidatingCount = resolvedCount;
-        _ = InvokeAsync(() => RevalidateItemsAsync(resolvedStartIndex, resolvedCount, _revalidateCts.Token));
+        _ = InvokeAsync(() => RevalidateItemsAsync(resolvedStartIndex, resolvedCount, delay, _revalidateCts.Token));
     }
 
-    private async Task RevalidateItemsAsync(int startIndex, int count, CancellationToken cancellationToken) {
+    private async Task RevalidateItemsAsync(int startIndex, int count, TimeSpan delay, CancellationToken cancellationToken) {
         try {
+            await Task.Delay(delay, cancellationToken);
             var result = await ItemsProvider!(new NTVirtualizeItemsProviderRequest<TItem> {
                 Count = count,
                 StartIndex = startIndex,
