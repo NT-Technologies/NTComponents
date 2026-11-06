@@ -5,6 +5,7 @@
 
 * **tabs:** docked NTPopoutTab content fills the tab panel height, matching NTTab
 * **editor:** blurring NTRichTextEditor without an edit no longer resends the value or fires `BindAfter`; it only marks an untouched field touched for validation and raises `OnBlurCallback`
+* **form:** with `BindOnInput` off, NTInputText, NTTextArea, NTInputNumeric, NTInputCurrency, NTInputColor, and NTInputDateTime no longer fire `BindAfter` on a blur without a change; a change still reports once, at the next blur. Use `OnBlurCallback` to react to every blur
 * **editor:** embedded iframes are sandboxed (`allow-scripts allow-same-origin allow-popups allow-presentation`), and iframes whose source is the page's own origin are refused. Existing content with a same-origin iframe loses that iframe when it is loaded into the editor
 
 

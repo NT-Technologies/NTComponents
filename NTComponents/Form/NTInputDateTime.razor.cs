@@ -152,10 +152,7 @@ public partial class NTInputDateTime<DateTimeType> {
         await ValueChanged.InvokeAsync(parsedValue);
         CurrentValueAsString = newValue;
         EditContext?.NotifyFieldChanged(FieldIdentifier);
-
-        if (EffectiveBindOnInput) {
-            await BindAfter.InvokeAsync(CurrentValue);
-        }
+        await BindAfterInputAsync();
     }
 
     /// <inheritdoc />

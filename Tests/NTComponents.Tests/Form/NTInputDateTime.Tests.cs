@@ -164,6 +164,19 @@ public class NTInputDateTime_Tests : BunitContext {
     }
 
     [Fact]
+    public void Native_Segment_Changes_Fire_BindAfter_Once_At_Blur_With_The_Settled_Value() {
+        var bindAfterValues = new List<DateTime?>();
+        var cut = RenderDateTime(configure: parameters => parameters
+            .Add(p => p.BindAfter, EventCallback.Factory.Create<DateTime?>(this, value => bindAfterValues.Add(value))));
+
+        cut.Find("input").Change("2026-05-19T10:30:00");
+        cut.Find("input").Change("2026-05-20T10:30:00");
+        cut.Find("input").Blur();
+
+        bindAfterValues.Should().Equal(new DateTime(2026, 5, 20, 10, 30, 0));
+    }
+
+    [Fact]
     public async Task Native_Date_Awaits_Value_Callback_Before_Notifying_EditContext() {
         var model = new DateOnlyModel();
         var editContext = new EditContext(model);

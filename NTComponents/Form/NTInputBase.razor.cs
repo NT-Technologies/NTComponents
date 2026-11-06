@@ -51,6 +51,7 @@ public abstract partial class NTInputBase<TValue> : NTFieldBase<TValue> {
     private string? _inputClassAttribute;
     private string? _inputClassField;
     private Func<string?, Task>? _inputHandler;
+    private bool _bindAfterPending;
     private int? _maxLength;
     private string? _maxValue;
     private int? _minLength;
@@ -204,7 +205,8 @@ public abstract partial class NTInputBase<TValue> : NTFieldBase<TValue> {
     /// <returns>A task that represents the asynchronous operation.</returns>
     protected override async Task OnBlurAsync(FocusEventArgs args) {
         await base.OnBlurAsync(args);
-        if (!EffectiveBindOnInput) {
+        if (_bindAfterPending) {
+            _bindAfterPending = false;
             await BindAfter.InvokeAsync(CurrentValue);
         }
     }
@@ -216,9 +218,21 @@ public abstract partial class NTInputBase<TValue> : NTFieldBase<TValue> {
     /// <returns>A task that represents the asynchronous operation.</returns>
     protected virtual async Task OnInputAsync(string? newValue) {
         CurrentValueAsString = newValue;
+        await BindAfterInputAsync();
+    }
+
+    /// <summary>
+    ///     Runs <c>BindAfter</c> for an applied input value: at once when binding on input, otherwise at the next blur. Waiting for
+    ///     blur reports a native date/time control once with its settled value, and a blur with no change does not report at all.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    private protected async Task BindAfterInputAsync() {
         if (EffectiveBindOnInput) {
             await BindAfter.InvokeAsync(CurrentValue);
+            return;
         }
+
+        _bindAfterPending = true;
     }
 
     /// <inheritdoc />

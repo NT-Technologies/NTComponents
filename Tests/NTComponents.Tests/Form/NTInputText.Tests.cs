@@ -443,6 +443,36 @@ public class NTInputText_Tests : BunitContext {
     }
 
     [Fact]
+    public void Blur_Without_A_Change_Does_Not_Fire_BindAfter() {
+        var bindAfterCount = 0;
+        var cut = RenderInput(configure: parameters => parameters
+            .Add(p => p.BindAfter, EventCallback.Factory.Create<string?>(this, _ => bindAfterCount++)));
+
+        cut.Find("input").Blur();
+
+        bindAfterCount.Should().Be(0);
+    }
+
+    [Fact]
+    public void Change_Fires_BindAfter_Once_At_The_Next_Blur() {
+        string? bindAfterValue = null;
+        var bindAfterCount = 0;
+        var cut = RenderInput(configure: parameters => parameters
+            .Add(p => p.BindAfter, EventCallback.Factory.Create<string?>(this, value => {
+                bindAfterCount++;
+                bindAfterValue = value;
+            })));
+
+        cut.Find("input").Change("Ada");
+        bindAfterCount.Should().Be(0);
+        cut.Find("input").Blur();
+        cut.Find("input").Blur();
+
+        bindAfterCount.Should().Be(1);
+        bindAfterValue.Should().Be("Ada");
+    }
+
+    [Fact]
     public void Placeholder_Adds_Placeholder_State_Class() {
         var cut = RenderInput(configure: parameters => parameters
             .Add(p => p.Label, "Name")
