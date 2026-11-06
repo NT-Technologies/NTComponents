@@ -36,7 +36,7 @@ public partial class NTNavigationRail {
     public RenderFragment? ChildContent { get; set; }
 
     /// <summary>
-    ///     Whether selecting an enabled destination link closes its collapsed-rail group popover. Defaults to <see langword="true" />.
+    ///     Whether selecting an enabled destination link closes its collapsed-rail group popover and the modal rail. Defaults to <see langword="true" />.
     /// </summary>
     [Parameter]
     public bool CloseOnNavigation { get; set; } = true;
@@ -101,7 +101,7 @@ public partial class NTNavigationRail {
     public RenderFragment? Header { get; set; }
 
     /// <summary>
-    ///     Hides the collapsed rail on extra-small screens and renders only a top-edge menu button that opens the modal rail.
+    ///     Hides the collapsed rail on extra-small screens, and on small screens in portrait orientation, and renders only a top-edge menu button that opens the modal rail.
     /// </summary>
     [Parameter]
     public bool HideRailOnXSScreens { get; set; } = true;

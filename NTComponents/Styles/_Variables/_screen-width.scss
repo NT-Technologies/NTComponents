@@ -11,6 +11,7 @@ $large-only: "only screen and (min-width: #{$large}) and (max-width: #{$extra-la
 $extra-large-only: "only screen and (min-width: #{$extra-large})" !default;
 
 $extra-small-and-down: $extra-small-only !default;
+$extra-small-or-small-portrait: "only screen and (max-width: #{$small - 1px}), only screen and (orientation: portrait) and (max-width: #{$medium - 1px})" !default;
 $small-and-down: "only screen and (max-width: #{$medium - 1px})" !default;
 $medium-and-down: "only screen and (max-width: #{$large - 1px})" !default;
 $large-and-down: "only screen and (max-width: #{$extra-large - 1px})" !default;

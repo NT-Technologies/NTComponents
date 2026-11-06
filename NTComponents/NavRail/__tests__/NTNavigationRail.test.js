@@ -1269,7 +1269,7 @@ describe('NTNavigationRail module', () => {
 
   test('nested rail expansion stays within its layout from small screens upward', () => {
     window.matchMedia = jest.fn(query => ({
-      matches: query === '(min-width: 600px)',
+      matches: query === '(min-width: 840px), (min-width: 600px) and (orientation: landscape)',
       media: query,
       addEventListener: jest.fn(),
       removeEventListener: jest.fn()
@@ -1636,6 +1636,62 @@ describe('NTNavigationRail module', () => {
 
     expect(document.querySelector('.nt-navigation-rail-modal-dialog')).toBeNull();
     expect(document.activeElement).toBe(menuButton);
+  });
+
+  test.each([
+    ['closes', true],
+    ['stays open', false]
+  ])('modal rail %s when a destination is selected with close-on-navigation %s', async (_, closeOnNavigation) => {
+    window.matchMedia = jest.fn(query => ({
+      matches: false,
+      media: query,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn()
+    }));
+    document.body.innerHTML = `
+      <main id="content"></main>
+      <nav class="nt-navigation-rail nt-navigation-rail-hide-on-xs nt-navigation-rail-collapsed" ${closeOnNavigation ? 'data-nt-close-on-navigation="true"' : ''}>
+        <button class="nt-navigation-rail-menu-button" type="button" aria-expanded="false">Menu</button>
+        <a class="nt-navigation-rail-item" href="#reports">Reports</a>
+      </nav>`;
+
+    module.onLoad();
+
+    const rail = document.querySelector('.nt-navigation-rail');
+    const menuButton = document.querySelector('.nt-navigation-rail-menu-button');
+
+    menuButton.click();
+    expect(document.querySelector('.nt-navigation-rail-modal-dialog')?.open).toBe(true);
+
+    document.querySelector('.nt-navigation-rail-item').click();
+    await waitForAnimationFrame();
+
+    expect(rail.classList.contains('nt-navigation-rail-expanded')).toBe(!closeOnNavigation);
+    expect(menuButton.getAttribute('aria-expanded')).toBe(String(!closeOnNavigation));
+    expect(document.querySelector('.nt-navigation-rail-modal-dialog') !== null).toBe(!closeOnNavigation);
+  });
+
+  test.each([
+    ['small landscape or wider shows the collapsed rail', true, false],
+    ['extra-small or small portrait uses the hidden modal layout', false, true]
+  ])('hide-on-xs rail: %s', (_, railScreen, expandedItemLayout) => {
+    const railScreenQuery = '(min-width: 840px), (min-width: 600px) and (orientation: landscape)';
+    window.matchMedia = jest.fn(query => ({
+      matches: railScreen && query === railScreenQuery,
+      media: query,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn()
+    }));
+    document.body.innerHTML = `
+      <nav class="nt-navigation-rail nt-navigation-rail-hide-on-xs nt-navigation-rail-collapsed">
+        <button class="nt-navigation-rail-menu-button" type="button" aria-expanded="false">Menu</button>
+        <a class="nt-navigation-rail-item" href="/home">Home</a>
+      </nav>`;
+
+    module.onLoad();
+
+    expect(window.matchMedia).toHaveBeenCalledWith(railScreenQuery);
+    expect(document.querySelector('.nt-navigation-rail-item').classList.contains('nt-navigation-rail-item-expanded')).toBe(expandedItemLayout);
   });
 
   test('standard rail expansion stays nonmodal on medium and larger screens', () => {

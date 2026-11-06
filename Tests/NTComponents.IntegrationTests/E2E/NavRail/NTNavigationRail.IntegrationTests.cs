@@ -338,7 +338,7 @@ public class NTNavigationRail_IntegrationTests : IAsyncLifetime {
     public async Task Rail_MediumScreen_Collapsed_VisibleRail_Uses_Full_Collapsed_Item_Layout() {
         ArgumentNullException.ThrowIfNull(_page);
 
-        await _page.SetViewportSizeAsync(700, 900);
+        await _page.SetViewportSizeAsync(800, 600);
         await NavigateToRailTestPageAsync();
 
         await _page.WaitForFunctionAsync(
@@ -385,6 +385,29 @@ public class NTNavigationRail_IntegrationTests : IAsyncLifetime {
 
         usesFullCollapsedItemLayout.Should().BeTrue(
             "a visible collapsed rail in the medium range should retain the full collapsed label geometry");
+    }
+
+    [Theory]
+    [InlineData(700, 900, true)]
+    [InlineData(900, 700, false)]
+    [InlineData(800, 600, false)]
+    public async Task Rail_SmallScreenOrientation_Hides_Collapsed_Rail_Only_In_Portrait(int width, int height, bool hidden) {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await _page.SetViewportSizeAsync(width, height);
+        await _page.GotoAsync($"{AppBaseUrl}/nav-rail-e2e-test", new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
+        await _page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        var rail = _page.Locator("[data-testid='nav-rail-under-test']");
+        await _page.WaitForFunctionAsync(
+            "() => document.querySelector('[data-testid=\"nav-rail-under-test\"]')?.classList.contains('nt-navigation-rail-collapsed') === true",
+            null,
+            new PageWaitForFunctionOptions { Timeout = 5000 });
+        var railWidth = await rail.EvaluateAsync<double>("rail => rail.getBoundingClientRect().width");
+        var railId = await rail.GetAttributeAsync("id");
+
+        (railWidth < 1).Should().Be(hidden);
+        (await _page.Locator($"#{railId}-xs-menu-button").IsVisibleAsync()).Should().Be(hidden);
     }
 
     [Fact]

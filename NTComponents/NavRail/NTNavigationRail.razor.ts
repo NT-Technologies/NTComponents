@@ -61,7 +61,8 @@ interface RouteSelectionContext {
 
 const smallScreenMinWidth = 600;
 const mediumScreenMinWidth = 840;
-const smallScreenQuery = `(min-width: ${smallScreenMinWidth}px)`;
+// Where the collapsed rail stays visible. Elsewhere (extra-small, or small in portrait) a hide-on-xs rail becomes the modal.
+const railScreenQuery = `(min-width: ${mediumScreenMinWidth}px), (min-width: ${smallScreenMinWidth}px) and (orientation: landscape)`;
 const mediumScreenQuery = `(min-width: ${mediumScreenMinWidth}px)`;
 const navigationRailTransitionDuration = 550;
 const responsiveModalClass = 'nt-navigation-rail-responsive-modal';
@@ -469,8 +470,9 @@ function isNestedRail(rail: NavigationRailElement): boolean {
     return getNestedLayout(rail) !== null;
 }
 
-function isSmallScreenAndUp(): boolean {
-    return window.matchMedia?.(smallScreenQuery).matches ?? window.innerWidth >= smallScreenMinWidth;
+function isRailScreen(): boolean {
+    return window.matchMedia?.(railScreenQuery).matches
+        ?? (window.innerWidth >= mediumScreenMinWidth || (window.innerWidth >= smallScreenMinWidth && window.innerWidth > window.innerHeight));
 }
 
 function usesHiddenCollapsedModal(rail: NavigationRailElement): boolean {
@@ -487,7 +489,7 @@ function usesExpandedItemLayout(rail: NavigationRailElement, expanded: boolean):
         || rail.classList.contains('nt-navigation-rail-modal')
         || rail.classList.contains('nt-navigation-rail-hide-when-collapsed')
         || (rail.classList.contains('nt-navigation-rail-hide-on-xs')
-            && !isSmallScreenAndUp());
+            && !isRailScreen());
 }
 
 function focusFirstDestination(rail: NavigationRailElement): void {
@@ -587,7 +589,7 @@ function watchSmallScreen(rail: NavigationRailElement, state: NavigationRailStat
         return;
     }
 
-    const query = window.matchMedia?.(smallScreenQuery);
+    const query = window.matchMedia?.(railScreenQuery);
     if (!query) {
         return;
     }
@@ -623,7 +625,7 @@ function syncModalDialogStyle(rail: NavigationRailElement, dialog: HTMLDialogEle
     const scrimColor = window.getComputedStyle(rail).getPropertyValue('--nt-navigation-rail-scrim-color').trim();
     const alwaysHiddenCollapsedModal = usesAlwaysHiddenCollapsedModal(rail);
     const nestedLayout = getNestedLayout(rail);
-    const usesNestedBounds = nestedLayout !== null && !isSmallScreenAndUp();
+    const usesNestedBounds = nestedLayout !== null && !isRailScreen();
 
     dialog.classList.toggle('nt-navigation-rail-modal-dialog-hide-on-xs', rail.classList.contains('nt-navigation-rail-hide-on-xs'));
     dialog.classList.toggle('nt-navigation-rail-modal-dialog-hide-when-collapsed', alwaysHiddenCollapsedModal);
@@ -888,7 +890,7 @@ function syncModalState(rail: NavigationRailElement, expanded: boolean, focusOnO
         return;
     }
 
-    if (isNestedRail(rail) && isSmallScreenAndUp()) {
+    if (isNestedRail(rail) && isRailScreen()) {
         hideModalDialog(rail, state);
         syncOutsidePointerListener(rail, state, expanded);
 
@@ -1108,7 +1110,7 @@ function closeGroupPopover(panel: HTMLElement): void {
     syncGroupPanelAvailability(panel);
 }
 
-function closeNavigationItemPopovers(rail: NavigationRailElement, event: MouseEvent): void {
+function closeOnNavigation(rail: NavigationRailElement, event: MouseEvent): void {
     if (!rail.hasAttribute('data-nt-close-on-navigation') || !(event.target instanceof Element)) {
         return;
     }
@@ -1126,6 +1128,10 @@ function closeNavigationItemPopovers(rail: NavigationRailElement, event: MouseEv
             closeGroupPopover(panel);
             trigger?.setAttribute('aria-expanded', 'false');
         });
+
+    if (isModalRail(rail) && getExpanded(rail)) {
+        setExpanded(rail, false, true);
+    }
 }
 
 function closeOtherTopLevelGroups(rail: NavigationRailElement, currentGroup: HTMLElement): void {
@@ -1502,7 +1508,7 @@ function registerNavigationClickHandler(rail: NavigationRailElement, state: Navi
         return;
     }
 
-    state.onNavigationClick = event => closeNavigationItemPopovers(rail, event);
+    state.onNavigationClick = event => closeOnNavigation(rail, event);
     rail.addEventListener('click', state.onNavigationClick);
 }
 

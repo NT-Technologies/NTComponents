@@ -687,7 +687,7 @@ tnt-page-script {
     }
 }
 
-@media #{screen-width.$extra-small-only} {
+@media #{screen-width.$extra-small-or-small-portrait} {
     .nt-navigation-rail-xs-menu-button {
         display: inline-flex;
     }

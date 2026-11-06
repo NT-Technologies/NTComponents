@@ -714,7 +714,8 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
     }
 
     private async Task<ILocator> OpenDragScrollDemoAsync() {
-        await _page!.SetViewportSizeAsync(700, 800);
+        // Landscape keeps the docs rail visible, so the grid stays narrow enough to overflow.
+        await _page!.SetViewportSizeAsync(700, 680);
         var example = await OpenExampleAsync("ntdatagrid", "DataGridDragScrollExample");
         // The Track buttons enable once the demo is interactive.
         await Assertions.Expect(example.GetByRole(AriaRole.Button, new() { Name = "Track" }).First).ToBeEnabledAsync();

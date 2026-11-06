@@ -104,7 +104,7 @@ public class NTLayout_IntegrationTests : IAsyncLifetime {
     public async Task NestedLayout_On_Small_Screen_Expands_Rail_Within_Its_Own_Bounds() {
         ArgumentNullException.ThrowIfNull(_page);
 
-        await _page.SetViewportSizeAsync(700, 900);
+        await _page.SetViewportSizeAsync(800, 600);
         await _page.GotoAsync($"{AppBaseUrl}/nestedLayout", new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
         await _page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
@@ -240,7 +240,7 @@ public class NTLayout_IntegrationTests : IAsyncLifetime {
             railId);
         modalRailRetainsNestedBounds.Should().BeTrue("the extra-small nested modal should retain the nested layout's position and height");
 
-        await _page.SetViewportSizeAsync(700, 900);
+        await _page.SetViewportSizeAsync(800, 600);
         await _page.WaitForFunctionAsync(
             """
             id => {
