@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.Playwright;
 
 namespace NTComponents.IntegrationTests.Editors;
@@ -120,6 +121,366 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
         }
     }
 
+    [Theory]
+    [InlineData("ul")]
+    [InlineData("ol")]
+    public async Task EnterInListItem_Inserts_New_List_Item(string listTag) {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlAndSelectTextAsync(ServerEditorTestId, $"<{listTag}><li>First item</li></{listTag}>", "First item");
+
+        await _page.Keyboard.PressAsync("End");
+        await _page.Keyboard.PressAsync("Enter");
+        await _page.Keyboard.TypeAsync("Second item");
+
+        await WaitForHiddenValueAsync(ServerEditorTestId, $"<{listTag}><li>First item</li><li>Second item</li></{listTag}>");
+    }
+
+    [Fact]
+    public async Task EnterAfterHeading_Creates_Paragraph() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<h2>Title|</h2>");
+
+        await _page.Keyboard.PressAsync("Enter");
+        await _page.Keyboard.TypeAsync("body");
+
+        await WaitForHiddenValueAsync(ServerEditorTestId, "<h2>Title</h2><p>body</p>");
+    }
+
+    [Theory]
+    [InlineData("blockquote", "<blockquote>quote|</blockquote>", "<p>quote</p>")]
+    [InlineData("unorderedList", "<ul><li>item|</li></ul>", "<p>item</p>")]
+    public async Task ToggleBlockOff_Yields_Paragraph(string command, string html, string expectedValue) {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, html);
+
+        await ClickToolbarButtonAsync(new(command));
+
+        await WaitForHiddenValueAsync(ServerEditorTestId, expectedValue);
+        (await EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-hidden-input").InputValueAsync()).Should().Be(expectedValue);
+    }
+
+    [Fact]
+    public async Task CodeBlock_Toggled_Off_After_Enter_Yields_Paragraphs() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<p>code|</p>");
+
+        await ClickToolbarButtonAsync(new("codeBlock"));
+        await _page.Keyboard.PressAsync("Enter");
+        await _page.Keyboard.TypeAsync("line2");
+        await ClickToolbarButtonAsync(new("codeBlock"));
+
+        await WaitForHiddenValueAsync(ServerEditorTestId, "<p>code</p><p>line2</p>");
+        (await EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-hidden-input").InputValueAsync()).Should().Be("<p>code</p><p>line2</p>");
+    }
+
+    [Fact]
+    public async Task ListCreated_From_Paragraph_Keeps_Caret_For_Enter() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<p>item|</p>");
+
+        await ClickToolbarButtonAsync(new("unorderedList"));
+        await _page.Keyboard.PressAsync("Enter");
+        await _page.Keyboard.TypeAsync("next");
+
+        await WaitForHiddenValueAsync(ServerEditorTestId, "<ul><li>item</li><li>next</li></ul>");
+    }
+
+    [Fact]
+    public async Task BackspaceMergingParagraphs_Keeps_Caret_At_Join() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<p>ab</p><p>|cd</p>");
+
+        await _page.Keyboard.PressAsync("Backspace");
+        await _page.Keyboard.TypeAsync("X");
+
+        await WaitForHiddenValueAsync(ServerEditorTestId, "<p>abXcd</p>");
+        (await EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-hidden-input").InputValueAsync()).Should().Be("<p>abXcd</p>");
+    }
+
+    [Fact]
+    public async Task ClearedEditor_Reports_Empty_Value_And_Data_Empty() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<p>[gone]</p>");
+
+        await _page.Keyboard.PressAsync("Backspace");
+
+        await _page.WaitForFunctionAsync(
+            """
+            testId => {
+                const section = document.querySelector(`[data-testid="${testId}"]`);
+                const surface = section?.querySelector('.tnt-rich-text-editor-surface');
+                return section?.querySelector('.tnt-rich-text-editor-hidden-input')?.value === ''
+                    && surface?.dataset.empty === 'true'
+                    && getComputedStyle(surface, '::before').content === `"${surface.dataset.placeholder}"`;
+            }
+            """,
+            ServerEditorTestId,
+            new PageWaitForFunctionOptions { Timeout = 5000 });
+    }
+
+    [Fact]
+    public async Task TextColor_Across_Paragraphs_Keeps_Both_Paragraphs() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<p>on[e</p><p>tw]o</p>");
+
+        await ClickToolbarButtonAsync(new("textColor"));
+        await EditorRoot(ServerEditorTestId).Locator("[data-role='text-color-value']").FillAsync("#00ff00");
+        await EditorRoot(ServerEditorTestId).Locator("[data-role='text-color-apply']").ClickAsync();
+
+        await WaitForHiddenValueAsync(ServerEditorTestId, "<p>on<span style=\"color: rgb(0, 255, 0);\">e</span></p><p><span style=\"color: rgb(0, 255, 0);\">tw</span>o</p>");
+    }
+
+    [Fact]
+    public async Task PartialRecolor_Only_Changes_Selected_Text() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<p><span style=\"color:#ff0000\">[hello] world</span></p>");
+
+        await ClickToolbarButtonAsync(new("textColor"));
+        await EditorRoot(ServerEditorTestId).Locator("[data-role='text-color-value']").FillAsync("#0000ff");
+        await EditorRoot(ServerEditorTestId).Locator("[data-role='text-color-apply']").ClickAsync();
+
+        await WaitForHiddenValueAsync(ServerEditorTestId, "<span style=\"color: rgb(0, 0, 255);\">hello</span><span style=\"color: rgb(255, 0, 0);\"> world</span>");
+    }
+
+    [Fact]
+    public async Task LinkPanel_Closes_After_Apply_And_Stays_Closed() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<p>go [here] now</p>");
+
+        await ClickToolbarButtonAsync(new("link"));
+        var root = EditorRoot(ServerEditorTestId);
+        await root.Locator("[data-role='link-url']").FillAsync("https://a.example");
+        await _page.Keyboard.PressAsync("Enter");
+
+        await WaitForHiddenValueAsync(ServerEditorTestId, "<a href=\"https://a.example\">here</a>");
+        (await root.Locator("[data-role='link-editor']").IsHiddenAsync()).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ClearingLinkUrl_Unlinks_Text() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<p><a href=\"https://a.example\">li|nk</a></p>");
+
+        await ClickToolbarButtonAsync(new("link"));
+        await EditorRoot(ServerEditorTestId).Locator("[data-role='link-url']").FillAsync(string.Empty);
+        await EditorRoot(ServerEditorTestId).Locator("[data-role='link-apply']").ClickAsync();
+
+        await WaitForHiddenValueAsync(ServerEditorTestId, "<p>link</p>");
+        (await EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-hidden-input").InputValueAsync()).Should().Be("<p>link</p>");
+    }
+
+    [Fact]
+    public async Task EditingLinkUrl_Keeps_Inline_Formatting() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<p><a href=\"https://a.com\"><strong>x|y</strong></a></p>");
+
+        await ClickToolbarButtonAsync(new("link"));
+        await EditorRoot(ServerEditorTestId).Locator("[data-role='link-url']").FillAsync("https://b.com");
+        await EditorRoot(ServerEditorTestId).Locator("[data-role='link-apply']").ClickAsync();
+
+        await WaitForHiddenValueAsync(ServerEditorTestId, "<a href=\"https://b.com\"><strong>xy</strong></a>");
+    }
+
+    [Fact]
+    public async Task BareDomainLink_Gets_Https_Scheme() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<p>[rel]</p>");
+
+        await ClickToolbarButtonAsync(new("link"));
+        await EditorRoot(ServerEditorTestId).Locator("[data-role='link-url']").FillAsync("example.com/page");
+        await EditorRoot(ServerEditorTestId).Locator("[data-role='link-apply']").ClickAsync();
+
+        await WaitForHiddenValueAsync(ServerEditorTestId, "href=\"https://example.com/page\"");
+    }
+
+    [Fact]
+    public async Task Tab_Moves_Between_Table_Cells_Without_Opening_Table_Panel() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<table><tbody><tr><td>a|</td><td>b</td></tr></tbody></table>");
+
+        await _page.Keyboard.PressAsync("Tab");
+        await _page.Keyboard.TypeAsync("Z");
+
+        await WaitForHiddenValueAsync(ServerEditorTestId, "<td>a</td><td>Z</td>");
+        (await EditorRoot(ServerEditorTestId).Locator("[data-role='table-editor']").IsHiddenAsync()).Should().BeTrue();
+    }
+
+    public static TheoryData<ClickToEditCase> ClickToEditCases() => [
+        new ClickToEditCase("image", "<p>pic <img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\" alt=\"A\" width=\"40\" height=\"40\"> after</p>", "img", "image-alt", "A", "B", "alt=\"B\""),
+        new ClickToEditCase("iframe", "<p>before</p><iframe src=\"https://example.com/embed\" title=\"Old\" width=\"100%\" height=\"200\" loading=\"lazy\"></iframe><p>after</p>", "iframe", "iframe-title", "Old", "New", "title=\"New\""),
+        new ClickToEditCase("link", "<p>go <a href=\"https://a.example\">here</a> now</p>", "a", "link-url", "https://a.example", "https://b.example", "<a href=\"https://b.example\">here</a>"),
+        new ClickToEditCase("table", "<table><thead><tr><th>Head</th></tr></thead><tbody><tr><td>cell</td></tr></tbody></table>", "td", "table-caption", "", "Cap", "<caption>Cap</caption>"),
+        new ClickToEditCase("text-color", "<p>a <span style=\"color: rgb(255, 0, 0);\">red</span> b</p>", "span", "text-color-value", "#ff0000", "#0000ff", "color: rgb(0, 0, 255);\">red</span>"),
+        new ClickToEditCase("aria-label", "<p>a <span role=\"group\" aria-label=\"L1\">phrase</span> b</p>", "span", "aria-label-value", "L1", "L2", "aria-label=\"L2\"")
+    ];
+
+    [Theory]
+    [MemberData(nameof(ClickToEditCases))]
+    public async Task ClickingEditableElement_Opens_Its_Settings_And_Edits_It(ClickToEditCase testCase) {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, testCase.Html);
+        var root = EditorRoot(ServerEditorTestId);
+        var target = root.Locator($".tnt-rich-text-editor-surface {testCase.TargetSelector}").First;
+
+        // Click by coordinates: an editable iframe ignores pointer events, which Playwright's element click refuses.
+        var box = await target.BoundingBoxAsync();
+        await _page.Mouse.ClickAsync(box!.X + (box.Width / 2), box.Y + (box.Height / 2));
+
+        var input = root.Locator($"[data-role='{testCase.InputRole}']");
+        await Assertions.Expect(input).ToBeVisibleAsync();
+        await Assertions.Expect(input).ToHaveValueAsync(testCase.PrefilledValue);
+        (await _page.EvaluateAsync<bool>("() => document.activeElement?.classList.contains('tnt-rich-text-editor-surface') === true")).Should().BeTrue();
+
+        await input.FillAsync(testCase.NewValue);
+        await input.PressAsync("Enter");
+
+        await WaitForHiddenValueAsync(ServerEditorTestId, testCase.ExpectedValue);
+        (await root.Locator($".tnt-rich-text-editor-surface {testCase.TargetSelector}").CountAsync()).Should().Be(1);
+        await Assertions.Expect(input).ToBeHiddenAsync();
+    }
+
+    [Fact]
+    public async Task ClickingPlainText_Closes_Settings_Opened_By_A_Click() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<p>go <a href=\"https://a.example\">here</a></p><p>plain text</p>");
+        var root = EditorRoot(ServerEditorTestId);
+        var linkUrl = root.Locator("[data-role='link-url']");
+
+        await root.Locator(".tnt-rich-text-editor-surface a").ClickAsync();
+        await Assertions.Expect(linkUrl).ToBeVisibleAsync();
+        await root.Locator(".tnt-rich-text-editor-surface p").Nth(1).ClickAsync();
+
+        await Assertions.Expect(linkUrl).ToBeHiddenAsync();
+    }
+
+    [Fact]
+    public async Task ChosenImageFile_Is_Inserted_Only_When_Insert_Is_Clicked() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<p>picture here|</p>");
+        var root = EditorRoot(ServerEditorTestId);
+        await ClickToolbarButtonAsync(new("image"));
+
+        var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==");
+        await root.Locator("[data-role='image-file']").SetInputFilesAsync(new FilePayload { Name = "dot.png", MimeType = "image/png", Buffer = png });
+
+        await Assertions.Expect(root.Locator("[data-role='image-alt']")).ToHaveValueAsync("dot");
+        await Assertions.Expect(root.Locator("[data-role='image-url']")).ToHaveValueAsync(string.Empty);
+        (await root.Locator(".tnt-rich-text-editor-surface img").CountAsync()).Should().Be(0);
+
+        await root.Locator("[data-role='image-apply']").ClickAsync();
+
+        await WaitForHiddenValueAsync(ServerEditorTestId, "<img src=\"data:image/png;base64,iVBORw0KGgo");
+    }
+
+    [Fact]
+    public async Task StaticSsrImagePanel_Shows_Chosen_File_And_Resets_When_Reopened() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        const string ssrEditorTestId = "rich-text-editor-ssr";
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ssrEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ssrEditorTestId, "<p>picture here|</p>");
+        var root = EditorRoot(ssrEditorTestId);
+        var imageButton = root.Locator(".tnt-rich-text-editor-toolbar-button[data-command='image']");
+        var chosenFile = root.Locator("[data-tool-command='image'] .nt-file-upload-value");
+
+        await imageButton.ClickAsync();
+        var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==");
+        await root.Locator("[data-role='image-file']").SetInputFilesAsync(new FilePayload { Name = "dot.png", MimeType = "image/png", Buffer = png });
+        await Assertions.Expect(chosenFile).ToHaveTextAsync("dot.png");
+
+        await root.Locator("[data-role='image-cancel']").ClickAsync();
+        await imageButton.ClickAsync();
+        await Assertions.Expect(chosenFile).ToHaveTextAsync("No image selected");
+    }
+
+    [Fact]
+    public async Task HtmlSource_Collapses_Embedded_Image_Data_But_Saves_It() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        var data = new string('A', 4096);
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, $"<p>Pic| <img src=\"data:image/png;base64,{data}\" alt=\"Dot\"></p>");
+        var source = EditorRoot(ServerEditorTestId).Locator("[data-role='html-source']");
+
+        await ClickToolbarButtonAsync(new("editHtml"));
+        var shown = await source.InputValueAsync();
+        await source.FillAsync(shown.Replace("Pic", "Edited", StringComparison.Ordinal));
+        await ClickToolbarButtonAsync(new("editHtml"));
+
+        shown.Should().Contain("data:image/png;base64,[image-data-1, 3 KB]").And.NotContain(data);
+        await WaitForHiddenValueAsync(ServerEditorTestId, $"<p>Edited <img src=\"data:image/png;base64,{data}\" alt=\"Dot\"></p>");
+    }
+
+    [Fact]
+    public async Task EscapeOnPanelButton_Closes_Panel() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<p>[x]</p>");
+
+        await ClickToolbarButtonAsync(new("link"));
+        var linkPanel = EditorRoot(ServerEditorTestId).Locator("[data-role='link-editor']");
+        await linkPanel.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Visible, Timeout = 5000 });
+        await EditorRoot(ServerEditorTestId).Locator("[data-role='link-apply']").FocusAsync();
+        await _page.Keyboard.PressAsync("Escape");
+
+        await linkPanel.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Hidden, Timeout = 5000 });
+    }
+
     [Fact]
     public async Task ToolPanelControls_Insert_Expected_Rich_Content_And_Cancel_Closes_Panels() {
         ArgumentNullException.ThrowIfNull(_page);
@@ -140,9 +501,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
         await WaitForHiddenValueAsync(ServerEditorTestId, "<img src=\"https://example.com/image.png\" alt=\"Architecture diagram\"");
 
         await ClickToolbarButtonAsync(new("table"));
-        await EditorRoot(ServerEditorTestId).Locator("[data-role='table-columns']").FillAsync("2");
-        await EditorRoot(ServerEditorTestId).Locator("[data-role='table-rows']").FillAsync("2");
-        await EditorRoot(ServerEditorTestId).Locator("[data-role='table-apply']").ClickAsync();
+        await EditorRoot(ServerEditorTestId).Locator("[data-role='table-grid'] button[data-col='2'][data-row='2']").ClickAsync();
         await WaitForHiddenValueAsync(ServerEditorTestId, "<table data-border-color=\"#94a3b8\"");
 
         await SetEditorHtmlAndSelectTextAsync(ServerEditorTestId, "<p>Color text</p>", "Color text");
@@ -164,6 +523,102 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
         await linkPanel.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Visible, Timeout = 5000 });
         await EditorRoot(ServerEditorTestId).Locator("[data-role='link-cancel']").ClickAsync();
         await linkPanel.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Hidden, Timeout = 5000 });
+    }
+
+    private const string TableSeedHtml = "<table><thead><tr><th>H1</th><th>H2</th></tr></thead><tbody><tr><td>A1</td><td>A2</td></tr></tbody></table><p>After</p>";
+
+    private ILocator TableMenuItem(string action) => EditorRoot(ServerEditorTestId).Locator($"[data-table-action='{action}']");
+
+    private async Task RightClickTableCellAndChooseAsync(string cellText, string action) {
+        var cell = EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-surface td", new LocatorLocatorOptions { HasTextString = cellText });
+        await cell.ClickAsync(new LocatorClickOptions { Button = MouseButton.Right });
+        var item = TableMenuItem(action);
+        await item.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Visible, Timeout = 5000 });
+        await item.ClickAsync();
+    }
+
+    [Fact]
+    public async Task TableGrid_Inserts_Table_Of_The_Hovered_Size() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<p>Text|</p>");
+
+        await ClickToolbarButtonAsync(new("table"));
+        var cell = EditorRoot(ServerEditorTestId).Locator("[data-role='table-grid'] button[data-col='3'][data-row='2']");
+        await cell.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Visible, Timeout = 5000 });
+        await cell.HoverAsync();
+        await Assertions.Expect(EditorRoot(ServerEditorTestId).Locator("[data-role='table-grid-label']")).ToHaveTextAsync("3 × 2");
+        await cell.ClickAsync();
+
+        await WaitForHiddenValueAsync(ServerEditorTestId, "<table data-border-color=\"#94a3b8\"");
+        var surface = EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-surface");
+        await Assertions.Expect(surface.Locator("thead th")).ToHaveCountAsync(3);
+        await Assertions.Expect(surface.Locator("tbody tr")).ToHaveCountAsync(1);
+        await Assertions.Expect(surface.Locator("tbody td")).ToHaveCountAsync(3);
+    }
+
+    [Fact]
+    public async Task TableContextMenu_Inserts_Row_Below() {
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, TableSeedHtml);
+
+        await RightClickTableCellAndChooseAsync("A1", "row-below");
+
+        var surface = EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-surface");
+        await Assertions.Expect(surface.Locator("tr")).ToHaveCountAsync(3);
+        await Assertions.Expect(surface.Locator("tbody tr")).ToHaveCountAsync(2);
+        await WaitForHiddenValueAsync(ServerEditorTestId, "<td><br></td>");
+    }
+
+    [Fact]
+    public async Task TableContextMenu_Inserts_Column_Right_In_Every_Row() {
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, TableSeedHtml);
+
+        await RightClickTableCellAndChooseAsync("A1", "column-right");
+
+        var surface = EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-surface");
+        await Assertions.Expect(surface.Locator("thead th")).ToHaveCountAsync(3);
+        await Assertions.Expect(surface.Locator("tbody td")).ToHaveCountAsync(3);
+    }
+
+    [Fact]
+    public async Task TableContextMenu_Deletes_Table() {
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, TableSeedHtml);
+
+        await RightClickTableCellAndChooseAsync("A2", "delete-table");
+
+        await Assertions.Expect(EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-surface table")).ToHaveCountAsync(0);
+    }
+
+    [Fact]
+    public async Task RightClick_Outside_A_Table_Does_Not_Open_The_Table_Menu() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<p>Plain paragraph|</p>");
+
+        var prevented = await _page.EvaluateAsync<bool>(
+            """
+            (testId) => {
+                const paragraph = document.querySelector(`[data-testid="${testId}"] .tnt-rich-text-editor-surface p`);
+                const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+                paragraph.dispatchEvent(event);
+                return event.defaultPrevented;
+            }
+            """,
+            ServerEditorTestId);
+
+        prevented.Should().BeFalse();
+        await EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-surface p").ClickAsync(new LocatorClickOptions { Button = MouseButton.Right });
+        (await TableMenuItem("row-below").IsVisibleAsync()).Should().BeFalse();
     }
 
     [Fact]
@@ -262,6 +717,26 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
             await Section(testId).GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { Name = "Submit" }).ClickAsync();
             await ExpectStatusAsync(testId, "Form is valid.");
         }
+    }
+
+    [Theory]
+    [InlineData(ServerEditorTestId)]
+    [InlineData("rich-text-editor-wasm")]
+    public async Task Value_Larger_Than_An_Interop_Message_Commits_And_Submits_Without_Disconnecting(string testId) {
+        ArgumentNullException.ThrowIfNull(_page);
+        var mode = testId.Replace("rich-text-editor-", "", StringComparison.Ordinal);
+        var html = string.Concat(Enumerable.Range(0, 600).Select(i => $"<p>Paragraph {i}: a long line of text that makes the editor value large.</p>"));
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(testId);
+        await SetEditorHtmlWithSelectionAsync(testId, html);
+        await Section(testId).Locator("header h2").ClickAsync();
+        await Assertions.Expect(_page.GetByTestId($"{mode}-blur-status")).ToContainTextAsync("Editor blurred.", new LocatorAssertionsToContainTextOptions { Timeout = 10000 });
+        await Assertions.Expect(_page.GetByTestId($"{mode}-html")).ToContainTextAsync("Paragraph 599:", new LocatorAssertionsToContainTextOptions { Timeout = 10000 });
+        await Section(testId).GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { Name = "Submit" }).ClickAsync();
+
+        await ExpectStatusAsync(testId, "Form is valid.");
+        _browserDiagnostics.Should().NotContain(diagnostic => diagnostic.Contains("Connection disconnected", StringComparison.Ordinal));
     }
 
     private async Task NavigateToRichTextEditorAsync() {
@@ -371,6 +846,69 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
         await WaitForHiddenValueAsync(testId, textToSelect);
     }
 
+    // Markers in html: '|' places a collapsed caret, '[' and ']' select between them. Without markers the caret goes to the end.
+    private async Task SetEditorHtmlWithSelectionAsync(string testId, string html) {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await _page.EvaluateAsync(
+            """
+            ([testId, html]) => {
+                const section = document.querySelector(`[data-testid="${testId}"]`);
+                const editor = section?.querySelector('nt-rich-text-editor');
+                const surface = editor?.querySelector('.tnt-rich-text-editor-surface');
+                if (!(surface instanceof HTMLElement)) {
+                    throw new Error(`Editor surface not found for ${testId}`);
+                }
+
+                surface.innerHTML = html;
+                surface.focus();
+
+                const marks = [];
+                const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT);
+                const nodes = [];
+                while (walker.nextNode()) {
+                    nodes.push(walker.currentNode);
+                }
+                for (const node of nodes) {
+                    let text = node.textContent;
+                    for (let i = 0; i < text.length; i++) {
+                        if ('|[]'.includes(text[i])) {
+                            marks.push({ ch: text[i], node, offset: i });
+                            text = text.slice(0, i) + text.slice(i + 1);
+                            i--;
+                        }
+                    }
+                    node.textContent = text;
+                }
+
+                const range = document.createRange();
+                const caret = marks.find(m => m.ch === '|');
+                const start = marks.find(m => m.ch === '[');
+                const end = marks.find(m => m.ch === ']');
+                if (caret) {
+                    range.setStart(caret.node, caret.offset);
+                    range.collapse(true);
+                } else if (start && end) {
+                    range.setStart(start.node, start.offset);
+                    range.setEnd(end.node, end.offset);
+                } else {
+                    range.selectNodeContents(surface);
+                    range.collapse(false);
+                }
+
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+                surface.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: null }));
+                document.dispatchEvent(new Event('selectionchange'));
+            }
+            """,
+            new[] { testId, html });
+
+        var expectedText = Regex.Match(html.Replace("|", string.Empty).Replace("[", string.Empty).Replace("]", string.Empty), ">([^<]+)<").Groups[1].Value;
+        await WaitForHiddenValueAsync(testId, expectedText);
+    }
+
     private async Task ClickToolbarButtonAsync(ToolbarControlCase controlCase) {
         var valueSelector = controlCase.Value is null ? string.Empty : $"[data-value='{controlCase.Value}']";
         var button = EditorRoot(ServerEditorTestId).Locator($".tnt-rich-text-editor-toolbar-button[data-command='{controlCase.Command}']{valueSelector}").First;
@@ -382,7 +920,14 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
     private async Task CloseOpenPanelAsync(string panelRole) {
         var cancelButtonRole = panelRole.Replace("-editor", "-cancel", StringComparison.Ordinal);
         var panel = EditorRoot(ServerEditorTestId).Locator($"[data-role='{panelRole}']");
-        await EditorRoot(ServerEditorTestId).Locator($"[data-role='{cancelButtonRole}']").ClickAsync();
+        var cancelButton = EditorRoot(ServerEditorTestId).Locator($"[data-role='{cancelButtonRole}']");
+        if (await cancelButton.IsVisibleAsync()) {
+            await cancelButton.ClickAsync();
+        } else {
+            // The table size picker has no Cancel button; Escape closes it.
+            await _page!.Keyboard.PressAsync("Escape");
+        }
+
         await panel.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Hidden, Timeout = 5000 });
     }
 
@@ -429,6 +974,10 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
 
         var mode = testId.Replace("rich-text-editor-", "", StringComparison.Ordinal);
         await Assertions.Expect(_page.GetByTestId($"{mode}-status")).ToContainTextAsync(expectedText, new LocatorAssertionsToContainTextOptions { Timeout = 10000 });
+    }
+
+    public sealed record ClickToEditCase(string Tool, string Html, string TargetSelector, string InputRole, string PrefilledValue, string NewValue, string ExpectedValue) {
+        public override string ToString() => Tool;
     }
 
     public sealed record ToolbarControlCase(string Command, string? Value = null, string InitialHtml = "<p>Text</p>", string SelectionText = "Text", string? ExpectedValue = null, string? ExpectedPanelRole = null, string? PreparedValue = null, bool PrepareUndoRedo = false, bool PrepareRedo = false);

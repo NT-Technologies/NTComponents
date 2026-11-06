@@ -4,6 +4,13 @@
 ### Bug Fixes
 
 * **tabs:** docked NTPopoutTab content fills the tab panel height, matching NTTab
+* **editor:** blurring NTRichTextEditor without an edit no longer resends the value or fires `BindAfter`; it only marks an untouched field touched for validation and raises `OnBlurCallback`
+* **editor:** embedded iframes are sandboxed (`allow-scripts allow-same-origin allow-popups allow-presentation`), and iframes whose source is the page's own origin are refused. Existing content with a same-origin iframe loses that iframe when it is loaded into the editor
+
+
+### Features
+
+* **editor:** `NTComponentsDefaultOptions.RichTextEditorMaxValueBytes` sets the largest streamed NTRichTextEditor value the server accepts (default 50 MB)
 
 # [1.48.0](https://github.com/Notallthatevil/NTComponents/compare/v1.47.0...v1.48.0) (2026-04-15)
 

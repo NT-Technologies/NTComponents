@@ -1,5 +1,6 @@
 import { join } from 'path';
 import { pathToFileURL } from 'url';
+import { TextDecoder, TextEncoder } from 'util';
 import { jest } from '@jest/globals';
 
 const repoRoot = process.cwd();
@@ -83,6 +84,14 @@ function escapeFixtureText(value) {
     .replaceAll('>', '&gt;');
 }
 
+function tableGridMarkup() {
+  return Array.from({ length: 80 }, (_, index) => `<button type="button" data-col="${(index % 8) + 1}" data-row="${Math.floor(index / 8) + 1}"></button>`).join('');
+}
+
+function gridCell(fixture, column, row) {
+  return fixture.element.querySelector(`[data-role="table-grid"] button[data-col="${column}"][data-row="${row}"]`);
+}
+
 function createEditorFixture({
   bindOnInput = false,
   editable = true,
@@ -121,12 +130,16 @@ function createEditorFixture({
           </div>
 
           <div data-tool-command="table" data-role="table-editor" hidden aria-hidden="true">
-            <input data-role="table-columns" type="number" />
-            <input data-role="table-rows" type="number" />
-            <input data-role="table-border-color" type="color" />
-            <input data-role="table-caption" type="text" />
-            <button type="button" data-role="table-apply"></button>
-            <button type="button" data-role="table-cancel"></button>
+            <div data-role="table-insert">
+              <div data-role="table-grid">${tableGridMarkup()}</div>
+              <span data-role="table-grid-label"></span>
+            </div>
+            <div data-role="table-edit" hidden>
+              <input data-role="table-border-color" type="color" />
+              <input data-role="table-caption" type="text" />
+              <button type="button" data-role="table-apply"></button>
+              <button type="button" data-role="table-cancel"></button>
+            </div>
           </div>
 
           <div data-tool-command="textColor" data-role="text-color-editor" hidden aria-hidden="true">
@@ -229,6 +242,23 @@ describe('NTRichTextEditor runtime behavior', () => {
 
     originalExecCommand = document.execCommand;
     document.execCommand = jest.fn((command, _showUi, value) => {
+      if (command === 'createLink') {
+        const linkSelection = window.getSelection();
+        if (linkSelection.rangeCount) {
+          const linkRange = linkSelection.getRangeAt(0);
+          const anchor = document.createElement('a');
+          anchor.setAttribute('href', value);
+          anchor.appendChild(linkRange.extractContents());
+          linkRange.insertNode(anchor);
+          const anchorRange = document.createRange();
+          anchorRange.selectNodeContents(anchor);
+          linkSelection.removeAllRanges();
+          linkSelection.addRange(anchorRange);
+        }
+
+        return true;
+      }
+
       if (command !== 'insertHTML') {
         return true;
       }
@@ -295,14 +325,13 @@ describe('NTRichTextEditor runtime behavior', () => {
     document.body.innerHTML = '';
   });
 
-  test('onLoad renders html, updates supporting length, and syncs bind-on-input changes', async () => {
+  test('onLoad renders html and syncs bind-on-input changes', async () => {
     const fixture = createEditorFixture({ bindOnInput: true, value: '<p>Hello</p>' });
     const dotNetRef = createDotNetRef();
 
     editorModule.onLoad(fixture.element, dotNetRef);
 
     expect(fixture.surface.innerHTML).toContain('Hello');
-    expect(fixture.length.textContent).toBe('12/200');
 
     setSurfaceContent(fixture.surface, '<p>World</p>');
     fixture.surface.dispatchEvent(new Event('input', { bubbles: true }));
@@ -312,7 +341,7 @@ describe('NTRichTextEditor runtime behavior', () => {
     expect(fixture.sourceValue.textContent).toBe('<p>Hello</p>');
     expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith(
       'UpdateValueFromJs',
-      '<p>World</p>',
+      expect.any(Number),
       '<p>World</p>'
     );
   });
@@ -327,7 +356,7 @@ describe('NTRichTextEditor runtime behavior', () => {
     editorModule.onLoad(fixture.element, dotNetRef);
 
     expect(fixture.surface.innerHTML).toContain('<p>Hello <a>bad</a></p>');
-    expect(fixture.surface.innerHTML).not.toContain('script');
+    expect(fixture.surface.querySelector('script')).toBeNull();
     expect(fixture.surface.querySelector('p').hasAttribute('onclick')).toBe(false);
     expect(fixture.surface.querySelector('iframe').getAttribute('title')).toBe('Embedded content');
     expect(fixture.hiddenInput.value).toBe(fixture.surface.innerHTML);
@@ -338,7 +367,7 @@ describe('NTRichTextEditor runtime behavior', () => {
     expect(fixture.hiddenInput.value).toBe('<p><a href="https://example.com/docs" aria-label="Docs label" title="Docs title">Docs</a></p>');
     expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith(
       'UpdateValueFromJs',
-      '<p><a href="https://example.com/docs" aria-label="Docs label" title="Docs title">Docs</a></p>',
+      expect.any(Number),
       '<p><a href="https://example.com/docs" aria-label="Docs label" title="Docs title">Docs</a></p>'
     );
   });
@@ -365,9 +394,24 @@ describe('NTRichTextEditor runtime behavior', () => {
     expect(fixture.htmlSource.hidden).toBe(true);
     expect(fixture.surface.innerHTML).toBe('<p>Edited <strong>HTML</strong></p>');
     expect(fixture.hiddenInput.value).toBe(fixture.surface.innerHTML);
-    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('UpdateValueFromJs', fixture.surface.innerHTML, fixture.surface.innerHTML);
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('UpdateValueFromJs', expect.any(Number), fixture.surface.innerHTML);
     expect(bold.disabled).toBe(false);
     expect(toggle.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  test('HTML source view collapses embedded image data but saves the full data URL', () => {
+    const data = 'A'.repeat(4096);
+    const fixture = createEditorFixture({ value: `<p>Pic <img src="data:image/png;base64,${data}" alt="Dot"></p>` });
+    editorModule.onLoad(fixture.element, createDotNetRef());
+
+    click(fixture.element.querySelector('[data-command="editHtml"]'));
+    expect(fixture.htmlSource.value).toBe('<p>Pic <img src="data:image/png;base64,[image-data-1, 3 KB]" alt="Dot"></p>');
+
+    fixture.htmlSource.value = fixture.htmlSource.value.replace('Pic', 'Edited');
+    fixture.htmlSource.dispatchEvent(new Event('input', { bubbles: true }));
+    click(fixture.element.querySelector('[data-command="editHtml"]'));
+
+    expect(fixture.hiddenInput.value).toBe(`<p>Edited <img src="data:image/png;base64,${data}" alt="Dot"></p>`);
   });
 
   test('HTML source view indents nested blocks and saves one-line markup', () => {
@@ -419,7 +463,7 @@ describe('NTRichTextEditor runtime behavior', () => {
     outside.focus();
     blur(fixture.htmlSource);
     jest.runAllTimers();
-    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', expected, expected);
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', expect.any(Number), expected);
     expect(fixture.htmlSource.value).toContain('\n  <p><em>A</em> <strong>B</strong></p>\n');
     expect(fixture.hiddenInput.value).not.toMatch(/[\r\n]/);
   });
@@ -456,7 +500,7 @@ describe('NTRichTextEditor runtime behavior', () => {
     jest.runAllTimers();
 
     expect(fixture.hiddenInput.value).toBe('<p>Saved <em>source</em></p>');
-    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', fixture.hiddenInput.value, fixture.hiddenInput.value);
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', expect.any(Number), fixture.hiddenInput.value);
   });
 
   test('HTML source mode updates bound input without replacing an incomplete draft', () => {
@@ -471,7 +515,7 @@ describe('NTRichTextEditor runtime behavior', () => {
 
     expect(fixture.htmlSource.value).toBe('<p>Draft <strong>');
     expect(fixture.hiddenInput.value).toBe('<p>Draft <strong></strong></p>');
-    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('UpdateValueFromJs', fixture.hiddenInput.value, fixture.hiddenInput.value);
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('UpdateValueFromJs', expect.any(Number), fixture.hiddenInput.value);
   });
 
   test('accessible label tool wraps selected text and edits its label', () => {
@@ -493,7 +537,7 @@ describe('NTRichTextEditor runtime behavior', () => {
     expect(tag.getAttribute('aria-label')).toBe('Primary term');
     expect(tag.getAttribute('role')).toBe('group');
     expect(fixture.hiddenInput.value).toContain('<span role="group" aria-label="Primary term">Alpha</span>');
-    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('UpdateValueFromJs', fixture.hiddenInput.value, fixture.hiddenInput.value);
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('UpdateValueFromJs', expect.any(Number), fixture.hiddenInput.value);
 
     selectText(tag.firstChild, 0, 5);
     click(fixture.element.querySelector('[data-command="ariaLabel"]'));
@@ -523,7 +567,7 @@ describe('NTRichTextEditor runtime behavior', () => {
 
     expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith(
       'CommitValueFromJs',
-      '<p>Committed</p>',
+      expect.any(Number),
       '<p>Committed</p>'
     );
   });
@@ -565,7 +609,18 @@ describe('NTRichTextEditor runtime behavior', () => {
 
     blur(fixture.surface);
 
-    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', '<p>Typed</p>', '<p>Typed</p>');
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', expect.any(Number), '<p>Typed</p>');
+  });
+
+  test('blur without an edit reports the blur without sending the value', () => {
+    const fixture = createEditorFixture({ value: '<p>Start</p>' });
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+
+    blur(fixture.surface);
+
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('BlurFromJs');
+    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.any(Number), expect.anything());
   });
 
   test('blur does not commit when focus moves inside the editor', () => {
@@ -575,7 +630,7 @@ describe('NTRichTextEditor runtime behavior', () => {
 
     blur(fixture.surface, fixture.element.querySelector('[data-command="bold"]'));
 
-    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.anything(), expect.anything());
+    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.any(Number), expect.anything());
   });
 
   test('blur does not commit when only the browser window loses focus', () => {
@@ -588,7 +643,7 @@ describe('NTRichTextEditor runtime behavior', () => {
     blur(fixture.surface);
     hasFocus.mockRestore();
 
-    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.anything(), expect.anything());
+    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.any(Number), expect.anything());
   });
 
   test('onDispose flushes an edit that has not reached .NET', () => {
@@ -600,7 +655,7 @@ describe('NTRichTextEditor runtime behavior', () => {
 
     editorModule.onDispose(fixture.element);
 
-    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', '<p>Unsaved</p>', '<p>Unsaved</p>');
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', expect.any(Number), '<p>Unsaved</p>');
   });
 
   test('onDispose does not rewrite the value of an untouched editor', () => {
@@ -610,7 +665,7 @@ describe('NTRichTextEditor runtime behavior', () => {
 
     editorModule.onDispose(fixture.element);
 
-    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.anything(), expect.anything());
+    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.any(Number), expect.anything());
   });
 
   test('onDispose removes the focus listener with the others', () => {
@@ -688,6 +743,90 @@ describe('NTRichTextEditor runtime behavior', () => {
     expect(fixture.surface.innerHTML).toBe('<p>Set from .NET</p>');
   });
 
+  describe('value transport', () => {
+    const largeValue = `<p>${'é'.repeat(6000)}</p>`;
+
+    beforeEach(() => {
+      // jsdom does not provide TextEncoder; browsers and Blazor's DotNet global do.
+      window.TextEncoder = TextEncoder;
+      window.DotNet = { createJSStreamReference: jest.fn((data) => ({ streamed: data })) };
+    });
+
+    afterEach(() => {
+      delete window.DotNet;
+      delete window.TextEncoder;
+    });
+
+    function commitTyped(html) {
+      const fixture = createEditorFixture({ value: '<p>Start</p>' });
+      const dotNetRef = createDotNetRef();
+      editorModule.onLoad(fixture.element, dotNetRef);
+      dotNetRef.invokeMethodAsync.mockClear();
+      setSurfaceContent(fixture.surface, html);
+      fixture.surface.dispatchEvent(new Event('input', { bubbles: true }));
+      blur(fixture.surface);
+      return { fixture, dotNetRef };
+    }
+
+    test('a small value is sent in the call itself', () => {
+      const { dotNetRef } = commitTyped('<p>Small</p>');
+
+      expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', expect.any(Number), '<p>Small</p>');
+      expect(window.DotNet.createJSStreamReference).not.toHaveBeenCalled();
+    });
+
+    test('a large value is streamed as UTF-8 to the same method', () => {
+      const { dotNetRef } = commitTyped(largeValue);
+
+      const [data] = window.DotNet.createJSStreamReference.mock.calls[0];
+      expect(new TextDecoder().decode(data)).toBe(largeValue);
+      expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('ReceiveValueStreamFromJs', 'CommitValueFromJs', expect.any(Number), { streamed: data });
+      expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.anything(), expect.anything());
+    });
+
+    test('every send carries a higher sequence than the one before, small or streamed', () => {
+      const hooks = editorModule.__testHooks;
+      const dotNetRef = createDotNetRef();
+      const state = { dotNetRef, sentValueCount: 0 };
+
+      hooks.sendValue(state, 'UpdateValueFromJs', largeValue);
+      hooks.sendValue(state, 'UpdateMarkupValueFromJs', '<p>Markup</p>');
+      hooks.sendValue(state, 'CommitValueFromJs', '<p>Small</p>');
+
+      const sequences = dotNetRef.invokeMethodAsync.mock.calls.map((call) => (call[0] === 'ReceiveValueStreamFromJs' ? call[2] : call[1]));
+      expect(sequences[1]).toBeGreaterThan(sequences[0]);
+      expect(sequences[2]).toBeGreaterThan(sequences[1]);
+    });
+
+    test('a streamed value counts as sent, so a render that has not seen it keeps the surface', () => {
+      const { fixture } = commitTyped(largeValue);
+
+      fixture.element.dataset.receivedValueCount = '0';
+      fixture.sourceValue.textContent = '<p>Start</p>';
+      editorModule.onUpdate(fixture.element, null);
+      const keptWhileStale = fixture.surface.innerHTML;
+      fixture.element.dataset.receivedValueCount = '1';
+      fixture.sourceValue.textContent = '<p>Caught up</p>';
+      editorModule.onUpdate(fixture.element, null);
+
+      expect(keptWhileStale).toBe(largeValue);
+      expect(fixture.surface.innerHTML).toBe('<p>Caught up</p>');
+    });
+
+    test('a stream that cannot be created does not make later renders look stale', async () => {
+      window.DotNet.createJSStreamReference.mockImplementation(() => {
+        throw new Error('Blazor is gone');
+      });
+      const { fixture } = commitTyped(largeValue);
+      await settleAsync();
+
+      fixture.sourceValue.textContent = '<p>Set from .NET</p>';
+      editorModule.onUpdate(fixture.element, null);
+
+      expect(fixture.surface.innerHTML).toBe('<p>Set from .NET</p>');
+    });
+  });
+
   test.each([false, true])('a caught-up render with a new value keeps an uncommitted edit (bindOnInput %s)', (bindOnInput) => {
     const fixture = createEditorFixture({ bindOnInput, value: '<p>Start</p>' });
     const dotNetRef = createDotNetRef();
@@ -734,7 +873,7 @@ describe('NTRichTextEditor runtime behavior', () => {
 
     blur(fixture.surface);
 
-    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', '<p>Typed</p>', '<p>Typed</p>');
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', expect.any(Number), '<p>Typed</p>');
   });
 
   test('a focused editor without edits accepts a new value', () => {
@@ -758,10 +897,10 @@ describe('NTRichTextEditor runtime behavior', () => {
     const panelInput = fixture.element.querySelector('[data-role="link-url"]');
 
     blur(fixture.surface, panelInput);
-    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.anything(), expect.anything());
+    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.any(Number), expect.anything());
 
     blur(panelInput);
-    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', '<p>Typed</p>', '<p>Typed</p>');
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', expect.any(Number), '<p>Typed</p>');
   });
 
   test('a rerender with an unchanged bound value keeps an uncommitted edit', () => {
@@ -819,7 +958,7 @@ describe('NTRichTextEditor runtime behavior', () => {
 
     fixture.element.querySelector('[data-role="link-url"]').click();
 
-    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.anything(), expect.anything());
+    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.any(Number), expect.anything());
   });
 
   test.each(['beforeunload', 'pagehide'])('%s commits an uncommitted edit', (eventName) => {
@@ -831,7 +970,7 @@ describe('NTRichTextEditor runtime behavior', () => {
 
     window.dispatchEvent(new Event(eventName));
 
-    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', '<p>Typed</p>', '<p>Typed</p>');
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', expect.any(Number), '<p>Typed</p>');
   });
 
   test('hiding the page commits an uncommitted edit but showing it does not', () => {
@@ -844,12 +983,12 @@ describe('NTRichTextEditor runtime behavior', () => {
 
     visibilityState.mockReturnValue('visible');
     document.dispatchEvent(new Event('visibilitychange'));
-    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.anything(), expect.anything());
+    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.any(Number), expect.anything());
 
     visibilityState.mockReturnValue('hidden');
     document.dispatchEvent(new Event('visibilitychange'));
     visibilityState.mockRestore();
-    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', '<p>Typed</p>', '<p>Typed</p>');
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', expect.any(Number), '<p>Typed</p>');
   });
 
   test('pagehide leaves an untouched editor alone', () => {
@@ -859,7 +998,7 @@ describe('NTRichTextEditor runtime behavior', () => {
 
     window.dispatchEvent(new Event('pagehide'));
 
-    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.anything(), expect.anything());
+    expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalledWith('CommitValueFromJs', expect.any(Number), expect.anything());
   });
 
   const createPrerenderedEditor = () => {
@@ -952,8 +1091,10 @@ describe('NTRichTextEditor runtime behavior', () => {
     fileInput.dispatchEvent(new Event('change', { bubbles: true }));
     await settleAsync();
 
-    expect(urlInput.value).toBe('data:image/png;base64,ZmFrZQ==');
+    // The picked file waits for Insert: the URL field is cleared rather than filled with base64 data.
+    expect(urlInput.value).toBe('');
     expect(altInput.value).toBe('Old alt');
+    expect(image.getAttribute('src')).toBe('https://old.example/image.png');
 
     collapseBeforeNode(image);
     click(fixture.element.querySelector('[data-command="image"]'));
@@ -968,10 +1109,10 @@ describe('NTRichTextEditor runtime behavior', () => {
     expect(image.getAttribute('alt')).toBe('Updated alt');
     expect(image.getAttribute('width')).toBe('640');
     expect(image.getAttribute('height')).toBe('360');
-    expect(imagePanel.hidden).toBe(false);
+    expect(imagePanel.hidden).toBe(true);
   });
 
-  test('table tool inserts clamped tables with border styling', () => {
+  test('table tool inserts a table sized from the grid with the first row as the header', () => {
     const fixture = createEditorFixture();
     editorModule.onLoad(fixture.element, createDotNetRef());
 
@@ -983,22 +1124,170 @@ describe('NTRichTextEditor runtime behavior', () => {
     window.getSelection().addRange(range);
 
     click(fixture.element.querySelector('[data-command="table"]'));
+    const panel = fixture.element.querySelector('[data-tool-command="table"]');
+    expect(panel.hidden).toBe(false);
+    expect(fixture.element.querySelector('[data-role="table-insert"]').hidden).toBe(false);
+    expect(fixture.element.querySelector('[data-role="table-edit"]').hidden).toBe(true);
 
-    fixture.element.querySelector('[data-role="table-columns"]').value = '20';
-    fixture.element.querySelector('[data-role="table-rows"]').value = '0';
-    fixture.element.querySelector('[data-role="table-border-color"]').value = '#112233';
-    click(fixture.element.querySelector('[data-role="table-apply"]'));
+    gridCell(fixture, 3, 2).dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    expect(fixture.element.querySelector('[data-role="table-grid-label"]').textContent).toBe('3 × 2');
+    expect(fixture.element.querySelectorAll('[data-role="table-grid"] [data-selected]')).toHaveLength(6);
+    expect(gridCell(fixture, 4, 2).hasAttribute('data-selected')).toBe(false);
 
+    click(gridCell(fixture, 3, 2));
     const table = fixture.surface.querySelector('table');
-    expect(table).not.toBeNull();
-    expect(table.querySelectorAll('thead th')).toHaveLength(8);
+    expect(table.querySelectorAll('thead th')).toHaveLength(3);
     expect(table.querySelectorAll('tbody tr')).toHaveLength(1);
-    expect(table.getAttribute('data-border-color')).toBe('#112233');
-    expect(table.style.getPropertyValue('--nt-rich-text-table-border-color')).toBe('#112233');
+    expect(table.querySelectorAll('tbody td')).toHaveLength(3);
+    expect(table.getAttribute('data-border-color')).toBe(editorModule.__testHooks.defaultTableBorderColor);
+    expect(table.style.getPropertyValue('--nt-rich-text-table-border-color')).toBe(editorModule.__testHooks.defaultTableBorderColor);
     expect(fixture.surface.lastElementChild.tagName).toBe('P');
+    expect(panel.hidden).toBe(true);
   });
 
-  test('text color tool wraps selected text and normalizes adjacent colored spans', () => {
+  test('table grid supports arrow-key focus movement, Escape, and a header-only 1-row table', () => {
+    const fixture = createEditorFixture();
+    editorModule.onLoad(fixture.element, createDotNetRef());
+    fixture.surface.textContent = '';
+    click(fixture.element.querySelector('[data-command="table"]'));
+    const panel = fixture.element.querySelector('[data-tool-command="table"]');
+
+    const first = gridCell(fixture, 1, 1);
+    expect(document.activeElement).toBe(first);
+    keydown(first, 'ArrowRight');
+    expect(document.activeElement).toBe(gridCell(fixture, 2, 1));
+    keydown(document.activeElement, 'ArrowDown');
+    expect(document.activeElement).toBe(gridCell(fixture, 2, 2));
+    keydown(document.activeElement, 'ArrowLeft');
+    expect(document.activeElement).toBe(gridCell(fixture, 1, 2));
+    keydown(document.activeElement, 'Escape');
+    expect(panel.hidden).toBe(true);
+    expect(fixture.surface.querySelector('table')).toBeNull();
+
+    click(fixture.element.querySelector('[data-command="table"]'));
+    click(gridCell(fixture, 4, 1));
+    const table = fixture.surface.querySelector('table');
+    expect(table.querySelectorAll('thead th')).toHaveLength(4);
+    expect(table.querySelectorAll('tbody')).toHaveLength(0);
+    expect(editorModule.__testHooks.sanitizeEditorHtml(table.outerHTML)).toContain('<th>Header 4</th>');
+  });
+
+  test('buildTableHtml makes the first row the header and the remaining rows body rows', () => {
+    const template = document.createElement('template');
+    template.innerHTML = editorModule.__testHooks.buildTableHtml(2, 4);
+    const table = template.content.querySelector('table');
+    expect(Array.from(table.querySelectorAll('thead th')).map((cell) => cell.textContent)).toEqual(['Header 1', 'Header 2']);
+    expect(table.querySelectorAll('tbody tr')).toHaveLength(3);
+    expect(table.querySelectorAll('tbody td br')).toHaveLength(6);
+  });
+
+  test('table context menu actions apply to the cell that opened the menu and sync the value', () => {
+    const fixture = createEditorFixture();
+    const dotNetRef = createDotNetRef();
+    editorModule.onLoad(fixture.element, dotNetRef);
+    setSurfaceContent(fixture.surface, '<table><tbody><tr><td>A</td><td>B</td></tr></tbody></table>');
+    const items = ['row-below', 'column-right', 'delete-table'].map((action) => {
+      const item = document.createElement('button');
+      item.dataset.tableAction = action;
+      fixture.element.append(item);
+      return item;
+    });
+    const secondCell = fixture.surface.querySelectorAll('td')[1];
+
+    click(items[0]);
+    expect(fixture.surface.querySelectorAll('tr')).toHaveLength(1);
+
+    secondCell.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+    click(items[0]);
+    expect(fixture.surface.querySelectorAll('tr')).toHaveLength(2);
+    expect(window.getSelection().anchorNode.closest ? window.getSelection().anchorNode.closest('td') : window.getSelection().anchorNode).toBe(fixture.surface.querySelectorAll('tr')[1].cells[1]);
+
+    click(items[1]);
+    expect(fixture.surface.querySelectorAll('tr')[0].cells).toHaveLength(2);
+
+    fixture.element.dataset.editable = 'false';
+    fixture.surface.querySelector('td').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+    click(items[2]);
+    expect(fixture.surface.querySelector('table')).not.toBeNull();
+    fixture.element.dataset.editable = 'true';
+
+    fixture.surface.querySelector('td').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+    click(items[2]);
+    expect(fixture.surface.querySelector('table')).toBeNull();
+    expect(fixture.element.querySelector('.tnt-rich-text-editor-hidden-input').value).not.toContain('<table');
+  });
+
+  describe('table row and column actions', () => {
+    const act = (cell, action) => editorModule.__testHooks.applyTableAction(cell, action);
+
+    function buildTable() {
+      document.body.innerHTML = '<div><table><thead><tr><th>H1</th><th>H2</th></tr></thead><tbody><tr><td>A1</td><td>A2</td></tr><tr><td>B1</td><td>B2</td></tr></tbody></table></div>';
+      return document.querySelector('table');
+    }
+
+    const cellTexts = (table) => Array.from(table.rows).map((row) => Array.from(row.cells).map((cell) => `${cell.tagName.toLowerCase()}:${cell.textContent}`));
+
+    test('inserts rows above and below with the clicked row shape', () => {
+      const table = buildTable();
+      const caret = act(table.querySelector('td'), 'row-below');
+      expect(cellTexts(table)).toEqual([['th:H1', 'th:H2'], ['td:A1', 'td:A2'], ['td:', 'td:'], ['td:B1', 'td:B2']]);
+      expect(caret).toBe(table.rows[2].cells[0]);
+      expect(table.rows[2].cells[0].querySelector('br')).not.toBeNull();
+
+      act(table.querySelector('td'), 'row-above');
+      expect(table.tBodies[0].rows).toHaveLength(4);
+      expect(table.tBodies[0].rows[0].cells[0].textContent).toBe('');
+    });
+
+    test.each(['row-above', 'row-below'])('%s on a header row starts the body with a td row', (action) => {
+      const table = buildTable();
+      const caret = act(table.querySelector('th'), action);
+      expect(table.tHead.rows).toHaveLength(1);
+      expect(cellTexts(table)).toEqual([['th:H1', 'th:H2'], ['td:', 'td:'], ['td:A1', 'td:A2'], ['td:B1', 'td:B2']]);
+      expect(caret).toBe(table.tBodies[0].rows[0].cells[0]);
+    });
+
+    test('inserts columns left and right in every row, using th in header rows', () => {
+      const table = buildTable();
+      const caret = act(table.querySelectorAll('td')[1], 'column-right');
+      expect(cellTexts(table)).toEqual([['th:H1', 'th:H2', 'th:'], ['td:A1', 'td:A2', 'td:'], ['td:B1', 'td:B2', 'td:']]);
+      expect(caret).toBe(table.rows[1].cells[2]);
+
+      act(table.querySelector('th'), 'column-left');
+      expect(cellTexts(table)[0]).toEqual(['th:', 'th:H1', 'th:H2', 'th:']);
+      expect(cellTexts(table)[1]).toEqual(['td:', 'td:A1', 'td:A2', 'td:']);
+    });
+
+    test('deletes rows and columns and removes the table when the last one goes', () => {
+      const table = buildTable();
+      let caret = act(table.querySelectorAll('td')[0], 'delete-row');
+      expect(cellTexts(table)).toEqual([['th:H1', 'th:H2'], ['td:B1', 'td:B2']]);
+      expect(caret).toBe(table.rows[1].cells[0]);
+
+      caret = act(table.querySelectorAll('td')[1], 'delete-column');
+      expect(cellTexts(table)).toEqual([['th:H1'], ['td:B1']]);
+      expect(caret).toBe(table.rows[1].cells[0]);
+
+      act(table.querySelector('td'), 'delete-row');
+      expect(table.tBodies).toHaveLength(0);
+      expect(table.rows).toHaveLength(1);
+      expect(act(table.querySelector('th'), 'delete-column')).toBeNull();
+      expect(document.querySelector('table')).toBeNull();
+    });
+
+    test('deleting the only row removes the table, and delete-table removes it outright', () => {
+      const table = buildTable();
+      table.tBodies[0].remove();
+      expect(act(table.querySelector('th'), 'delete-row')).toBeNull();
+      expect(document.querySelector('table')).toBeNull();
+
+      const second = buildTable();
+      expect(act(second.querySelector('td'), 'delete-table')).toBeNull();
+      expect(document.querySelector('table')).toBeNull();
+    });
+  });
+
+  test('text color tool applies the color to the selection through native commands', () => {
     const fixture = createEditorFixture();
     editorModule.onLoad(fixture.element, createDotNetRef());
 
@@ -1008,23 +1297,15 @@ describe('NTRichTextEditor runtime behavior', () => {
 
     click(fixture.element.querySelector('[data-command="textColor"]'));
     fixture.element.querySelector('[data-role="text-color-value"]').value = '#ff0000';
+    document.execCommand.mockClear();
     click(fixture.element.querySelector('[data-role="text-color-apply"]'));
 
-    const coloredSpan = fixture.surface.querySelector('span');
-    expect(coloredSpan).not.toBeNull();
-    expect(coloredSpan.textContent).toBe('Alpha');
-    expect(coloredSpan.style.color).toBe('rgb(255, 0, 0)');
-
-    setSurfaceContent(fixture.surface, '<p><span style="color:#ff0000">Alpha</span><span style="color:#ff0000">Beta</span></p>');
-    const secondSpanTextNode = fixture.surface.querySelectorAll('span')[1].firstChild;
-    selectText(secondSpanTextNode, 0, 4);
-
-    click(fixture.element.querySelector('[data-command="textColor"]'));
-    click(fixture.element.querySelector('[data-role="text-color-apply"]'));
-
-    const mergedSpans = fixture.surface.querySelectorAll('span');
-    expect(mergedSpans).toHaveLength(1);
-    expect(mergedSpans[0].textContent).toBe('AlphaBeta');
+    const colorCalls = document.execCommand.mock.calls.filter(([command]) => ['styleWithCSS', 'foreColor'].includes(command));
+    expect(colorCalls).toEqual([
+      ['styleWithCSS', false, 'true'],
+      ['foreColor', false, '#ff0000'],
+      ['styleWithCSS', false, 'false']
+    ]);
   });
 
   test('link tool inserts links from the current selection and rejects unsafe URLs', () => {
@@ -1169,7 +1450,7 @@ describe('NTRichTextEditor runtime behavior', () => {
     expect(hooks.normalizeSafeUrl('data:image/png;base64,abc', 'image')).toBe('data:image/png;base64,abc');
     expect(hooks.normalizeSafeUrl('javascript:alert(1)', 'link')).toBe('');
     expect(hooks.normalizeSafeUrl('ftp://example.com/file', 'iframe')).toBe('');
-    expect(hooks.normalizeSafeUrl('example.com/path', 'iframe')).toBe('example.com/path');
+    expect(hooks.normalizeSafeUrl('example.com/path', 'iframe')).toBe('https://example.com/path');
     expect(hooks.getChildNodeIndex(cell)).toBe(0);
     expect(hooks.getChildNodeIndex(document.createTextNode('orphan'))).toBe(-1);
 
@@ -1212,9 +1493,24 @@ describe('NTRichTextEditor runtime behavior', () => {
     expect(hooks.getImageDetails({})).toEqual({ src: '', alt: '', title: '', width: '', height: '' });
 
     const rejectedRef = { invokeMethodAsync: jest.fn(() => Promise.reject(new Error('disconnect'))) };
-    hooks.invokeDotNetVoid(rejectedRef, 'UpdateMarkupValueFromJs', '<p>x</p>');
-    hooks.invokeDotNetVoid(rejectedRef, 'UpdateValueFromJs', '<p>x</p>', '<p>x</p>');
-    await Promise.resolve();
+    const rejectedState = { dotNetRef: rejectedRef, sentValueCount: 0 };
+    hooks.sendValue(rejectedState, 'UpdateMarkupValueFromJs', '<p>x</p>');
+    hooks.sendValue(rejectedState, 'UpdateValueFromJs', '<p>x</p>');
+    await settleAsync();
+    expect(rejectedState.sentValueCount).toBe(0);
+  });
+
+  test('sanitizer drops iframes whose source is this origin', () => {
+    const hooks = editorModule.__testHooks;
+
+    const sanitized = hooks.sanitizeEditorHtml([
+      '<iframe src="/upload/page.html"></iframe>',
+      `<iframe src="${window.location.origin}/page"></iframe>`,
+      '<iframe src="https://example.com/embed"></iframe>'
+    ].join(''));
+
+    expect(sanitized.match(/<iframe/g)).toHaveLength(1);
+    expect(sanitized).toContain('src="https://example.com/embed"');
   });
 
   test('test hooks sanitize complex html content', () => {
@@ -1236,10 +1532,10 @@ describe('NTRichTextEditor runtime behavior', () => {
     expect(sanitized).toContain('<img src="https://example.com/image.png" alt="Alt" width="50" height="60">');
     expect(sanitized).toContain('<a href="https://example.com/docs">Docs</a>');
     expect(sanitized).toContain('<table data-border-color="#112233"');
-    expect(sanitized).toContain('<iframe src="https://example.com/embed" title="Embed" width="100%" height="315" loading="lazy"></iframe>');
+    expect(sanitized).toContain('<iframe src="https://example.com/embed" title="Embed" width="100%" height="315" loading="lazy" sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"></iframe>');
     expect(sanitized).not.toContain('onclick');
     expect(sanitized).not.toContain('onerror');
-    expect(sanitized).not.toContain('script');
+    expect(sanitized).not.toContain('<script');
 
     expect(hooks.normalizeAlignment('start')).toBe('left');
     expect(hooks.normalizeAlignment('end')).toBe('right');
@@ -1264,12 +1560,10 @@ describe('NTRichTextEditor runtime behavior', () => {
     hooks.updateEmptyState(fixture.surface);
     expect(fixture.surface.dataset.empty).toBe('true');
 
-    hooks.updateLength(fixture.element, '1234');
-    expect(fixture.length.textContent).toBe('4/25');
-    fixture.surface.removeAttribute('data-maxlength');
-    hooks.updateLength(fixture.element, '12345');
-    expect(fixture.length.textContent).toBe('4/25');
-    fixture.surface.setAttribute('data-maxlength', '25');
+    fixture.surface.innerHTML = '<p><br></p>';
+    hooks.updateEmptyState(fixture.surface);
+    expect(fixture.surface.dataset.empty).toBe('true');
+    expect(hooks.surfaceToValue(fixture.surface)).toBe('');
 
     hooks.applyHtmlToSurface(fixture.element, '<p><strong>Bold</strong></p>');
     expect(fixture.surface.innerHTML).toContain('<strong>Bold</strong>');
@@ -1277,14 +1571,14 @@ describe('NTRichTextEditor runtime behavior', () => {
     setSurfaceContent(fixture.surface, '<p>Sync</p>');
     hooks.syncValueFromSurface(fixture.element, true);
     expect(fixture.hiddenInput.value).toBe('<p>Sync</p>');
-    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('UpdateValueFromJs', '<p>Sync</p>', '<p>Sync</p>');
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('UpdateValueFromJs', expect.any(Number), '<p>Sync</p>');
 
     setSurfaceContent(fixture.surface, '<p>Commit</p>');
     hooks.commitValue(fixture.element);
-    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', '<p>Commit</p>', '<p>Commit</p>');
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('CommitValueFromJs', expect.any(Number), '<p>Commit</p>');
 
     setSurfaceContent(fixture.surface, '<blockquote>Quote</blockquote>');
-    collapseBeforeNode(fixture.surface.querySelector('blockquote'));
+    selectText(fixture.surface.querySelector('blockquote').firstChild, 0, 2);
     fixture.element.querySelector('.tnt-rich-text-editor-toolbar').innerHTML = `
       <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="paragraph" data-value="" aria-pressed="false"></button>
       <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="heading" data-value="1" aria-pressed="false"></button>
@@ -1374,8 +1668,11 @@ describe('NTRichTextEditor runtime behavior', () => {
     fileInput.dispatchEvent(new Event('change', { bubbles: true }));
     await settleAsync();
 
-    expect(fixture.element.querySelector('[data-role="image-url"]').value).toContain('data:image/png;base64');
+    expect(fixture.element.querySelector('[data-role="image-url"]').value).toBe('');
     expect(fixture.element.querySelector('[data-role="image-alt"]').value).toBe('photo');
+    click(fixture.element.querySelector('[data-role="image-apply"]'));
+    await settleAsync();
+    expect(image.getAttribute('src')).toContain('data:image/png;base64');
 
     collapseBeforeNode(image);
     click(fixture.element.querySelector('[data-command="image"]'));
@@ -1451,22 +1748,22 @@ describe('NTRichTextEditor runtime behavior', () => {
     const table = fixture.surface.querySelector('table');
     selectText(table.querySelector('td').firstChild, 0, 1);
     click(fixture.element.querySelector('[data-command="table"]'));
-    fixture.element.querySelector('[data-role="table-columns"]').value = '3';
-    fixture.element.querySelector('[data-role="table-rows"]').value = '2';
     fixture.element.querySelector('[data-role="table-border-color"]').value = '#123456';
+    fixture.element.querySelector('[data-role="table-caption"]').value = 'Totals';
     click(fixture.element.querySelector('[data-role="table-apply"]'));
 
     const updatedTable = fixture.surface.querySelector('table');
-    const headers = Array.from(updatedTable.querySelectorAll('th')).map((cell) => cell.textContent.trim());
-    const rows = Array.from(updatedTable.querySelectorAll('tbody tr')).map((row) =>
-      Array.from(row.querySelectorAll('td')).map((cell) => cell.textContent.trim())
-    );
-    expect(headers).toEqual(['H1', 'H2', 'Header 3']);
-    expect(rows).toEqual([
-      ['A1', 'A2', 'Cell 1-3'],
-      ['Cell 2-1', 'Cell 2-2', 'Cell 2-3']
-    ]);
+    expect(updatedTable).toBe(table);
+    expect(Array.from(updatedTable.querySelectorAll('th, td')).map((cell) => cell.textContent)).toEqual(['H1', 'H2', 'A1', 'A2']);
     expect(updatedTable.getAttribute('data-border-color')).toBe('#123456');
+    expect(updatedTable.style.getPropertyValue('--nt-rich-text-table-border-color')).toBe('#123456');
+    expect(updatedTable.querySelector(':scope > caption').textContent).toBe('Totals');
+    expect(updatedTable.firstElementChild.tagName).toBe('CAPTION');
+
+    click(fixture.element.querySelector('[data-command="table"]'));
+    fixture.element.querySelector('[data-role="table-caption"]').value = '';
+    click(fixture.element.querySelector('[data-role="table-apply"]'));
+    expect(updatedTable.querySelector('caption')).toBeNull();
 
     setSurfaceContent(fixture.surface, '<p><iframe src="https://example.com/old" title="Old" width="640" height="480"></iframe></p>');
     const iframe = fixture.surface.querySelector('iframe');
@@ -1485,20 +1782,9 @@ describe('NTRichTextEditor runtime behavior', () => {
     expect(iframe.getAttribute('loading')).toBe('lazy');
   });
 
-  test('text color tool normalizes nested same-color spans and blocks collapsed-range applies', () => {
+  test('text color tool blocks collapsed-range applies', () => {
     const fixture = createEditorFixture();
     editorModule.onLoad(fixture.element, createDotNetRef());
-
-    setSurfaceContent(fixture.surface, '<p><span style="color:#123456"><span style="color:#123456">Blue</span></span></p>');
-    selectText(fixture.surface.querySelector('span span').firstChild, 0, 4);
-    click(fixture.element.querySelector('[data-command="textColor"]'));
-    fixture.element.querySelector('[data-role="text-color-value"]').value = '#123456';
-    click(fixture.element.querySelector('[data-role="text-color-apply"]'));
-
-    const coloredSpans = fixture.surface.querySelectorAll('span[style*="color"]');
-    expect(coloredSpans).toHaveLength(1);
-    expect(coloredSpans[0].textContent).toBe('Blue');
-    expect(coloredSpans[0].style.color).toBe('rgb(18, 52, 86)');
 
     setSurfaceContent(fixture.surface, '<p>Plain</p>');
     const plainText = fixture.surface.querySelector('p').firstChild;
@@ -1514,6 +1800,7 @@ describe('NTRichTextEditor runtime behavior', () => {
 
     expect(document.activeElement).toBe(textColorInput);
     expect(fixture.surface.innerHTML).toBe('<p>Plain</p>');
+    expect(document.execCommand).not.toHaveBeenCalledWith('foreColor', false, '#654321');
   });
 
   test('command routing handles toggles, multiple shortcut expressions, and tab list indentation', () => {
@@ -1531,7 +1818,8 @@ describe('NTRichTextEditor runtime behavior', () => {
     setSurfaceContent(fixture.surface, '<pre><code>const x = 1;</code></pre>');
     selectText(fixture.surface.querySelector('code').firstChild, 0, 5);
     hooks.executeEditorCommand(fixture.element, 'codeBlock');
-    expect(document.execCommand).toHaveBeenCalledWith('formatBlock', false, 'P');
+    expect(fixture.surface.querySelector('pre')).toBeNull();
+    expect(fixture.surface.innerHTML).toBe('<p>const x = 1;</p>');
 
     hooks.executeEditorCommand(fixture.element, 'heading', '2');
     expect(document.execCommand).toHaveBeenCalledWith('formatBlock', false, 'H2');
@@ -1572,8 +1860,16 @@ describe('NTRichTextEditor runtime behavior', () => {
       new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
     );
     expect(document.execCommand).toHaveBeenCalledWith('indent', false);
-    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('UpdateValueFromJs', expect.any(String), '<ul><li>Item</li></ul>');
+    expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('UpdateValueFromJs', expect.any(Number), '<ul><li>Item</li></ul>');
 
+    document.execCommand.mockClear();
+    const topLevelShiftTab = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true });
+    hooks.handleEditorKeyDown(fixture.element, topLevelShiftTab);
+    expect(document.execCommand).not.toHaveBeenCalledWith('outdent', false);
+    expect(topLevelShiftTab.defaultPrevented).toBe(false);
+
+    setSurfaceContent(fixture.surface, '<ul><li>Parent<ul><li>Child</li></ul></li></ul>');
+    selectText(fixture.surface.querySelector('ul ul li').firstChild, 0, 5);
     document.execCommand.mockClear();
     hooks.handleEditorKeyDown(
       fixture.element,
@@ -1628,28 +1924,33 @@ describe('NTRichTextEditor runtime behavior', () => {
 
     click(fixture.element.querySelector('[data-command="table"]'));
     const tablePanel = fixture.element.querySelector('[data-tool-command="table"]');
-    const columnsInput = fixture.element.querySelector('[data-role="table-columns"]');
-    const rowsInput = fixture.element.querySelector('[data-role="table-rows"]');
+    const captionInput = fixture.element.querySelector('[data-role="table-caption"]');
     expect(tablePanel.hidden).toBe(false);
+    expect(fixture.element.querySelector('[data-role="table-insert"]').hidden).toBe(false);
+
+    keydown(gridCell(fixture, 1, 1), 'Escape');
+    expect(tablePanel.hidden).toBe(true);
+    expect(document.activeElement).toBe(fixture.surface);
+
+    setSurfaceContent(fixture.surface, '<table><tbody><tr><td>Cell</td></tr></tbody></table>');
+    selectText(fixture.surface.querySelector('td').firstChild, 0, 1);
+    click(fixture.element.querySelector('[data-command="table"]'));
+    expect(fixture.element.querySelector('[data-role="table-edit"]').hidden).toBe(false);
+    expect(fixture.element.querySelector('[data-role="table-insert"]').hidden).toBe(true);
 
     click(fixture.element.querySelector('[data-role="table-cancel"]'));
     expect(tablePanel.hidden).toBe(true);
     expect(document.activeElement).toBe(fixture.surface);
 
     click(fixture.element.querySelector('[data-command="table"]'));
-    keydown(columnsInput, 'Escape');
+    keydown(captionInput, 'Escape');
     expect(tablePanel.hidden).toBe(true);
 
     click(fixture.element.querySelector('[data-command="table"]'));
-    columnsInput.value = '';
-    rowsInput.value = '2';
-    click(fixture.element.querySelector('[data-role="table-apply"]'));
-    expect(document.activeElement).toBe(columnsInput);
-
-    columnsInput.value = '2';
-    rowsInput.value = '2';
-    keydown(rowsInput, 'Enter');
+    captionInput.value = 'Enter caption';
+    keydown(captionInput, 'Enter');
     expect(fixture.surface.querySelectorAll('table')).toHaveLength(1);
+    expect(fixture.surface.querySelector('caption').textContent).toBe('Enter caption');
   });
 
   test('link, iframe, and text-color tools support escape, cancel, enter, and invalid apply branches', () => {
@@ -1721,7 +2022,8 @@ describe('NTRichTextEditor runtime behavior', () => {
 
     click(fixture.element.querySelector('[data-command="textColor"]'));
     textColorInput.value = '#ff0000';
+    document.execCommand.mockClear();
     keydown(textColorInput, 'Enter');
-    expect(fixture.surface.querySelector('span[style*="color"]')).not.toBeNull();
+    expect(document.execCommand).toHaveBeenCalledWith('foreColor', false, '#ff0000');
   });
 });

@@ -94,13 +94,16 @@
 				            }
 			            </span>
 
-			            @foreach (var tool in _activeToolsToRender) {
-				            if (tool.PanelTemplate is not null) {
-					            @tool.PanelTemplate(FieldDisabled || FieldReadOnly)
+			            <CascadingValue Value="InputId" Name="RichTextEditorSurfaceId">
+				            @foreach (var tool in _activeToolsToRender) {
+					            if (tool.PanelTemplate is not null) {
+						            @tool.PanelTemplate(FieldDisabled || FieldReadOnly)
+					            }
 				            }
-			            }
+			            </CascadingValue>
 
-			            <span id="@InputId"
+			            @* Must be a block element: Chromium inserts <br> instead of a new list item when the editing host is a span. *@
+			            <div id="@InputId"
 			                  class="tnt-rich-text-editor-surface nt-input-control"
 			                  data-role="surface"
 			                  data-placeholder="@RichTextPlaceholder"
@@ -118,7 +121,7 @@
 			                  aria-errormessage="@(hasErrorText ? ErrorTextId : null)"
 			                  spellcheck="true"
 			                  onkeydown="NTComponents.stopEnterPropagation(event)"
-			                  @ref="Element"></span>
+			                  @ref="Element"></div>
 			            <span class="tnt-rich-text-editor-source-container">
 			                <pre class="tnt-rich-text-editor-source-highlight" aria-hidden="true"><code></code></pre>
 			                <textarea class="tnt-rich-text-editor-source nt-input-control"

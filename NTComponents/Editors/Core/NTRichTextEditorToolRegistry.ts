@@ -41,4 +41,7 @@ export interface RichTextEditorToolPlugin<TState> {
     execute?(context: RichTextEditorToolContext<TState>, value?: string): boolean;
     close?(context: RichTextEditorToolContext<TState>, options?: InlineToolCloseOptions): void;
     syncState?(context: RichTextEditorToolContext<TState>): void;
+    /** Elements this tool edits. Clicking one in the surface calls openForTarget so its settings show. */
+    targetSelector?: string;
+    openForTarget?(context: RichTextEditorToolContext<TState>): void;
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
 using NTComponents.Core;
 using NTComponents.Ext;
@@ -63,8 +64,13 @@ public partial class NTRichTextEditor : INTPageScriptComponent<NTRichTextEditor>
     private readonly NTDisposalState _disposalState = new();
     private ElementReference _editorElement;
     private long _receivedValueCount;
+    private long _valueSequence;
+    private long _markupSequence;
     private object? _boundModel;
     private bool _scriptLoadFailed;
+
+    [Inject]
+    private IServiceProvider Services { get; set; } = default!;
 
     /// <summary>
     /// Gets the .NET object reference used for JavaScript interop.
@@ -132,6 +138,10 @@ public partial class NTRichTextEditor : INTPageScriptComponent<NTRichTextEditor>
     /// <summary>
     /// Gets the current editor HTML markup produced by the TypeScript editor surface.
     /// </summary>
+    /// <remarks>
+    /// This markup, like the bound value, is sanitized in the browser and received from it as-is: the server does not
+    /// sanitize it. Sanitize it on the server before storing it or rendering it to other users.
+    /// </remarks>
     public MarkupString MarkupValue => _markupValue;
 
     /// <summary>
@@ -417,13 +427,17 @@ public partial class NTRichTextEditor : INTPageScriptComponent<NTRichTextEditor>
     /// <summary>
     /// Synchronizes the editor value from JavaScript while the user is typing.
     /// </summary>
-    /// <param name="value">The current sanitized HTML source value.</param>
-    /// <param name="html">The current HTML value.</param>
+    /// <param name="sequence">The send order of this value; a value older than one already applied is ignored.</param>
+    /// <param name="value">The current sanitized HTML value.</param>
     [JSInvokable]
-    public async Task UpdateValueFromJs(string value, string html) {
+    public async Task UpdateValueFromJs(long sequence, string value) {
         _receivedValueCount++;
+        if (!TryAdvance(ref _valueSequence, sequence)) {
+            return;
+        }
+
         CurrentValueAsString = value;
-        await SetMarkupValueAsync(html);
+        await SetMarkupValueAsync(sequence, value);
 
         if (BindOnInput) {
             await BindAfter.InvokeAsync(CurrentValue);
@@ -432,12 +446,12 @@ public partial class NTRichTextEditor : INTPageScriptComponent<NTRichTextEditor>
     }
 
     /// <summary>
-    /// Commits the editor value and notifies the form that the field changed.
+    /// Commits an edited value when the editor loses focus, then completes the blur like <see cref="BlurFromJs" />.
     /// </summary>
-    /// <param name="value">The current sanitized HTML source value.</param>
-    /// <param name="html">The current HTML value.</param>
+    /// <param name="sequence">The send order of this value; a value older than one already applied is not applied.</param>
+    /// <param name="value">The current sanitized HTML value.</param>
     [JSInvokable]
-    public async Task CommitValueFromJs(string value, string html) {
+    public async Task CommitValueFromJs(long sequence, string value) {
         _receivedValueCount++;
         if (DisposalStarted && IsBindingRetargeted()) {
             return;
@@ -445,12 +459,27 @@ public partial class NTRichTextEditor : INTPageScriptComponent<NTRichTextEditor>
 
         var previousValue = CurrentValueAsString ?? string.Empty;
 
-        CurrentValueAsString = value;
-        await SetMarkupValueAsync(html);
-        EditContext?.NotifyFieldChanged(FieldIdentifier);
+        // A newer value already applied wins, but the blur still happened, so the blur still completes.
+        if (TryAdvance(ref _valueSequence, sequence)) {
+            CurrentValueAsString = value;
+            await SetMarkupValueAsync(sequence, value);
+            if (!string.Equals(previousValue, value, StringComparison.Ordinal)) {
+                await BindAfter.InvokeAsync(CurrentValue);
+            }
+        }
 
-        if (!BindOnInput || !string.Equals(previousValue, value, StringComparison.Ordinal)) {
-            await BindAfter.InvokeAsync(CurrentValue);
+        await BlurFromJs();
+    }
+
+    /// <summary>
+    /// Completes a blur that carried no edit: marks the field touched for validation, as other inputs do on blur, and raises
+    /// <see cref="NTFormControlBaseCore{TValue}.OnBlurCallback" />. The value and <c>BindAfter</c> are left alone.
+    /// </summary>
+    [JSInvokable]
+    public async Task BlurFromJs() {
+        // A changed value already notified through CurrentValueAsString, so only an untouched field is notified here.
+        if (EditContext is not null && !EditContext.IsModified(FieldIdentifier)) {
+            EditContext.NotifyFieldChanged(FieldIdentifier);
         }
 
         await OnBlurCallback.InvokeAsync(new FocusEventArgs());
@@ -460,9 +489,40 @@ public partial class NTRichTextEditor : INTPageScriptComponent<NTRichTextEditor>
     /// <summary>
     /// Synchronizes the editor HTML value from JavaScript without changing the bound value.
     /// </summary>
+    /// <param name="sequence">The send order of this markup; markup older than markup already applied is ignored.</param>
     /// <param name="html">The current HTML value.</param>
     [JSInvokable]
-    public Task UpdateMarkupValueFromJs(string html) => SetMarkupValueAsync(html);
+    public Task UpdateMarkupValueFromJs(long sequence, string html) => SetMarkupValueAsync(sequence, html);
+
+    /// <summary>
+    /// Receives a value too large for a single interop message and applies it through <paramref name="methodName" />.
+    /// </summary>
+    /// <param name="methodName">
+    /// <see cref="UpdateValueFromJs" />, <see cref="CommitValueFromJs" />, or <see cref="UpdateMarkupValueFromJs" />.
+    /// </param>
+    /// <param name="sequence">The send order of this value.</param>
+    /// <param name="value">A stream of the UTF-8 encoded value.</param>
+    /// <remarks>
+    /// A stream larger than <see cref="NTComponentsDefaultOptions.RichTextEditorMaxValueBytes" /> is rejected here, on the server, and not applied.
+    /// </remarks>
+    [JSInvokable]
+    public async Task ReceiveValueStreamFromJs(string methodName, long sequence, IJSStreamReference value) {
+        var maxBytes = (Services.GetService<NTComponentsDefaultOptions>() ?? NTComponentsDefaultOptions.Default).RichTextEditorMaxValueBytes;
+        string text;
+        await using (value) {
+            await using var stream = await value.OpenReadStreamAsync(maxBytes);
+            using var reader = new StreamReader(stream, Encoding.UTF8);
+            text = await reader.ReadToEndAsync();
+        }
+
+        // Counted only once read, so a render during the read still reports this value as unseen.
+        await (methodName switch {
+            nameof(UpdateValueFromJs) => UpdateValueFromJs(sequence, text),
+            nameof(CommitValueFromJs) => CommitValueFromJs(sequence, text),
+            nameof(UpdateMarkupValueFromJs) => UpdateMarkupValueFromJs(sequence, text),
+            _ => throw new ArgumentOutOfRangeException(nameof(methodName), methodName, "Unknown editor value method.")
+        });
+    }
 
     /// <inheritdoc />
     protected override void Dispose(bool disposing) {
@@ -516,14 +576,24 @@ public partial class NTRichTextEditor : INTPageScriptComponent<NTRichTextEditor>
         return !DisposalStarted && module is not null && dotNetRef is not null;
     }
 
-    private async Task SetMarkupValueAsync(string? html) {
+    // Markup has its own sequence because a markup-only update must not make an older pending value look superseded.
+    private async Task SetMarkupValueAsync(long sequence, string? html) {
         var nextMarkupValue = new MarkupString(html ?? string.Empty);
-        if (string.Equals(_markupValue.Value, nextMarkupValue.Value, StringComparison.Ordinal)) {
+        if (!TryAdvance(ref _markupSequence, sequence) || string.Equals(_markupValue.Value, nextMarkupValue.Value, StringComparison.Ordinal)) {
             return;
         }
 
         _markupValue = nextMarkupValue;
         await MarkupValueChanged.InvokeAsync(_markupValue);
+    }
+
+    private static bool TryAdvance(ref long appliedSequence, long sequence) {
+        if (sequence <= appliedSequence) {
+            return false;
+        }
+
+        appliedSequence = sequence;
+        return true;
     }
 
     private int? TryParseAdditionalAttributeInteger(string name) {

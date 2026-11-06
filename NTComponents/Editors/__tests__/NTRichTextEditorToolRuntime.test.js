@@ -78,6 +78,7 @@ function createHost(element, surface, options = {}) {
         selection.addRange(editorState.selectionRange);
       }
     }),
+    getToolPanel: (editorElement, command) => editorElement.querySelector(`[data-tool-command="${command}"]`),
     setToolPanelOpen: jest.fn((editorElement, command, isOpen) => {
       const panel = editorElement.querySelector(`[data-tool-command="${command}"]`);
       if (panel) {
@@ -116,6 +117,23 @@ describe('NTRichTextEditor registered tool runtimes', () => {
 
     originalExecCommand = document.execCommand;
     document.execCommand = jest.fn((command, _showUi, value) => {
+      if (command === 'createLink') {
+        const linkSelection = window.getSelection();
+        if (linkSelection.rangeCount) {
+          const linkRange = linkSelection.getRangeAt(0);
+          const anchor = document.createElement('a');
+          anchor.setAttribute('href', value);
+          anchor.appendChild(linkRange.extractContents());
+          linkRange.insertNode(anchor);
+          const anchorRange = document.createRange();
+          anchorRange.selectNodeContents(anchor);
+          linkSelection.removeAllRanges();
+          linkSelection.addRange(anchorRange);
+        }
+
+        return true;
+      }
+
       if (command !== 'insertHTML') {
         return true;
       }
@@ -176,7 +194,7 @@ describe('NTRichTextEditor registered tool runtimes', () => {
 
   test('image and table tools cover direct runtime branches', async () => {
     document.body.innerHTML = `
-      <nt-rich-text-editor>
+      <nt-rich-text-editor data-editable="true">
         <div data-tool-command="image" data-role="image-editor" hidden aria-hidden="true">
           <input data-role="image-url" type="text" />
           <input data-role="image-file" type="file" />
@@ -188,12 +206,19 @@ describe('NTRichTextEditor registered tool runtimes', () => {
           <button type="button" data-role="image-cancel"></button>
         </div>
         <div data-tool-command="table" data-role="table-editor" hidden aria-hidden="true">
-          <input data-role="table-columns" type="text" />
-          <input data-role="table-rows" type="text" />
-          <input data-role="table-border-color" type="text" />
-          <input data-role="table-caption" type="text" />
-          <button type="button" data-role="table-apply"></button>
-          <button type="button" data-role="table-cancel"></button>
+          <div data-role="table-insert">
+            <div data-role="table-grid">
+              <button type="button" data-col="1" data-row="1"></button>
+              <button type="button" data-col="2" data-row="1"></button>
+            </div>
+            <span data-role="table-grid-label"></span>
+          </div>
+          <div data-role="table-edit" hidden>
+            <input data-role="table-border-color" type="text" />
+            <input data-role="table-caption" type="text" />
+            <button type="button" data-role="table-apply"></button>
+            <button type="button" data-role="table-cancel"></button>
+          </div>
         </div>
         <div class="tnt-rich-text-editor-surface" contenteditable="true"><p>Host</p></div>
       </nt-rich-text-editor>
@@ -260,11 +285,25 @@ describe('NTRichTextEditor registered tool runtimes', () => {
     });
     fileInput.dispatchEvent(new Event('change', { bubbles: true }));
     await settleAsync();
+    // Choosing a file only stages it; nothing is inserted until Insert is clicked.
+    expect(surface.querySelector('img')).toBeNull();
+    expect(element.querySelector('[data-role="image-url"]').value).toBe('');
+    click(element.querySelector('[data-role="image-apply"]'));
+    await settleAsync();
     const uploadedImage = surface.querySelector('img');
     expect(uploadedImage.getAttribute('src')).toBe('data:image/png;base64,ZmFrZQ==');
     expect(uploadedImage.getAttribute('alt')).toBe('uploaded-image');
     expect(imageHost.syncValueFromSurface).toHaveBeenCalledWith(element, true);
     expect(imageHost.updateToolbarState).toHaveBeenCalled();
+
+    surface.innerHTML = '<p>Locked</p>';
+    collapseAtEnd(surface.querySelector('p').firstChild);
+    imageTool.execute(imageContext);
+    element.dataset.editable = 'false';
+    fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+    await settleAsync();
+    expect(surface.querySelector('img')).toBeNull();
+    element.dataset.editable = 'true';
 
     imageContext.toolState.onImageFileChange({ target: null });
     imageTool.close(imageContext);
@@ -286,30 +325,32 @@ describe('NTRichTextEditor registered tool runtimes', () => {
     const tableHost = createHost(element, surface, { selectionElement: existingTable.querySelector('td') });
     const tableContext = editorModule.createRichTextEditorToolContext(element, tableState, tableHost, tableTool);
     tableTool.bind(tableContext);
+    selectText(existingTable.querySelector('td').firstChild, 0, 1);
     tableTool.execute(tableContext);
     expect(element.querySelector('[data-role="table-border-color"]').value).toBe('#445566');
     expect(element.querySelector('[data-role="table-caption"]').value).toBe('');
     click(element.querySelector('[data-role="table-cancel"]'));
     expect(tableHost.updateToolbarState).toHaveBeenCalled();
 
+    selectText(existingTable.querySelector('td').firstChild, 0, 1);
     tableTool.execute(tableContext);
-    element.querySelector('[data-role="table-columns"]').value = '2';
-    element.querySelector('[data-role="table-rows"]').value = '';
+    element.querySelector('[data-role="table-border-color"]').value = '#112233';
+    element.querySelector('[data-role="table-caption"]').value = 'Kept';
     click(element.querySelector('[data-role="table-apply"]'));
-    expect(document.activeElement).toBe(element.querySelector('[data-role="table-rows"]'));
+    expect(surface.querySelector('table')).toBe(existingTable);
+    expect(existingTable.querySelector('td').textContent).toBe('Only');
+    expect(existingTable.dataset.borderColor).toBe('#112233');
+    expect(existingTable.querySelector('caption').textContent).toBe('Kept');
 
     surface.innerHTML = '<p>Table host</p>';
     tableHost.setSelectionElement(surface.querySelector('p'));
     collapseAtEnd(surface.querySelector('p').firstChild);
     tableTool.execute(tableContext);
-    element.querySelector('[data-role="table-columns"]').value = '2';
-    element.querySelector('[data-role="table-rows"]').value = '1';
-    element.querySelector('[data-role="table-border-color"]').value = 'invalid';
-    element.querySelector('[data-role="table-caption"]').value = 'Data summary';
-    click(element.querySelector('[data-role="table-apply"]'));
+    click(element.querySelector('[data-role="table-grid"] button[data-col="2"]'));
     const insertedTable = surface.querySelector('table');
     expect(insertedTable.dataset.borderColor).toBe('#94a3b8');
-    expect(insertedTable.querySelector('caption').textContent).toBe('Data summary');
+    expect(insertedTable.querySelectorAll('thead th')).toHaveLength(2);
+    expect(insertedTable.querySelector('tbody')).toBeNull();
 
     tableTool.close(tableContext);
     expect(tableState.selectionRange).toBeNull();
@@ -379,8 +420,8 @@ describe('NTRichTextEditor registered tool runtimes', () => {
     element.querySelector('[data-role="link-text"]').value = '';
     click(element.querySelector('[data-role="link-apply"]'));
     const insertedLink = surface.querySelector('a');
-    expect(insertedLink.getAttribute('href')).toBe('example.com/plain');
-    expect(insertedLink.textContent).toBe('example.com/plain');
+    expect(insertedLink.getAttribute('href')).toBe('https://example.com/plain');
+    expect(insertedLink.textContent).toBe('https://example.com/plain');
 
     const detachedHost = document.createElement('div');
     detachedHost.innerHTML = '<p>Outside</p>';
@@ -429,9 +470,15 @@ describe('NTRichTextEditor registered tool runtimes', () => {
 
     collapseAtEnd(surface.querySelector('p').firstChild);
     iframeTool.execute(iframeContext);
+    // A same-origin source would make allow-same-origin a sandbox escape, so it is refused and nothing is inserted.
     element.querySelector('[data-role="iframe-url"]').value = '../embed';
     click(element.querySelector('[data-role="iframe-apply"]'));
-    expect(surface.querySelector('iframe').getAttribute('src')).toBe('../embed');
+    expect(surface.querySelector('iframe')).toBeNull();
+
+    element.querySelector('[data-role="iframe-url"]').value = 'https://example.com/embed';
+    click(element.querySelector('[data-role="iframe-apply"]'));
+    expect(surface.querySelector('iframe').getAttribute('src')).toBe('https://example.com/embed');
+    expect(surface.querySelector('iframe').getAttribute('sandbox')).toBe('allow-scripts allow-same-origin allow-popups allow-presentation');
 
     surface.innerHTML = '<p>Embed again</p>';
     iframeHost.setSelectionElement(surface.querySelector('p'));
@@ -443,7 +490,7 @@ describe('NTRichTextEditor registered tool runtimes', () => {
     element.querySelector('[data-role="iframe-height"]').value = '';
     keydown(element.querySelector('[data-role="iframe-height"]'), 'Enter');
     const insertedIframe = surface.querySelector('iframe');
-    expect(insertedIframe.getAttribute('src')).toBe('example.com/embed');
+    expect(insertedIframe.getAttribute('src')).toBe('https://example.com/embed');
     expect(insertedIframe.getAttribute('title')).toBe('Embedded content');
 
     iframeTool.close(iframeContext);
@@ -493,9 +540,9 @@ describe('NTRichTextEditor registered tool runtimes', () => {
     textColorTool.execute(textColorContext);
     element.querySelector('[data-role="text-color-value"]').value = '#abc';
     click(element.querySelector('[data-role="text-color-apply"]'));
-    expect(outer.style.color).toBe('rgb(170, 187, 204)');
-    expect(outer.querySelectorAll('span')).toHaveLength(0);
-    expect(outer.textContent).toBe('Blue');
+    expect(document.execCommand).toHaveBeenCalledWith('styleWithCSS', false, 'true');
+    expect(document.execCommand).toHaveBeenCalledWith('foreColor', false, '#aabbcc');
+    expect(document.execCommand).toHaveBeenLastCalledWith('styleWithCSS', false, 'false');
 
     surface.innerHTML = '<p>Plain text</p>';
     const detachedHost = document.createElement('div');

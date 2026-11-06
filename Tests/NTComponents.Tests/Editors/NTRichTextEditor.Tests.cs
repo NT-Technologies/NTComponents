@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
+using NSubstitute;
+using NTComponents.Core;
 
 namespace NTComponents.Tests.Editors;
 
@@ -11,8 +13,10 @@ namespace NTComponents.Tests.Editors;
 /// </summary>
 public class NTRichTextEditor_Tests : BunitContext {
     private readonly BunitJSModuleInterop _module;
+    private readonly NTComponentsDefaultOptions _options = new();
 
     public NTRichTextEditor_Tests() {
+        Services.AddSingleton(_options);
         SetRendererInfo(new RendererInfo("WebAssembly", true));
         _module = JSInterop.SetupModule("./_content/NTComponents/Editors/NTRichTextEditor.razor.js");
         _module.SetupVoid("onLoad", _ => true).SetVoidResult();
@@ -23,6 +27,17 @@ public class NTRichTextEditor_Tests : BunitContext {
         tooltipModule.SetupVoid("onLoad", _ => true).SetVoidResult();
         tooltipModule.SetupVoid("onUpdate", _ => true).SetVoidResult();
         tooltipModule.SetupVoid("onDispose", _ => true).SetVoidResult();
+        SetupTableMenuModules(this);
+    }
+
+    // The table tool renders an NTContextMenu (and its NTMenu), which load their own modules.
+    private static void SetupTableMenuModules(BunitContext context) {
+        foreach (var path in new[] { "./_content/NTComponents/Menus/NTContextMenu.razor.js", "./_content/NTComponents/Menus/NTMenu.razor.js" }) {
+            var menuModule = context.JSInterop.SetupModule(path);
+            menuModule.SetupVoid("onLoad", _ => true).SetVoidResult();
+            menuModule.SetupVoid("onUpdate", _ => true).SetVoidResult();
+            menuModule.SetupVoid("onDispose", _ => true).SetVoidResult();
+        }
     }
 
     [Fact]
@@ -54,7 +69,7 @@ public class NTRichTextEditor_Tests : BunitContext {
 
         var pageScripts = cut.FindAll("tnt-page-script").Select(script => script.GetAttribute("src")).ToList();
         pageScripts.Should().ContainSingle(src => src == "./_content/NTComponents/Editors/NTRichTextEditor.razor.js");
-        pageScripts.Where(src => src != "./_content/NTComponents/Editors/NTRichTextEditor.razor.js").Should().OnlyContain(src => src == "./_content/NTComponents/Form/NTInputColor.razor.js", "the color fields in the tool panels add only their own module");
+        pageScripts.Where(src => src != "./_content/NTComponents/Editors/NTRichTextEditor.razor.js").Should().OnlyContain(src => src == "./_content/NTComponents/Form/NTInputColor.razor.js" || src == "./_content/NTComponents/Menus/NTContextMenu.razor.js" || src == "./_content/NTComponents/Menus/NTMenu.razor.js", "the tool panels add only the color field and table context menu modules");
     }
 
     [Fact]
@@ -89,8 +104,7 @@ public class NTRichTextEditor_Tests : BunitContext {
         cut.Find("[data-role='image-height']").GetAttribute("type").Should().Be("number");
         cut.Find("[data-role='table-editor']").Should().NotBeNull();
         cut.Find("[data-tool-command='table']").Should().NotBeNull();
-        cut.Find("[data-role='table-columns']").GetAttribute("type").Should().Be("number");
-        cut.Find("[data-role='table-rows']").GetAttribute("type").Should().Be("number");
+        cut.FindAll("[data-role='table-grid'] button[data-col][data-row]").Should().HaveCount(80);
         cut.Find("[data-role='table-border-color']").GetAttribute("type").Should().Be("text");
         cut.Find("[data-role='table-caption']").GetAttribute("type").Should().Be("text");
         cut.Find("[data-role='text-color-editor']").Should().NotBeNull();
@@ -196,8 +210,8 @@ public class NTRichTextEditor_Tests : BunitContext {
     public async Task Render_Reports_Every_Value_Received_From_JavaScript() {
         var cut = RenderEditor(parameters => parameters.Add(x => x.BindOnInput, true));
 
-        await cut.InvokeAsync(() => cut.Instance.UpdateValueFromJs("<p>A</p>", "<p>A</p>"));
-        await cut.InvokeAsync(() => cut.Instance.CommitValueFromJs("<p>AB</p>", "<p>AB</p>"));
+        await cut.InvokeAsync(() => cut.Instance.UpdateValueFromJs(1, "<p>A</p>"));
+        await cut.InvokeAsync(() => cut.Instance.CommitValueFromJs(2, "<p>AB</p>"));
 
         cut.Find("nt-rich-text-editor").GetAttribute("data-received-value-count").Should().Be("2");
     }
@@ -213,7 +227,7 @@ public class NTRichTextEditor_Tests : BunitContext {
         var pendingOnDispose = _module.SetupVoid("onDispose", _ => true);
 
         var disposal = cut.InvokeAsync(async () => await cut.Instance.DisposeAsync());
-        await cut.InvokeAsync(() => cut.Instance.CommitValueFromJs("<p>Unsaved</p>", "<p>Unsaved</p>"));
+        await cut.InvokeAsync(() => cut.Instance.CommitValueFromJs(1, "<p>Unsaved</p>"));
         pendingOnDispose.SetVoidResult();
         await disposal;
 
@@ -232,7 +246,7 @@ public class NTRichTextEditor_Tests : BunitContext {
 
         var disposal = cut.InvokeAsync(async () => await cut.Instance.DisposeAsync());
         holder.Note = new RichTextEditorModel { Value = "<p>Second</p>" };
-        await cut.InvokeAsync(() => cut.Instance.CommitValueFromJs("<p>Unsaved</p>", "<p>Unsaved</p>"));
+        await cut.InvokeAsync(() => cut.Instance.CommitValueFromJs(1, "<p>Unsaved</p>"));
         pendingOnDispose.SetVoidResult();
         await disposal;
 
@@ -251,7 +265,7 @@ public class NTRichTextEditor_Tests : BunitContext {
 
         var disposal = cut.InvokeAsync(async () => await cut.Instance.DisposeAsync());
         holder.Note = null;
-        await cut.InvokeAsync(() => cut.Instance.CommitValueFromJs("<p>Unsaved</p>", "<p>Unsaved</p>"));
+        await cut.InvokeAsync(() => cut.Instance.CommitValueFromJs(1, "<p>Unsaved</p>"));
         pendingOnDispose.SetVoidResult();
         await disposal;
 
@@ -268,7 +282,7 @@ public class NTRichTextEditor_Tests : BunitContext {
             .Add(x => x.ValueChanged, EventCallback.Factory.Create<string?>(this, delivered.Add)));
 
         holder.Note = new RichTextEditorModel { Value = "<p>Second</p>" };
-        await cut.InvokeAsync(() => cut.Instance.CommitValueFromJs("<p>Typed</p>", "<p>Typed</p>"));
+        await cut.InvokeAsync(() => cut.Instance.CommitValueFromJs(1, "<p>Typed</p>"));
 
         delivered.Should().ContainSingle().Which.Should().Be("<p>Typed</p>");
     }
@@ -292,7 +306,7 @@ public class NTRichTextEditor_Tests : BunitContext {
             .Add(x => x.MarkupValueChanged, EventCallback.Factory.Create<MarkupString>(this, value => markupValue = value.Value))
             .Add(x => x.BindAfter, EventCallback.Factory.Create<string?>(this, value => bindAfterValue = value ?? string.Empty)));
 
-        await cut.Instance.UpdateValueFromJs("<p>Updated <strong>HTML</strong></p>", "<p>Updated <strong>HTML</strong></p>");
+        await cut.Instance.UpdateValueFromJs(1, "<p>Updated <strong>HTML</strong></p>");
 
         cut.Instance.Value.Should().Be("<p>Updated <strong>HTML</strong></p>");
         cut.Instance.MarkupValue.Value.Should().Be("<p>Updated <strong>HTML</strong></p>");
@@ -316,11 +330,11 @@ public class NTRichTextEditor_Tests : BunitContext {
             .Add(x => x.OnBlurCallback, EventCallback.Factory.Create<FocusEventArgs>(this, _ => blurInvoked = true))
             .AddCascadingValue(editContext));
 
-        await cut.Instance.CommitValueFromJs("Committed", "<p>Committed</p>");
+        await cut.Instance.CommitValueFromJs(1, "<p>Committed</p>");
 
         notifiedFields.Should().Contain(nameof(RichTextEditorModel.Value));
         blurInvoked.Should().BeTrue();
-        cut.Instance.Value.Should().Be("Committed");
+        cut.Instance.Value.Should().Be("<p>Committed</p>");
         cut.Instance.MarkupValue.Value.Should().Be("<p>Committed</p>");
         markupValue.Should().Be("<p>Committed</p>");
     }
@@ -329,7 +343,7 @@ public class NTRichTextEditor_Tests : BunitContext {
     public async Task UpdateMarkupValueFromJs_Updates_Markup_Without_Changing_Bound_Value() {
         var cut = RenderEditor(parameters => parameters.Add(x => x.Value, "Original"));
 
-        await cut.Instance.UpdateMarkupValueFromJs("<p>Preview</p>");
+        await cut.Instance.UpdateMarkupValueFromJs(1, "<p>Preview</p>");
 
         cut.Instance.Value.Should().Be("Original");
         cut.Instance.MarkupValue.Value.Should().Be("<p>Preview</p>");
@@ -341,8 +355,8 @@ public class NTRichTextEditor_Tests : BunitContext {
         var cut = RenderEditor(parameters => parameters
             .Add(x => x.MarkupValueChanged, EventCallback.Factory.Create<MarkupString>(this, _ => markupChangedCount++)));
 
-        await cut.Instance.UpdateMarkupValueFromJs("<p>Preview</p>");
-        await cut.Instance.UpdateMarkupValueFromJs("<p>Preview</p>");
+        await cut.Instance.UpdateMarkupValueFromJs(1, "<p>Preview</p>");
+        await cut.Instance.UpdateMarkupValueFromJs(2, "<p>Preview</p>");
 
         markupChangedCount.Should().Be(1);
     }
@@ -351,7 +365,7 @@ public class NTRichTextEditor_Tests : BunitContext {
     public async Task UpdateMarkupValueFromJs_Normalizes_Null_To_Empty_Markup() {
         var cut = RenderEditor();
 
-        await cut.Instance.UpdateMarkupValueFromJs(null!);
+        await cut.Instance.UpdateMarkupValueFromJs(1, null!);
 
         cut.Instance.MarkupValue.Value.Should().Be(string.Empty);
     }
@@ -364,9 +378,159 @@ public class NTRichTextEditor_Tests : BunitContext {
             .Add(x => x.Value, "Same value")
             .Add(x => x.BindAfter, EventCallback.Factory.Create<string?>(this, _ => bindAfterCount++)));
 
-        await cut.Instance.CommitValueFromJs("Same value", "<p>Same value</p>");
+        await cut.Instance.CommitValueFromJs(1, "Same value");
 
         bindAfterCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ReceiveValueStreamFromJs_Commit_Applies_The_Decoded_Value_And_Notifies_EditContext() {
+        var model = new RichTextEditorModel();
+        var editContext = new EditContext(model);
+        var notifiedFields = new List<string>();
+        editContext.OnFieldChanged += (_, args) => notifiedFields.Add(args.FieldIdentifier.FieldName);
+        var cut = Render<NTRichTextEditor>(parameters => parameters
+            .Add(x => x.ValueExpression, () => model.Value)
+            .AddCascadingValue(editContext));
+        var value = string.Concat(Enumerable.Repeat("<p>Größe 文字</p>", 2000));
+
+        await cut.InvokeAsync(() => cut.Instance.ReceiveValueStreamFromJs(nameof(NTRichTextEditor.CommitValueFromJs), 1, CreateStreamReference(Task.FromResult(Utf8Stream(value)))));
+
+        cut.Instance.Value.Should().Be(value);
+        cut.Instance.MarkupValue.Value.Should().Be(value);
+        notifiedFields.Should().Contain(nameof(RichTextEditorModel.Value));
+    }
+
+    [Fact]
+    public async Task ReceiveValueStreamFromJs_Finishing_After_A_Newer_Value_Does_Not_Overwrite_It() {
+        var pendingStream = new TaskCompletionSource<Stream>();
+        var cut = RenderEditor(parameters => parameters.Add(x => x.BindOnInput, true));
+
+        var streamed = cut.InvokeAsync(() => cut.Instance.ReceiveValueStreamFromJs(nameof(NTRichTextEditor.UpdateValueFromJs), 1, CreateStreamReference(pendingStream.Task)));
+        await cut.InvokeAsync(() => cut.Instance.UpdateValueFromJs(2, "<p>Newer</p>"));
+        pendingStream.SetResult(Utf8Stream("<p>Older</p>"));
+        await streamed;
+
+        cut.Instance.Value.Should().Be("<p>Newer</p>");
+        cut.Instance.MarkupValue.Value.Should().Be("<p>Newer</p>");
+    }
+
+    [Fact]
+    public async Task ReceiveValueStreamFromJs_Counts_A_Value_As_Received_Only_Once_It_Is_Read() {
+        var pendingStream = new TaskCompletionSource<Stream>();
+        var cut = RenderEditor(parameters => parameters.Add(x => x.BindOnInput, true));
+
+        var streamed = cut.InvokeAsync(() => cut.Instance.ReceiveValueStreamFromJs(nameof(NTRichTextEditor.UpdateValueFromJs), 1, CreateStreamReference(pendingStream.Task)));
+        await cut.InvokeAsync(() => cut.Instance.UpdateValueFromJs(2, "<p>Newer</p>"));
+        var countWhileReading = cut.Find("nt-rich-text-editor").GetAttribute("data-received-value-count");
+        pendingStream.SetResult(Utf8Stream("<p>Older</p>"));
+        await streamed;
+        cut.Render();
+
+        countWhileReading.Should().Be("1");
+        cut.Find("nt-rich-text-editor").GetAttribute("data-received-value-count").Should().Be("2");
+    }
+
+    [Fact]
+    public async Task ReceiveValueStreamFromJs_Rejects_An_Unknown_Method_Name() {
+        var cut = RenderEditor();
+
+        var receive = () => cut.InvokeAsync(() => cut.Instance.ReceiveValueStreamFromJs("Unknown", 1, CreateStreamReference(Task.FromResult(Utf8Stream("<p>A</p>")))));
+
+        await receive.Should().ThrowAsync<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public async Task CommitValueFromJs_Older_Than_An_Applied_Update_Keeps_The_Newer_Value_And_Still_Raises_Blur() {
+        var blurInvoked = false;
+        var cut = RenderEditor(parameters => parameters
+            .Add(x => x.BindOnInput, true)
+            .Add(x => x.OnBlurCallback, EventCallback.Factory.Create<FocusEventArgs>(this, _ => blurInvoked = true)));
+
+        await cut.InvokeAsync(() => cut.Instance.UpdateValueFromJs(2, "<p>Newer</p>"));
+        await cut.InvokeAsync(() => cut.Instance.CommitValueFromJs(1, "<p>Older</p>"));
+
+        cut.Instance.Value.Should().Be("<p>Newer</p>");
+        blurInvoked.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CommitValueFromJs_Skips_BindAfter_When_The_Value_Is_Unchanged_Without_BindOnInput() {
+        var bindAfterCount = 0;
+        var cut = RenderEditor(parameters => parameters
+            .Add(x => x.Value, "Same value")
+            .Add(x => x.BindAfter, EventCallback.Factory.Create<string?>(this, _ => bindAfterCount++)));
+
+        await cut.InvokeAsync(() => cut.Instance.CommitValueFromJs(1, "Same value"));
+
+        bindAfterCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task BlurFromJs_On_An_Untouched_Field_Marks_It_Touched_And_Raises_Blur_Without_BindAfter() {
+        var model = new RichTextEditorModel();
+        var editContext = new EditContext(model);
+        var notifiedFields = new List<string>();
+        var blurInvoked = false;
+        var bindAfterCount = 0;
+        editContext.OnFieldChanged += (_, args) => notifiedFields.Add(args.FieldIdentifier.FieldName);
+        var cut = Render<NTRichTextEditor>(parameters => parameters
+            .Add(x => x.ValueExpression, () => model.Value)
+            .Add(x => x.OnBlurCallback, EventCallback.Factory.Create<FocusEventArgs>(this, _ => blurInvoked = true))
+            .Add(x => x.BindAfter, EventCallback.Factory.Create<string?>(this, _ => bindAfterCount++))
+            .AddCascadingValue(editContext));
+
+        await cut.InvokeAsync(() => cut.Instance.BlurFromJs());
+
+        notifiedFields.Should().ContainSingle().Which.Should().Be(nameof(RichTextEditorModel.Value));
+        blurInvoked.Should().BeTrue();
+        bindAfterCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task BlurFromJs_On_A_Modified_Field_Does_Not_Notify_Again() {
+        var model = new RichTextEditorModel();
+        var editContext = new EditContext(model);
+        var cut = Render<NTRichTextEditor>(parameters => parameters
+            .Add(x => x.ValueExpression, () => model.Value)
+            .AddCascadingValue(editContext));
+        await cut.InvokeAsync(() => cut.Instance.BlurFromJs());
+        var notifiedFields = new List<string>();
+        editContext.OnFieldChanged += (_, args) => notifiedFields.Add(args.FieldIdentifier.FieldName);
+
+        await cut.InvokeAsync(() => cut.Instance.BlurFromJs());
+
+        notifiedFields.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ReceiveValueStreamFromJs_Reads_At_Most_The_Server_Configured_Limit() {
+        _options.RichTextEditorMaxValueBytes = 1234;
+        var cut = RenderEditor();
+        var reference = CreateStreamReference(Task.FromResult(Utf8Stream("<p>A</p>")));
+
+        await cut.InvokeAsync(() => cut.Instance.ReceiveValueStreamFromJs(nameof(NTRichTextEditor.UpdateValueFromJs), 1, reference));
+
+        await reference.Received(1).OpenReadStreamAsync(1234, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateMarkupValueFromJs_Does_Not_Make_An_Older_Pending_Value_Look_Superseded() {
+        var cut = RenderEditor();
+
+        await cut.InvokeAsync(() => cut.Instance.UpdateMarkupValueFromJs(2, "<p>Normalized</p>"));
+        await cut.InvokeAsync(() => cut.Instance.UpdateValueFromJs(1, "<p>Typed</p>"));
+
+        cut.Instance.Value.Should().Be("<p>Typed</p>");
+        cut.Instance.MarkupValue.Value.Should().Be("<p>Normalized</p>");
+    }
+
+    private static Stream Utf8Stream(string value) => new MemoryStream(System.Text.Encoding.UTF8.GetBytes(value));
+
+    private static IJSStreamReference CreateStreamReference(Task<Stream> stream) {
+        var reference = Substitute.For<IJSStreamReference>();
+        reference.OpenReadStreamAsync(Arg.Any<long>(), Arg.Any<CancellationToken>()).Returns(new ValueTask<Stream>(stream));
+        return reference;
     }
 
     [Fact]
@@ -732,6 +896,7 @@ public class NTRichTextEditor_Tests : BunitContext {
         module.SetupVoid("onUpdate", _ => true).SetVoidResult();
         module.SetupVoid("onDispose", _ => true).SetVoidResult();
         module.SetupVoid("focusEditor", _ => true).SetVoidResult();
+        SetupTableMenuModules(context);
 
         var model = new RichTextEditorModel();
         var act = () => context.Render<TestableRichTextEditor>(parameters => parameters

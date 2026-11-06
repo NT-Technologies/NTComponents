@@ -4,6 +4,12 @@ type Maybe<T> = T | null | undefined;
 type Alignment = '' | 'left' | 'center' | 'right' | 'justify';
 type DotNetEditorMethod = 'UpdateValueFromJs' | 'CommitValueFromJs' | 'UpdateMarkupValueFromJs';
 
+declare global {
+    interface Window {
+        DotNet: { createJSStreamReference(data: ArrayBufferView): unknown };
+    }
+}
+
 interface InlineToolCloseOptions {
     focusSurface?: boolean;
     preserveSelection?: boolean;
@@ -45,11 +51,15 @@ interface RichTextEditorToolPlugin<TState> {
     execute?(context: RichTextEditorToolContext<TState>, value?: string): boolean;
     close?(context: RichTextEditorToolContext<TState>, options?: InlineToolCloseOptions): void;
     syncState?(context: RichTextEditorToolContext<TState>): void;
+    /** Elements this tool edits. Clicking one in the surface calls openForTarget so its settings show. */
+    targetSelector?: string;
+    openForTarget?(context: RichTextEditorToolContext<TState>): void;
 }
 
 interface DotNetEditorRef {
-    invokeMethodAsync(methodName: 'UpdateValueFromJs' | 'CommitValueFromJs', value: string, html: string): Promise<unknown> | void;
-    invokeMethodAsync(methodName: 'UpdateMarkupValueFromJs', html: string): Promise<unknown> | void;
+    invokeMethodAsync(methodName: DotNetEditorMethod, sequence: number, value: string): Promise<unknown> | void;
+    invokeMethodAsync(methodName: 'ReceiveValueStreamFromJs', targetMethodName: DotNetEditorMethod, sequence: number, value: unknown): Promise<unknown> | void;
+    invokeMethodAsync(methodName: 'BlurFromJs'): Promise<unknown> | void;
 }
 
 interface ImageDetails {
@@ -58,27 +68,6 @@ interface ImageDetails {
     title: string;
     width: string;
     height: string;
-}
-
-interface ExistingTableContent {
-    caption: string;
-    headers: string[];
-    rows: string[][];
-}
-
-interface TableEditorDetails {
-    columns: number;
-    rows: number;
-    borderColor: string;
-    caption: string;
-}
-
-interface TableHtmlOptions {
-    columns: number;
-    rows: number;
-    borderColor: string;
-    caption?: string;
-    existingContent?: ExistingTableContent | null;
 }
 
 interface EditorState extends RichTextEditorToolEditorState {
@@ -94,6 +83,7 @@ interface EditorState extends RichTextEditorToolEditorState {
     renderedValue: string;
     sentValueCount: number;
     sourceMode: boolean;
+    sourceEmbeddedData: string[];
     onInput: () => void;
     onSourceInput: () => void;
     onSourceScroll: () => void;
@@ -103,7 +93,9 @@ interface EditorState extends RichTextEditorToolEditorState {
     onFocusOut: (event: FocusEvent) => void;
     onKeyUp: () => void;
     onMouseUp: () => void;
+    onClick: (event: MouseEvent) => void;
     onKeyDown: (event: KeyboardEvent) => void;
+    onPanelKeyDown: (event: KeyboardEvent) => void;
     onToolbarMouseDown: (event: MouseEvent) => void;
 }
 
@@ -118,6 +110,7 @@ const editorState = new WeakMap<HTMLElement, EditorState>();
 const blockNodeTags = new Set<string>(['DIV', 'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'BLOCKQUOTE', 'PRE', 'TABLE', 'IFRAME']);
 const sourceBlockTags = new Set<string>([...blockNodeTags, 'CAPTION', 'IMG', 'LI', 'TBODY', 'TD', 'TFOOT', 'TH', 'THEAD', 'TR']);
 const blockSelector = 'h1, h2, h3, h4, h5, h6, pre, blockquote, table, th, td, iframe, li, p, div';
+const blockLevelSelector = 'h1, h2, h3, h4, h5, h6, pre, blockquote, table, caption, thead, tbody, tfoot, tr, th, td, li, ul, ol, p, div';
 const defaultTableBorderColor = '#94a3b8';
 const defaultTextColor = '#1d4ed8';
 const editorElements = new Set<HTMLElement>();
@@ -125,6 +118,11 @@ let selectionChangeRegistered = false;
 let uncommittedEditHandlersRegistered = false;
 let activeEditor: HTMLElement | null = null;
 let prerenderFocusedEditorIndex = -1;
+// Blazor Server closes the circuit on a message over 32 KB by default. JSON can spend 6 bytes on one character (\u0001),
+// so values up to this length always fit; longer ones are streamed.
+const maxInlineValueLength = 5000;
+// Module-wide so a recreated editor state never reuses a number its .NET component has already seen.
+let valueSequence = 0;
 
 export function setRichTextEditorToolRegistryChangedCallback(callback: (() => void) | null): void {
     richTextEditorToolRegistry.onChange = callback;
@@ -216,7 +214,7 @@ function clearPendingSync(state: Maybe<EditorState>): void {
 }
 
 function placeCaretAtEnd(surface: HTMLElement): void {
-    surface.focus();
+    surface.focus({ preventScroll: true });
 
     const selection = window.getSelection?.();
     if (!selection) {
@@ -346,6 +344,22 @@ function updateHtmlSourceView(source: HTMLTextAreaElement): void {
     }
 }
 
+// The source view shows each embedded image as a short token so base64 data does not bury the markup. Tokens are
+// display-only: reading the source back swaps the original data URLs in, and an unknown token is left as typed.
+const embeddedDataPattern = /data:([\w.+/-]+);base64,([A-Za-z0-9+/=]{64,})/g;
+const embeddedDataTokenPattern = /\[image-data-(\d+)[^\]]*\]/g;
+
+function writeHtmlSource(source: HTMLTextAreaElement, state: EditorState, html: string): void {
+    source.value = formatHtmlSource(html).replace(embeddedDataPattern, (_match, type: string, data: string) => {
+        const index = state.sourceEmbeddedData.includes(data) ? state.sourceEmbeddedData.indexOf(data) : state.sourceEmbeddedData.push(data) - 1;
+        return `data:${type};base64,[image-data-${index + 1}, ${Math.ceil((data.length * 3) / 4 / 1024)} KB]`;
+    });
+}
+
+function readHtmlSource(source: HTMLTextAreaElement, state: EditorState): string {
+    return flattenEditorHtml(source.value.replace(embeddedDataTokenPattern, (token, index: string) => state.sourceEmbeddedData[Number(index) - 1] ?? token));
+}
+
 function setHtmlSourceMode(element: HTMLElement, state: EditorState, enabled: boolean): void {
     const surface = getSurface(element);
     const source = getHtmlSource(element);
@@ -356,9 +370,10 @@ function setHtmlSourceMode(element: HTMLElement, state: EditorState, enabled: bo
     if (enabled) {
         syncValueFromSurface(element, true);
         closeOtherTools(element, state);
-        source.value = formatHtmlSource(state.lastHtml);
+        state.sourceEmbeddedData = [];
+        writeHtmlSource(source, state, state.lastHtml);
     } else {
-        surface.innerHTML = flattenEditorHtml(source.value);
+        surface.innerHTML = readHtmlSource(source, state);
         state.selectionRange = null;
     }
 
@@ -374,7 +389,7 @@ function setHtmlSourceMode(element: HTMLElement, state: EditorState, enabled: bo
         source.focus();
     } else {
         syncValueFromSurface(element, true);
-        surface.focus();
+        surface.focus({ preventScroll: true });
     }
 }
 
@@ -384,10 +399,6 @@ function getSourceValueElement(element: Maybe<ParentNode>): HTMLDivElement | nul
 
 function getHiddenInput(element: Maybe<ParentNode>): HTMLInputElement | null {
     return qs<HTMLInputElement>(element, '.tnt-rich-text-editor-hidden-input');
-}
-
-function getLengthElement(element: Maybe<Element>): HTMLElement | null {
-    return qs<HTMLElement>(element?.closest?.('.tnt-input-container') ?? null, '.tnt-input-length');
 }
 
 function getToolbarButtons(element: Maybe<ParentNode>): HTMLButtonElement[] {
@@ -428,35 +439,30 @@ function clearActiveEditor(element: Maybe<HTMLElement>): void {
     }
 }
 
-function invokeDotNetVoid(
-    dotNetRef: Maybe<DotNetEditorRef>,
-    methodName: DotNetEditorMethod,
-    ...args: string[]
-): void {
+// A streamed value is read asynchronously, so a later small value can reach .NET first. Each call carries a rising
+// sequence and .NET drops values older than the newest it applied. Chaining sends instead would queue every keystroke
+// behind a slow stream and lose sends still queued when the page goes away.
+function sendValue(state: EditorState, methodName: DotNetEditorMethod, value: string): void {
+    const dotNetRef = state.dotNetRef;
     if (!dotNetRef) {
         return;
     }
 
-    const invocation = methodName === 'UpdateMarkupValueFromJs'
-        ? dotNetRef.invokeMethodAsync('UpdateMarkupValueFromJs', args[0] ?? '')
-        : dotNetRef.invokeMethodAsync(methodName, args[0] ?? '', args[1] ?? '');
-
-    Promise.resolve(invocation)
-        .catch(() => {
-            // Ignore late/disconnected interop failures from fire-and-forget editor sync paths.
-        });
-}
-
-function sendValue(state: EditorState, methodName: 'UpdateValueFromJs' | 'CommitValueFromJs', value: string, html: string): void {
-    if (!state.dotNetRef) {
-        return;
+    // Markup-only updates leave the bound value alone, so renders do not have to wait for them.
+    const isValue = methodName !== 'UpdateMarkupValueFromJs';
+    if (isValue) {
+        state.sentValueCount++;
     }
 
-    state.sentValueCount++;
-    Promise.resolve(state.dotNetRef.invokeMethodAsync(methodName, value, html))
+    const sequence = ++valueSequence;
+    new Promise<unknown>(resolve => resolve(value.length > maxInlineValueLength
+        ? dotNetRef.invokeMethodAsync('ReceiveValueStreamFromJs', methodName, sequence, window.DotNet.createJSStreamReference(new TextEncoder().encode(value)))
+        : dotNetRef.invokeMethodAsync(methodName, sequence, value)))
         .catch(() => {
             // A call that never reached .NET must not make later renders look stale.
-            state.sentValueCount--;
+            if (isValue) {
+                state.sentValueCount--;
+            }
         });
 }
 
@@ -466,9 +472,31 @@ function extractUrlScheme(value: string): string {
 }
 
 function normalizeSafeUrl(value: unknown, kind: 'link' | 'iframe' | 'image'): string {
-    const trimmed = `${value ?? ''}`.trim();
+    const url = normalizeUrlScheme(value, kind);
+    return kind === 'iframe' && !isCrossOriginHttpUrl(url) ? '' : url;
+}
+
+// The iframe sandbox grants allow-same-origin, which only stays a sandbox for another origin's content.
+function isCrossOriginHttpUrl(url: string): boolean {
+    try {
+        const resolved = new URL(url, document.baseURI);
+        return ['http:', 'https:'].includes(resolved.protocol) && resolved.origin !== window.location.origin;
+    }
+    catch {
+        return false;
+    }
+}
+
+function normalizeUrlScheme(value: unknown, kind: 'link' | 'iframe' | 'image'): string {
+    // Browsers ignore control characters in URLs, so "java\tscript:" must not slip past the scheme check.
+    const trimmed = `${value ?? ''}`.replace(/[\u0000-\u001F\u007F]/g, '').trim();
     if (!trimmed) {
         return '';
+    }
+
+    // A typed "example.com/page" would otherwise resolve against the host page.
+    if (kind !== 'image' && /^[a-z\d-]+(?:\.[a-z\d-]+)*\.[a-z]{2,}(?::\d+)?(?:[/?#]|$)/i.test(trimmed)) {
+        return `https://${trimmed}`;
     }
 
     if (trimmed.startsWith('#')
@@ -558,18 +586,13 @@ function getBoundaryAdjacentElement(surface: HTMLElement, container: Node, offse
 
         const currentElement = currentNode as Element;
         const childNodes = toArray(currentElement.childNodes);
-
-        if (direction === 'before') {
-            if (currentOffset > 0) {
-                const candidateNode = childNodes[currentOffset - 1];
-                return candidateNode instanceof Element && surface.contains(candidateNode) ? candidateNode : null;
-            }
-        } else if (currentOffset < childNodes.length) {
-            const candidateNode = childNodes[currentOffset];
-            return candidateNode instanceof Element && surface.contains(candidateNode) ? candidateNode : null;
+        const candidateNode = direction === 'before' ? childNodes[currentOffset - 1] : childNodes[currentOffset];
+        if (candidateNode) {
+            // Only inline neighbours (images, links, formatting) describe the caret; a sibling block does not.
+            return candidateNode instanceof Element && !candidateNode.matches(blockLevelSelector) && surface.contains(candidateNode) ? candidateNode : null;
         }
 
-        if (currentElement === surface) {
+        if (currentElement === surface || currentElement.matches(blockLevelSelector)) {
             return null;
         }
 
@@ -593,6 +616,14 @@ function getSelectionElement(surface: Maybe<HTMLElement>): Element | null {
     const selection = window.getSelection?.();
     const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
     let node: Node | null = selection?.anchorNode ?? surface;
+
+    // A clicked image is selected as the single node between two offsets of its parent.
+    const selectedNode = range && !range.collapsed && range.startContainer === range.endContainer && range.endOffset - range.startOffset === 1
+        ? range.startContainer.childNodes[range.startOffset]
+        : null;
+    if (selectedNode instanceof Element && surface.contains(selectedNode)) {
+        return selectedNode;
+    }
 
     if (range?.collapsed) {
         const adjacentElement = getBoundaryAdjacentElement(surface, range.startContainer, range.startOffset, 'before')
@@ -638,9 +669,14 @@ function getCurrentAlignment(surface: Maybe<HTMLElement>, blockElement: Maybe<El
     return getElementAlignment(blockElement) || 'left';
 }
 
+// Bounded by the surface so a host page that wraps the editor in an li or b does not count.
+function closestInSurface(surface: Maybe<HTMLElement>, selector: string): Element | null {
+    const match = getSelectionElement(surface)?.closest?.(selector) ?? null;
+    return match && match !== surface && surface?.contains(match) ? match : null;
+}
+
 function hasAncestorTag(surface: Maybe<HTMLElement>, tagNames: string): boolean {
-    const selectionElement = getSelectionElement(surface);
-    return Boolean(selectionElement?.closest?.(tagNames));
+    return Boolean(closestInSurface(surface, tagNames));
 }
 
 function getElementTextColor(element: unknown): string {
@@ -706,6 +742,8 @@ function escapeHtml(value: string): string {
         .replaceAll('\'', '&#39;');
 }
 
+// A document without a browsing context: probing a clone here loads no images or frames.
+const inertDocument = document.implementation.createHTMLDocument('');
 const allowedHtmlTags = new Set(['A', 'B', 'BLOCKQUOTE', 'BR', 'CAPTION', 'CODE', 'DEL', 'DIV', 'EM', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'I', 'IFRAME', 'IMG', 'LI', 'OL', 'P', 'PRE', 'S', 'SPAN', 'STRIKE', 'STRONG', 'TABLE', 'TBODY', 'TD', 'TFOOT', 'TH', 'THEAD', 'TR', 'U', 'UL']);
 const droppedHtmlTags = new Set(['SCRIPT', 'STYLE', 'TEMPLATE']);
 
@@ -767,7 +805,17 @@ function sanitizeElementAttributes(element: Element): void {
             continue;
         }
 
-        if (!['align', 'alt', 'aria-label', 'data-border-color', 'data-language', 'height', 'href', 'loading', 'scope', 'src', 'title', 'width'].includes(name)) {
+        // Firefox justify commands write align="..."; keep one representation of alignment.
+        if (name === 'align') {
+            const alignment = normalizeAlignment(attribute.value);
+            element.removeAttribute(attribute.name);
+            if (alignment && element instanceof HTMLElement && !(element instanceof HTMLImageElement) && !element.style.textAlign) {
+                element.style.textAlign = alignment;
+            }
+            continue;
+        }
+
+        if (!['alt', 'aria-label', 'data-border-color', 'data-language', 'height', 'href', 'loading', 'scope', 'src', 'title', 'width'].includes(name)) {
             element.removeAttribute(attribute.name);
         }
     }
@@ -794,6 +842,7 @@ function sanitizeElementAttributes(element: Element): void {
         element.setAttribute('width', sanitizeDimensionAttribute(element.getAttribute('width'), true) || defaultIframeWidth);
         element.setAttribute('height', sanitizeDimensionAttribute(element.getAttribute('height')) || defaultIframeHeight);
         element.setAttribute('loading', 'lazy');
+        element.setAttribute('sandbox', iframeSandbox);
     }
 
     if (element instanceof HTMLTableElement) {
@@ -820,7 +869,102 @@ function sanitizeHtmlFragment(root: ParentNode): void {
         }
 
         sanitizeElementAttributes(element);
+        // Chrome wraps moved text in style spans; once the styles are stripped the span carries nothing.
+        if (element.tagName === 'SPAN' && element.attributes.length === 0) {
+            unwrapElement(element);
+        }
     }
+}
+
+// Structural repairs for markup produced by browser editing commands.
+function normalizeEditorStructure(surface: HTMLElement): void {
+    // Chrome nests lists inside the paragraph they were created from, which no parser can round-trip.
+    for (const wrapper of toArray(surface.querySelectorAll('p'))) {
+        if (wrapper.querySelector(':scope > :is(ul, ol, table, pre, blockquote, div, p, h1, h2, h3, h4, h5, h6)')) {
+            unwrapElement(wrapper);
+        }
+    }
+
+    // Outdent, list removal, and typing into an empty editor leave bare inline content at the root.
+    let run: HTMLParagraphElement | null = null;
+    for (const node of toArray(surface.childNodes)) {
+        const isInline = node.nodeType === Node.TEXT_NODE || (node instanceof Element && !node.matches(blockLevelSelector));
+        if (!isInline) {
+            run = null;
+            continue;
+        }
+
+        if (!run) {
+            if (node.nodeType === Node.TEXT_NODE && !node.textContent?.trim()) {
+                continue;
+            }
+
+            run = surface.ownerDocument.createElement('p');
+            node.before(run);
+        }
+
+        run.appendChild(node);
+    }
+}
+
+// Cleans the live surface in place. Existing text nodes are moved, never recreated, so the caret survives.
+function cleanSurface(surface: HTMLElement, repairStructure: boolean): void {
+    const clean = (root: HTMLElement): void => {
+        sanitizeHtmlFragment(root);
+        if (repairStructure) {
+            normalizeEditorStructure(root);
+        }
+    };
+
+    const probe = inertDocument.importNode(surface, true) as HTMLElement;
+    clean(probe);
+    if (probe.innerHTML === surface.innerHTML) {
+        return;
+    }
+
+    const selection = window.getSelection?.();
+    const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+    const saved = range && surface.contains(range.commonAncestorContainer)
+        ? [toTextBoundary(range.startContainer, range.startOffset), toTextBoundary(range.endContainer, range.endOffset)]
+        : null;
+
+    clean(surface);
+    if (!saved || !selection) {
+        return;
+    }
+
+    const [start, end] = saved;
+    if (!surface.contains(start.node) || !surface.contains(end.node)) {
+        placeCaretAtEnd(surface);
+        return;
+    }
+
+    const restored = document.createRange();
+    restored.setStart(start.node, Math.min(start.offset, getNodeLength(start.node)));
+    restored.setEnd(end.node, Math.min(end.offset, getNodeLength(end.node)));
+    selection.removeAllRanges();
+    selection.addRange(restored);
+}
+
+function getNodeLength(node: Node): number {
+    return node.nodeType === Node.TEXT_NODE ? node.textContent?.length ?? 0 : node.childNodes.length;
+}
+
+// Element boundaries shift when siblings are unwrapped, so anchor them to an adjacent text node when one exists.
+function toTextBoundary(node: Node, offset: number): { node: Node; offset: number } {
+    if (node.nodeType !== Node.TEXT_NODE) {
+        const after = node.childNodes[offset];
+        if (after?.nodeType === Node.TEXT_NODE) {
+            return { node: after, offset: 0 };
+        }
+
+        const before = node.childNodes[offset - 1];
+        if (before?.nodeType === Node.TEXT_NODE) {
+            return { node: before, offset: before.textContent?.length ?? 0 };
+        }
+    }
+
+    return { node, offset };
 }
 
 function sanitizeEditorHtml(html: string): string {
@@ -950,6 +1094,8 @@ interface ImageToolState {
     imageApplyButton: HTMLButtonElement | null;
     imageCancelButton: HTMLButtonElement | null;
     imageTarget: HTMLImageElement | null;
+    // A chosen file waits here as a data URL until Insert is clicked; it is never shown in the URL field.
+    uploadedImageUrl: string;
     onImageFileChange?: (event: Event) => void;
     onImageApply?: (event: MouseEvent) => void;
     onImageCancel?: (event: MouseEvent) => void;
@@ -961,6 +1107,12 @@ interface TableToolState {
     tableApplyButton: HTMLButtonElement | null;
     tableCancelButton: HTMLButtonElement | null;
     tableTarget: HTMLTableElement | null;
+    tableGrid: HTMLElement | null;
+    tableSurface: HTMLElement | null;
+    tableContextCell: HTMLTableCellElement | null;
+    onTableGridEvent?: (event: Event) => void;
+    onTableContextTrigger?: (event: Event) => void;
+    onTableMenuClick?: (event: MouseEvent) => void;
     onTableApply?: (event: MouseEvent) => void;
     onTableCancel?: (event: MouseEvent) => void;
     onTableEditorKeyDown?: (event: KeyboardEvent) => void;
@@ -970,7 +1122,6 @@ interface TextColorToolState {
     textColorEditorInputs: HTMLInputElement[];
     textColorApplyButton: HTMLButtonElement | null;
     textColorCancelButton: HTMLButtonElement | null;
-    textColorTarget: HTMLSpanElement | null;
     onTextColorApply?: (event: MouseEvent) => void;
     onTextColorCancel?: (event: MouseEvent) => void;
     onTextColorEditorKeyDown?: (event: KeyboardEvent) => void;
@@ -1010,6 +1161,9 @@ interface AriaLabelToolState {
 const defaultIframeTitle = 'Embedded content';
 const defaultIframeWidth = '100%';
 const defaultIframeHeight = '315';
+// Embeds need scripts and their own origin. Same-origin sources are refused (see normalizeSafeUrl), because with both
+// flags a same-origin frame could remove its own sandbox.
+const iframeSandbox = 'allow-scripts allow-same-origin allow-popups allow-presentation';
 
 function getRoleInput(element: Maybe<ParentNode>, role: string): HTMLInputElement | null {
     return qs<HTMLInputElement>(element, `[data-role="${role}"]`);
@@ -1031,13 +1185,12 @@ function closeInlineTool<TState>(context: RichTextEditorToolContext<TState>, com
     }
 
     if (focusSurface) {
-        host.getSurface(element)?.focus();
+        host.getSurface(element)?.focus({ preventScroll: true });
     }
 }
 
 function getSelectionClosest<TElement extends Element>(surface: Maybe<HTMLElement>, selector: string, guard: (value: unknown) => value is TElement): TElement | null {
-    const selectionElement = getSelectionElement(surface);
-    const candidate = selectionElement?.closest?.(selector) ?? null;
+    const candidate = closestInSurface(surface, selector);
     return guard(candidate) ? candidate : null;
 }
 
@@ -1074,28 +1227,33 @@ function getImageHeightInput(element: Maybe<ParentNode>): HTMLInputElement | nul
 }
 
 function handleImageFileSelection(context: RichTextEditorToolContext<ImageToolState>, file: File | null): void {
-    const { element, host } = context;
+    const { element, toolState } = context;
+    toolState.uploadedImageUrl = '';
     if (!(file instanceof File) || !file.type.startsWith('image/')) {
         return;
     }
 
     const reader = new FileReader();
     reader.onload = () => {
-        const imageUrlInput = getImageUrlInput(element);
-        if (typeof reader.result === 'string' && imageUrlInput) {
-            imageUrlInput.value = reader.result;
-            const imageAltInput = getImageAltInput(element);
-            if (imageAltInput && !imageAltInput.value.trim()) {
-                imageAltInput.value = file.name.replace(/\.[^.]+$/, '');
-            }
+        // The read is async: the panel may have been closed, or the editor disabled, while it ran.
+        if (getToolEditor(element, 'image')?.hidden !== false || !isEditorEditable(element)) {
+            return;
+        }
 
-            void applyImageEditor(context)
-                .then((applied) => {
-                    if (applied) {
-                        host.syncValueFromSurface(element, true);
-                        host.updateToolbarState(element);
-                    }
-                });
+        if (typeof reader.result !== 'string') {
+            return;
+        }
+
+        // The file replaces any typed URL; a URL typed afterwards wins again (see applyImageEditor).
+        toolState.uploadedImageUrl = reader.result;
+        const imageUrlInput = getImageUrlInput(element);
+        if (imageUrlInput) {
+            imageUrlInput.value = '';
+        }
+
+        const imageAltInput = getImageAltInput(element);
+        if (imageAltInput && !imageAltInput.value.trim()) {
+            imageAltInput.value = file.name.replace(/\.[^.]+$/, '');
         }
     };
 
@@ -1200,9 +1358,20 @@ function unbindImageToolControls(context: RichTextEditorToolContext<ImageToolSta
     }
 }
 
+// Clearing a file input fires no change event; send one so NTFileUpload's chosen-file text resets too (via Blazor
+// when interactive, via the library module in static SSR). This also clears the staged upload.
+function clearImageFileInput(toolState: ImageToolState): void {
+    const input = toolState.imageFileInput;
+    if (input?.value) {
+        input.value = '';
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+}
+
 function closeImageEditor(context: RichTextEditorToolContext<ImageToolState>, options: InlineToolCloseOptions = {}): void {
     context.toolState.imageTarget = null;
-    context.toolState.imageFileInput && (context.toolState.imageFileInput.value = '');
+    clearImageFileInput(context.toolState);
+    context.toolState.uploadedImageUrl = '';
     closeInlineTool(context, 'image', options);
 }
 
@@ -1218,9 +1387,13 @@ function openImageEditor(context: RichTextEditorToolContext<ImageToolState>, { f
     const imageDetails = getImageDetails(existingImage);
     host.saveSelectionRange(surface, editorState);
     toolState.imageTarget = existingImage;
+    clearImageFileInput(toolState);
+    // An embedded (uploaded) image keeps its data URL out of the URL field; Insert keeps it unless a URL is typed.
+    const isEmbedded = imageDetails.src.startsWith('data:');
+    toolState.uploadedImageUrl = isEmbedded ? imageDetails.src : '';
     const imageUrlInput = getImageUrlInput(element);
     if (imageUrlInput) {
-        imageUrlInput.value = imageDetails.src;
+        imageUrlInput.value = isEmbedded ? '' : imageDetails.src;
     }
 
     const imageAltInput = getImageAltInput(element);
@@ -1243,10 +1416,6 @@ function openImageEditor(context: RichTextEditorToolContext<ImageToolState>, { f
         imageHeightInput.value = imageDetails.height;
     }
 
-    if (toolState.imageFileInput) {
-        toolState.imageFileInput.value = '';
-    }
-
     host.setToolPanelOpen(element, 'image', true);
     if (focusInput) {
         imageUrlInput?.focus();
@@ -1265,15 +1434,11 @@ async function applyImageEditor(context: RichTextEditorToolContext<ImageToolStat
         return false;
     }
 
-    const imageUrl = normalizeSafeUrl(getImageUrlInput(element)?.value ?? '', 'image');
+    const typedUrl = getImageUrlInput(element)?.value?.trim() ?? '';
+    const imageUrl = normalizeSafeUrl(typedUrl || toolState.uploadedImageUrl, 'image');
     if (!imageUrl) {
         getImageUrlInput(element)?.focus();
         return false;
-    }
-
-    const imageUrlInput = getImageUrlInput(element);
-    if (imageUrlInput) {
-        imageUrlInput.value = imageUrl;
     }
 
     const imageAlt = getImageAltInput(element)?.value?.trim?.() ?? '';
@@ -1303,70 +1468,152 @@ async function applyImageEditor(context: RichTextEditorToolContext<ImageToolStat
     return true;
 }
 
-function getTableEditorDetails(tableElement: Maybe<HTMLTableElement>): TableEditorDetails {
-    if (!(tableElement instanceof HTMLTableElement)) {
-        return {
-            columns: 3,
-            rows: 2,
-            borderColor: defaultTableBorderColor,
-            caption: ''
-        };
+function buildTableHtml(columns: number, rows: number): string {
+    const headerMarkup = Array.from({ length: columns }, (_, columnIndex) => `<th>${escapeHtml(`Header ${columnIndex + 1}`)}</th>`).join('');
+    const bodyMarkup = rows > 1 ? `<tbody>${`<tr>${'<td><br></td>'.repeat(columns)}</tr>`.repeat(rows - 1)}</tbody>` : '';
+    return `<table${buildTableStyleAttribute(defaultTableBorderColor)}><thead><tr>${headerMarkup}</tr></thead>${bodyMarkup}</table>`;
+}
+
+function getTableGridButtons(grid: Maybe<ParentNode>): HTMLButtonElement[] {
+    return toArray(grid?.querySelectorAll('button[data-col]')).filter(isHtmlButtonElement);
+}
+
+// Highlights the rectangle from the top-left cell to columns x rows and makes its last cell the roving tab stop.
+function highlightTableGrid(element: Maybe<ParentNode>, grid: Maybe<ParentNode>, columns: number, rows: number): void {
+    for (const button of getTableGridButtons(grid)) {
+        const column = Number(button.dataset.col);
+        const row = Number(button.dataset.row);
+        button.toggleAttribute('data-selected', column <= columns && row <= rows);
+        button.tabIndex = column === Math.max(columns, 1) && row === Math.max(rows, 1) ? 0 : -1;
     }
 
-    const rows = getTableRows(tableElement);
-    const headerCells = getTableCells(rows[0]);
-    const bodyRows = rows.slice(1)
-        .map((row) => getTableCells(row))
-        .filter((cells) => cells.length > 0);
-    return {
-        columns: Math.min(Math.max(headerCells.length || 3, 1), 8),
-        rows: Math.min(Math.max(bodyRows.length || 2, 1), 12),
-        borderColor: getTableBorderColor(tableElement) || defaultTableBorderColor,
-        caption: tableElement.querySelector(':scope > caption')?.textContent?.trim() ?? ''
-    };
+    const label = qs<HTMLElement>(element, '[data-role="table-grid-label"]');
+    if (label) {
+        label.textContent = columns && rows ? `${columns} × ${rows}` : 'Insert table';
+    }
 }
 
-function getExistingTableContent(tableElement: Maybe<HTMLTableElement>): ExistingTableContent {
-    if (!(tableElement instanceof HTMLTableElement)) {
-        return {
-            caption: '',
-            headers: [],
-            rows: []
-        };
+function insertTable(context: RichTextEditorToolContext<TableToolState>, columns: number, rows: number): void {
+    const { element, editorState, host } = context;
+    const surface = host.getSurface(element);
+    if (!surface) {
+        return;
     }
 
-    const rows = getTableRows(tableElement);
-    const headerCells = getTableCells(rows[0]);
-    const bodyRows = rows.slice(1)
-        .map((row) => getTableCells(row))
-        .filter((cells) => cells.length > 0);
-    return {
-        caption: tableElement.querySelector(':scope > caption')?.innerHTML?.trim() ?? '',
-        headers: headerCells.map((cell) => cell.innerHTML.trim()),
-        rows: bodyRows.map((cells) => cells.map((cell) => cell.innerHTML.trim()))
-    };
+    host.restoreSelectionRange(surface, editorState);
+    document.execCommand('insertHTML', false, `${buildTableHtml(columns, rows)}<p><br></p>`);
+    closeTableEditor(context, { focusSurface: true });
+    host.syncValueFromSurface(element, true);
+    host.updateToolbarState(element);
 }
 
-function getTableCellMarkup(content: string | undefined, fallbackText: string, tagName: 'th' | 'td'): string {
-    const normalizedContent = `${content ?? ''}`.trim();
-    return normalizedContent.length > 0 ? `<${tagName}>${normalizedContent}</${tagName}>` : `<${tagName}>${escapeHtml(fallbackText)}</${tagName}>`;
+function handleTableGridEvent(context: RichTextEditorToolContext<TableToolState>, event: Event): void {
+    const { element, host, toolState } = context;
+    const button = event.target instanceof Element ? event.target.closest<HTMLButtonElement>('button[data-col]') : null;
+    if (!button) {
+        return;
+    }
+
+    const column = Number(button.dataset.col);
+    const row = Number(button.dataset.row);
+    if (event.type === 'click') {
+        event.preventDefault();
+        insertTable(context, column, row);
+    } else if (event.type === 'keydown') {
+        const key = (event as KeyboardEvent).key;
+        if (key === 'Escape') {
+            event.preventDefault();
+            closeTableEditor(context, { focusSurface: true });
+            host.updateToolbarState(element);
+            return;
+        }
+
+        const columnOffset = key === 'ArrowRight' ? 1 : key === 'ArrowLeft' ? -1 : 0;
+        const rowOffset = key === 'ArrowDown' ? 1 : key === 'ArrowUp' ? -1 : 0;
+        if (columnOffset || rowOffset) {
+            event.preventDefault();
+            toolState.tableGrid?.querySelector<HTMLButtonElement>(`button[data-col="${column + columnOffset}"][data-row="${row + rowOffset}"]`)?.focus();
+        }
+    } else {
+        highlightTableGrid(element, toolState.tableGrid, column, row);
+    }
 }
 
-function clampTableColumns(value: number): number {
-    return Math.min(Math.max(value, 1), 8);
+function createTableCell(tagName: 'th' | 'td'): HTMLTableCellElement {
+    const cell = document.createElement(tagName);
+    cell.append(document.createElement('br'));
+    return cell;
 }
 
-function clampTableRows(value: number): number {
-    return Math.min(Math.max(value, 1), 12);
+function isHeaderTableRow(row: HTMLTableRowElement): boolean {
+    const cells = getTableCells(row);
+    return row.parentElement?.tagName === 'THEAD' || (cells.length > 0 && cells.every((cell) => cell.tagName === 'TH'));
 }
 
-function buildTableHtml({ columns, rows, borderColor, caption = '', existingContent = null }: TableHtmlOptions): string {
-    const normalizedBorderColor = normalizeTableBorderColor(borderColor) || defaultTableBorderColor;
-    const captionContent = `${caption || existingContent?.caption || ''}`.trim();
-    const captionMarkup = captionContent ? `<caption>${escapeHtml(captionContent)}</caption>` : '';
-    const headerMarkup = Array.from({ length: columns }, (_, columnIndex) => getTableCellMarkup(existingContent?.headers?.[columnIndex], `Header ${columnIndex + 1}`, 'th')).join('');
-    const bodyMarkup = Array.from({ length: rows }, (_, rowIndex) => `<tr>${Array.from({ length: columns }, (_, columnIndex) => getTableCellMarkup(existingContent?.rows?.[rowIndex]?.[columnIndex], `Cell ${rowIndex + 1}-${columnIndex + 1}`, 'td')).join('')}</tr>`).join('');
-    return `<table${buildTableStyleAttribute(normalizedBorderColor)}>${captionMarkup}<thead><tr>${headerMarkup}</tr></thead><tbody>${bodyMarkup}</tbody></table>`;
+// Edits the live table around a cell and returns the cell that should receive the caret (null when the table is gone).
+function applyTableAction(cell: HTMLTableCellElement, action: string): HTMLTableCellElement | null {
+    const row = cell.parentElement;
+    const table = cell.closest('table');
+    if (!(row instanceof HTMLTableRowElement) || !table) {
+        return null;
+    }
+
+    const rows = toArray(table.rows);
+    const rowIndex = rows.indexOf(row);
+    const columnIndex = getTableCells(row).indexOf(cell);
+    if (action === 'row-above' || action === 'row-below') {
+        // New rows are always body rows: inserting next to the header starts the body instead of adding a second header.
+        const newRow = document.createElement('tr');
+        getTableCells(row).forEach(() => newRow.append(createTableCell('td')));
+        if (row.parentElement instanceof HTMLTableSectionElement && row.parentElement.tagName === 'THEAD') {
+            (table.tBodies[0] ?? table.appendChild(document.createElement('tbody'))).prepend(newRow);
+        } else {
+            row.insertAdjacentElement(action === 'row-above' ? 'beforebegin' : 'afterend', newRow);
+        }
+
+        return getTableCells(newRow)[columnIndex] ?? cell;
+    }
+
+    if (action === 'column-left' || action === 'column-right') {
+        const insertIndex = action === 'column-left' ? columnIndex : columnIndex + 1;
+        let focusCell = cell;
+        for (const tableRow of rows) {
+            const newCell = createTableCell(isHeaderTableRow(tableRow) ? 'th' : 'td');
+            const beforeCell = getTableCells(tableRow)[insertIndex];
+            if (beforeCell) {
+                tableRow.insertBefore(newCell, beforeCell);
+            } else {
+                tableRow.append(newCell);
+            }
+
+            if (tableRow === row) {
+                focusCell = newCell;
+            }
+        }
+
+        return focusCell;
+    }
+
+    if (action === 'delete-row' && rows.length > 1) {
+        const neighborCells = getTableCells(rows[rowIndex + 1] ?? rows[rowIndex - 1]);
+        const section = row.parentElement;
+        row.remove();
+        if (section && section !== table && !section.children.length) {
+            section.remove();
+        }
+
+        return neighborCells[columnIndex] ?? neighborCells[0] ?? null;
+    }
+
+    if (action === 'delete-column' && rows.some((tableRow) => getTableCells(tableRow).length > 1)) {
+        rows.forEach((tableRow) => getTableCells(tableRow)[columnIndex]?.remove());
+        const remainingCells = getTableCells(row);
+        return remainingCells[Math.min(columnIndex, remainingCells.length - 1)] ?? null;
+    }
+
+    // Delete table, and deleting the last remaining row or column.
+    table.remove();
+    return null;
 }
 
 function initializeTableToolStateHandlers(context: RichTextEditorToolContext<TableToolState>): void {
@@ -1405,15 +1652,62 @@ function initializeTableToolStateHandlers(context: RichTextEditorToolContext<Tab
             }
         }
     };
+
+    toolState.onTableGridEvent = (event: Event) => handleTableGridEvent(context, event);
+
+    // Remember which cell the context menu was opened on (right-click or the keyboard menu keys).
+    toolState.onTableContextTrigger = (event: Event) => {
+        const surface = host.getSurface(element);
+        if (event.type === 'keydown') {
+            const keyEvent = event as KeyboardEvent;
+            if (keyEvent.key !== 'ContextMenu' && !(keyEvent.shiftKey && keyEvent.key === 'F10')) {
+                return;
+            }
+        }
+
+        const candidate = event.type === 'contextmenu'
+            ? (event.target instanceof Element ? event.target.closest('td, th') : null)
+            : getSelectionClosest(surface, 'td, th', isTableCellElement);
+        toolState.tableContextCell = isTableCellElement(candidate) && surface?.contains(candidate) ? candidate : null;
+    };
+
+    toolState.onTableMenuClick = (event: MouseEvent) => {
+        const item = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-table-action]') : null;
+        const cell = toolState.tableContextCell;
+        const surface = host.getSurface(element);
+        if (!item || !surface || !cell || !surface.contains(cell) || !isEditorEditable(element)) {
+            return;
+        }
+
+        toolState.tableContextCell = null;
+        const caretCell = applyTableAction(cell, item.dataset.tableAction ?? '');
+        if (caretCell) {
+            surface.focus({ preventScroll: true });
+            const range = document.createRange();
+            range.selectNodeContents(caretCell);
+            range.collapse(true);
+            window.getSelection?.()?.removeAllRanges();
+            window.getSelection?.()?.addRange(range);
+        } else {
+            placeCaretAtEnd(surface);
+        }
+
+        host.syncValueFromSurface(element, true);
+        host.updateToolbarState(element);
+    };
 }
 
+const tableGridEventTypes = ['click', 'mouseover', 'focusin', 'keydown'];
+
 function bindTableToolControls(context: RichTextEditorToolContext<TableToolState>): void {
-    const { element, toolState } = context;
+    const { element, host, toolState } = context;
     initializeTableToolStateHandlers(context);
     unbindTableToolControls(context);
     toolState.tableApplyButton = getRoleButton(element, 'table-apply');
     toolState.tableCancelButton = getRoleButton(element, 'table-cancel');
-    toolState.tableEditorInputs = [getRoleInput(element, 'table-columns'), getRoleInput(element, 'table-rows'), getRoleInput(element, 'table-border-color'), getRoleInput(element, 'table-caption')].filter(isHtmlInputElement);
+    toolState.tableEditorInputs = [getRoleInput(element, 'table-border-color'), getRoleInput(element, 'table-caption')].filter(isHtmlInputElement);
+    toolState.tableGrid = qs<HTMLElement>(element, '[data-role="table-grid"]');
+    toolState.tableSurface = host.getSurface(element);
     if (toolState.onTableApply) {
         toolState.tableApplyButton?.addEventListener('click', toolState.onTableApply);
     }
@@ -1427,10 +1721,23 @@ function bindTableToolControls(context: RichTextEditorToolContext<TableToolState
             input.addEventListener('keydown', toolState.onTableEditorKeyDown);
         }
     }
+
+    if (toolState.onTableGridEvent) {
+        tableGridEventTypes.forEach((type) => toolState.tableGrid?.addEventListener(type, toolState.onTableGridEvent!));
+    }
+
+    if (toolState.onTableContextTrigger) {
+        toolState.tableSurface?.addEventListener('contextmenu', toolState.onTableContextTrigger);
+        toolState.tableSurface?.addEventListener('keydown', toolState.onTableContextTrigger);
+    }
+
+    if (toolState.onTableMenuClick) {
+        element.addEventListener('click', toolState.onTableMenuClick);
+    }
 }
 
 function unbindTableToolControls(context: RichTextEditorToolContext<TableToolState>): void {
-    const { toolState } = context;
+    const { element, toolState } = context;
     if (toolState.onTableApply) {
         toolState.tableApplyButton?.removeEventListener('click', toolState.onTableApply);
     }
@@ -1444,6 +1751,19 @@ function unbindTableToolControls(context: RichTextEditorToolContext<TableToolSta
             input.removeEventListener('keydown', toolState.onTableEditorKeyDown);
         }
     }
+
+    if (toolState.onTableGridEvent) {
+        tableGridEventTypes.forEach((type) => toolState.tableGrid?.removeEventListener(type, toolState.onTableGridEvent!));
+    }
+
+    if (toolState.onTableContextTrigger) {
+        toolState.tableSurface?.removeEventListener('contextmenu', toolState.onTableContextTrigger);
+        toolState.tableSurface?.removeEventListener('keydown', toolState.onTableContextTrigger);
+    }
+
+    if (toolState.onTableMenuClick) {
+        element.removeEventListener('click', toolState.onTableMenuClick);
+    }
 }
 
 function closeTableEditor(context: RichTextEditorToolContext<TableToolState>, options: InlineToolCloseOptions = {}): void {
@@ -1451,6 +1771,7 @@ function closeTableEditor(context: RichTextEditorToolContext<TableToolState>, op
     closeInlineTool(context, 'table', options);
 }
 
+// Inserting shows the size grid; editing an existing table shows its border color and caption.
 function openTableEditor(context: RichTextEditorToolContext<TableToolState>, { focusInput = true, selectInputText = true }: { focusInput?: boolean; selectInputText?: boolean } = {}): boolean {
     const { element, editorState, host, toolState } = context;
     const surface = host.getSurface(element);
@@ -1460,77 +1781,60 @@ function openTableEditor(context: RichTextEditorToolContext<TableToolState>, { f
 
     host.closeOtherTools(element, editorState, 'table');
     const existingTable = getSelectionClosest(surface, 'table', (value): value is HTMLTableElement => value instanceof HTMLTableElement);
-    const tableDetails = getTableEditorDetails(existingTable);
     host.saveSelectionRange(surface, editorState);
     toolState.tableTarget = existingTable;
-    const columnsInput = getRoleInput(element, 'table-columns');
-    const rowsInput = getRoleInput(element, 'table-rows');
+    const insertPanel = qs<HTMLElement>(element, '[data-role="table-insert"]');
+    const editPanel = qs<HTMLElement>(element, '[data-role="table-edit"]');
+    if (insertPanel) {
+        insertPanel.hidden = existingTable !== null;
+    }
+
+    if (editPanel) {
+        editPanel.hidden = existingTable === null;
+    }
+
     const borderColorInput = getRoleInput(element, 'table-border-color');
-    if (columnsInput) {
-        columnsInput.value = `${tableDetails.columns}`;
-    }
-
-    if (rowsInput) {
-        rowsInput.value = `${tableDetails.rows}`;
-    }
-
-    if (borderColorInput) {
-        borderColorInput.value = tableDetails.borderColor;
-    }
-
     const captionInput = getRoleInput(element, 'table-caption');
-    if (captionInput) {
-        captionInput.value = tableDetails.caption;
+    if (borderColorInput) {
+        borderColorInput.value = getTableBorderColor(existingTable) || defaultTableBorderColor;
     }
 
+    if (captionInput) {
+        captionInput.value = existingTable?.querySelector(':scope > caption')?.textContent?.trim() ?? '';
+    }
+
+    highlightTableGrid(element, toolState.tableGrid, 0, 0);
     host.setToolPanelOpen(element, 'table', true);
     if (focusInput) {
-        columnsInput?.focus();
-        if (selectInputText) {
-            columnsInput?.select();
+        const focusTarget = existingTable ? captionInput : getTableGridButtons(toolState.tableGrid)[0];
+        focusTarget?.focus();
+        if (existingTable && selectInputText) {
+            captionInput?.select();
         }
     }
 
     return false;
 }
 
+// Applies border color and caption to the existing table in place so cell content and attributes are never rebuilt.
 function applyTableEditor(context: RichTextEditorToolContext<TableToolState>): boolean {
-    const { element, editorState, host, toolState } = context;
+    const { element, host, toolState } = context;
     const surface = host.getSurface(element);
-    if (!surface) {
+    const table = toolState.tableTarget;
+    if (!surface || !(table instanceof HTMLTableElement) || !surface.contains(table)) {
         return false;
     }
 
-    const requestedColumns = Number.parseInt(getRoleInput(element, 'table-columns')?.value ?? '', 10);
-    const requestedRows = Number.parseInt(getRoleInput(element, 'table-rows')?.value ?? '', 10);
-    if (Number.isNaN(requestedColumns)) {
-        getRoleInput(element, 'table-columns')?.focus();
-        return false;
-    }
-
-    if (Number.isNaN(requestedRows)) {
-        getRoleInput(element, 'table-rows')?.focus();
-        return false;
-    }
-
-    const columns = clampTableColumns(requestedColumns);
-    const rows = clampTableRows(requestedRows);
     const borderColor = normalizeTableBorderColor(getRoleInput(element, 'table-border-color')?.value ?? '') || defaultTableBorderColor;
-    const caption = getRoleInput(element, 'table-caption')?.value?.trim?.() ?? '';
-    const tableTarget = toolState.tableTarget;
-    if (tableTarget instanceof HTMLTableElement && surface.contains(tableTarget)) {
-        const template = document.createElement('template');
-        template.innerHTML = buildTableHtml({ columns, rows, borderColor, caption, existingContent: getExistingTableContent(tableTarget) });
-        const replacementTable = template.content.querySelector('table');
-        if (!(replacementTable instanceof HTMLTableElement)) {
-            return false;
-        }
-
-        tableTarget.replaceWith(replacementTable);
-        toolState.tableTarget = replacementTable;
+    const captionText = getRoleInput(element, 'table-caption')?.value?.trim?.() ?? '';
+    table.setAttribute('data-border-color', borderColor);
+    table.style.setProperty('--nt-rich-text-table-border-color', borderColor);
+    let caption = table.querySelector(':scope > caption');
+    if (!captionText) {
+        caption?.remove();
     } else {
-        host.restoreSelectionRange(surface, editorState);
-        document.execCommand('insertHTML', false, `${buildTableHtml({ columns, rows, borderColor, caption })}<p><br></p>`);
+        caption ??= table.insertBefore(document.createElement('caption'), table.firstChild);
+        caption.textContent = captionText;
     }
 
     closeTableEditor(context, { focusSurface: true });
@@ -1539,70 +1843,6 @@ function applyTableEditor(context: RichTextEditorToolContext<TableToolState>): b
 
 function unwrapElement(element: Element): void {
     element.replaceWith(...Array.from(element.childNodes));
-}
-
-function mergeAdjacentColorSiblings(span: HTMLSpanElement, color: string): HTMLSpanElement {
-    let current = span;
-    let previous = current.previousSibling;
-    while (previous instanceof HTMLSpanElement && normalizeTextColorValue(getElementTextColor(previous)) === color) {
-        const source = previous;
-        previous = source.previousSibling;
-        current.prepend(...Array.from(source.childNodes));
-        source.remove();
-    }
-
-    let next = current.nextSibling;
-    while (next instanceof HTMLSpanElement && normalizeTextColorValue(getElementTextColor(next)) === color) {
-        const source = next;
-        next = source.nextSibling;
-        current.append(...Array.from(source.childNodes));
-        source.remove();
-    }
-
-    current.normalize();
-    return current;
-}
-
-function normalizeTextColorSpan(span: HTMLSpanElement): HTMLSpanElement {
-    const color = normalizeTextColorValue(getElementTextColor(span));
-    if (!color) {
-        return span;
-    }
-
-    span.style.color = color;
-    for (const descendant of Array.from(span.querySelectorAll('span[style*="color"]'))) {
-        if (descendant instanceof HTMLSpanElement && normalizeTextColorValue(getElementTextColor(descendant)) === color) {
-            unwrapElement(descendant);
-        }
-    }
-
-    const parent = span.parentElement;
-    if (parent instanceof HTMLSpanElement && normalizeTextColorValue(getElementTextColor(parent)) === color) {
-        for (const childNode of Array.from(span.childNodes)) {
-            parent.insertBefore(childNode, span);
-        }
-
-        span.remove();
-        return mergeAdjacentColorSiblings(parent, color);
-    }
-
-    return mergeAdjacentColorSiblings(span, color);
-}
-
-function applyTextColorRange(range: Range, color: string): void {
-    const selectedContent = range.extractContents();
-    const wrapper = document.createElement('span');
-    wrapper.style.color = color;
-    wrapper.appendChild(selectedContent);
-    range.insertNode(wrapper);
-    const normalizedWrapper = normalizeTextColorSpan(wrapper);
-    const selection = window.getSelection?.();
-    if (selection) {
-        const updatedRange = document.createRange();
-        updatedRange.selectNodeContents(normalizedWrapper);
-        selection.removeAllRanges();
-        selection.addRange(updatedRange);
-    }
 }
 
 function initializeTextColorToolStateHandlers(context: RichTextEditorToolContext<TextColorToolState>): void {
@@ -1683,23 +1923,23 @@ function unbindTextColorToolControls(context: RichTextEditorToolContext<TextColo
 }
 
 function closeTextColorEditor(context: RichTextEditorToolContext<TextColorToolState>, options: InlineToolCloseOptions = {}): void {
-    context.toolState.textColorTarget = null;
     closeInlineTool(context, 'textColor', options);
 }
 
 function openTextColorEditor(context: RichTextEditorToolContext<TextColorToolState>, { focusInput = true, selectInputText = true }: { focusInput?: boolean; selectInputText?: boolean } = {}): boolean {
-    const { element, editorState, host, toolState } = context;
+    const { element, editorState, host } = context;
     const surface = host.getSurface(element);
     if (!surface) {
         return false;
     }
 
     host.closeOtherTools(element, editorState, 'textColor');
-    const selectionElement = host.getSelectionElement(surface);
-    const existingSpanCandidate = selectionElement?.closest?.('span[style*="color"]') ?? null;
-    const existingSpan = isHtmlSpanElement(existingSpanCandidate) ? existingSpanCandidate : null;
+    const existingSpan = closestInSurface(surface, 'span[style*="color"]');
     host.saveSelectionRange(surface, editorState);
-    toolState.textColorTarget = existingSpan;
+    if (existingSpan && editorState.selectionRange?.collapsed) {
+        // A caret in colored text (e.g. after clicking it) recolors that whole span; the live caret is left alone.
+        editorState.selectionRange.selectNodeContents(existingSpan);
+    }
     const textColorInput = getRoleInput(element, 'text-color-value');
     if (textColorInput) {
         textColorInput.value = normalizeTextColorValue(getElementTextColor(existingSpan)) || defaultTextColor;
@@ -1717,29 +1957,25 @@ function openTextColorEditor(context: RichTextEditorToolContext<TextColorToolSta
 }
 
 function applyTextColorEditor(context: RichTextEditorToolContext<TextColorToolState>): boolean {
-    const { element, editorState, host, toolState } = context;
+    const { element, editorState, host } = context;
     const surface = host.getSurface(element);
     if (!surface) {
         return false;
     }
 
     const color = normalizeTextColorValue(getRoleInput(element, 'text-color-value')?.value ?? '') || defaultTextColor;
-    const textColorTarget = toolState.textColorTarget;
-    if (textColorTarget instanceof HTMLSpanElement && surface.contains(textColorTarget)) {
-        textColorTarget.style.color = color;
-        normalizeTextColorSpan(textColorTarget);
-    } else {
-        host.restoreSelectionRange(surface, editorState);
-        const selection = window.getSelection?.();
-        const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
-        if (!range || range.collapsed || !surface.contains(range.commonAncestorContainer)) {
-            getRoleInput(element, 'text-color-value')?.focus();
-            return false;
-        }
-
-        applyTextColorRange(range, color);
+    host.restoreSelectionRange(surface, editorState);
+    const range = window.getSelection?.()?.rangeCount ? window.getSelection()!.getRangeAt(0) : null;
+    if (!range || range.collapsed || !surface.contains(range.commonAncestorContainer)) {
+        getRoleInput(element, 'text-color-value')?.focus();
+        return false;
     }
 
+    // The native command splits partial spans, recolors nested ones, stays inside each block, and joins the undo
+    // stack. styleWithCSS makes it write <span style="color"> instead of <font>.
+    document.execCommand('styleWithCSS', false, 'true');
+    document.execCommand('foreColor', false, color);
+    document.execCommand('styleWithCSS', false, 'false');
     closeTextColorEditor(context, { focusSurface: true });
     return true;
 }
@@ -1844,7 +2080,8 @@ function openLinkEditor(context: RichTextEditorToolContext<LinkToolState>, { foc
     const linkTitle = existingLink?.getAttribute('title') ?? '';
     host.saveSelectionRange(surface, editorState);
     toolState.linkTarget = existingLink;
-    toolState.linkSelectedText = selectedText;
+    // The prefilled text, so apply can tell whether the user edited it.
+    toolState.linkSelectedText = linkText;
     const linkUrlInput = getRoleInput(element, 'link-url');
     const linkTextInput = getRoleInput(element, 'link-text');
     if (linkUrlInput) {
@@ -1883,50 +2120,53 @@ function applyLinkEditor(context: RichTextEditorToolContext<LinkToolState>): boo
         return false;
     }
 
-    const linkUrl = normalizeSafeUrl(getRoleInput(element, 'link-url')?.value ?? '', 'link');
+    const linkTarget = toolState.linkTarget instanceof HTMLAnchorElement && surface.contains(toolState.linkTarget) ? toolState.linkTarget : null;
+    const rawUrl = getRoleInput(element, 'link-url')?.value?.trim() ?? '';
+    if (!rawUrl && linkTarget) {
+        // Clearing the URL of an existing link removes the link and keeps its text.
+        unwrapElement(linkTarget);
+        closeLinkEditor(context, { focusSurface: true });
+        return true;
+    }
+
+    const linkUrl = normalizeSafeUrl(rawUrl, 'link');
     if (!linkUrl) {
         getRoleInput(element, 'link-url')?.focus();
         return false;
     }
 
-    const linkTextInput = getRoleInput(element, 'link-text')?.value?.trim?.() ?? '';
-    const linkText = linkTextInput || toolState.linkSelectedText || linkUrl;
+    const linkText = getRoleInput(element, 'link-text')?.value?.trim?.() ?? '';
+    // Rewriting textContent flattens formatting inside the link, so only do it when the user changed the text.
+    const isTextChanged = linkText !== '' && linkText !== toolState.linkSelectedText;
     const linkAriaLabel = getRoleInput(element, 'link-aria-label')?.value?.trim?.() ?? '';
     const linkTitle = getRoleInput(element, 'link-title')?.value?.trim?.() ?? '';
-    const linkTarget = toolState.linkTarget;
-    if (linkTarget instanceof HTMLAnchorElement && surface.contains(linkTarget)) {
-        linkTarget.setAttribute('href', linkUrl);
-        linkAriaLabel ? linkTarget.setAttribute('aria-label', linkAriaLabel) : linkTarget.removeAttribute('aria-label');
-        linkTitle ? linkTarget.setAttribute('title', linkTitle) : linkTarget.removeAttribute('title');
-        linkTarget.textContent = linkText;
+    let anchor = linkTarget;
+    if (anchor) {
+        anchor.setAttribute('href', linkUrl);
+        if (isTextChanged) {
+            anchor.textContent = linkText;
+        }
     } else {
         host.restoreSelectionRange(surface, editorState);
-        const selection = window.getSelection?.();
-        const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+        const range = window.getSelection?.()?.rangeCount ? window.getSelection()!.getRangeAt(0) : null;
         if (!range || !surface.contains(range.commonAncestorContainer)) {
             getRoleInput(element, 'link-url')?.focus();
             return false;
         }
 
-        const anchor = document.createElement('a');
-        anchor.setAttribute('href', linkUrl);
-        if (linkAriaLabel) {
-            anchor.setAttribute('aria-label', linkAriaLabel);
+        // Native commands keep the selection's formatting and land on the undo stack.
+        if (!range.collapsed && !isTextChanged) {
+            document.execCommand('createLink', false, linkUrl);
+        } else {
+            document.execCommand('insertHTML', false, `<a href="${escapeHtml(linkUrl)}">${escapeHtml(linkText || toolState.linkSelectedText || linkUrl)}</a>`);
         }
 
-        if (linkTitle) {
-            anchor.setAttribute('title', linkTitle);
-        }
+        anchor = getSelectionClosest(surface, 'a', isHtmlAnchorElement);
+    }
 
-        anchor.textContent = linkText;
-        range.deleteContents();
-        range.insertNode(anchor);
-        if (selection) {
-            const updatedRange = document.createRange();
-            updatedRange.selectNodeContents(anchor);
-            selection.removeAllRanges();
-            selection.addRange(updatedRange);
-        }
+    if (anchor) {
+        linkAriaLabel ? anchor.setAttribute('aria-label', linkAriaLabel) : anchor.removeAttribute('aria-label');
+        linkTitle ? anchor.setAttribute('title', linkTitle) : anchor.removeAttribute('title');
     }
 
     closeLinkEditor(context, { focusSurface: true });
@@ -1944,7 +2184,8 @@ function buildIframeHtml(url: string, title: string, width: string, height: stri
         return '';
     }
 
-    return `<iframe src="${escapeHtml(normalizedUrl)}" title="${escapeHtml(title)}" width="${escapeHtml(width)}" height="${escapeHtml(height)}" loading="lazy"></iframe>`;
+    // Sandbox flags apply when a frame navigates, so the attribute must be in the inserted markup, not added later.
+    return `<iframe src="${escapeHtml(normalizedUrl)}" title="${escapeHtml(title)}" width="${escapeHtml(width)}" height="${escapeHtml(height)}" loading="lazy" sandbox="${iframeSandbox}"></iframe>`;
 }
 
 function initializeIframeToolStateHandlers(context: RichTextEditorToolContext<IframeToolState>): void {
@@ -2085,10 +2326,13 @@ function applyIframeEditor(context: RichTextEditorToolContext<IframeToolState>):
     }
 
     const iframeTitle = normalizeIframeField(getRoleInput(element, 'iframe-title')?.value, defaultIframeTitle);
-    const iframeWidth = normalizeIframeField(getRoleInput(element, 'iframe-width')?.value, defaultIframeWidth);
-    const iframeHeight = normalizeIframeField(getRoleInput(element, 'iframe-height')?.value, defaultIframeHeight);
+    // Match the sanitizer: plain pixel numbers (or a width percentage), so "500px" is kept rather than reset on save.
+    const iframeWidth = sanitizeDimensionAttribute(`${getRoleInput(element, 'iframe-width')?.value ?? ''}`.replace(/px$/i, ''), true) || defaultIframeWidth;
+    const iframeHeight = sanitizeDimensionAttribute(`${getRoleInput(element, 'iframe-height')?.value ?? ''}`.replace(/px$/i, '')) || defaultIframeHeight;
     const iframeTarget = toolState.iframeTarget;
     if (iframeTarget instanceof HTMLIFrameElement && surface.contains(iframeTarget)) {
+        // Before src, so the navigation it starts is sandboxed.
+        iframeTarget.setAttribute('sandbox', iframeSandbox);
         iframeTarget.setAttribute('src', iframeUrl);
         iframeTarget.setAttribute('title', iframeTitle);
         iframeTarget.setAttribute('width', iframeWidth);
@@ -2114,7 +2358,7 @@ function closeAriaLabelEditor(context: RichTextEditorToolContext<AriaLabelToolSt
     closeInlineTool(context, 'ariaLabel', options);
 }
 
-function openAriaLabelEditor(context: RichTextEditorToolContext<AriaLabelToolState>): boolean {
+function openAriaLabelEditor(context: RichTextEditorToolContext<AriaLabelToolState>, { focusInput = true }: { focusInput?: boolean } = {}): boolean {
     const { element, editorState: state, host, toolState } = context;
     const surface = host.getSurface(element);
     if (!surface) {
@@ -2136,7 +2380,10 @@ function openAriaLabelEditor(context: RichTextEditorToolContext<AriaLabelToolSta
     }
 
     host.setToolPanelOpen(element, 'ariaLabel', true);
-    toolState.input?.focus();
+    if (focusInput) {
+        toolState.input?.focus();
+    }
+
     return false;
 }
 
@@ -2144,13 +2391,15 @@ function applyAriaLabelEditor(context: RichTextEditorToolContext<AriaLabelToolSt
     const { element, editorState: state, host, toolState } = context;
     const surface = host.getSurface(element);
     const label = toolState.input?.value.trim() ?? '';
-    if (!surface || !label) {
+    const target = surface && toolState.target && surface.contains(toolState.target) ? toolState.target : null;
+    if (!label && target) {
+        // Clearing the label removes the group and keeps its text.
+        unwrapElement(target);
+    } else if (!surface || !label) {
         toolState.input?.focus();
         return false;
-    }
-
-    if (toolState.target && surface.contains(toolState.target)) {
-        toolState.target.setAttribute('aria-label', label);
+    } else if (target) {
+        target.setAttribute('aria-label', label);
     } else {
         host.restoreSelectionRange(surface, state);
         const selection = window.getSelection?.();
@@ -2214,6 +2463,62 @@ function unbindAriaLabelTool({ toolState }: RichTextEditorToolContext<AriaLabelT
     }
 }
 
+// The element whose click opened each tool's panel, keyed by that editor's tool state.
+const clickedPanelTargets = new WeakMap<object, Element>();
+
+// Panels open from their toolbar button or a click on an element they edit. They close once focus is back in the text,
+// unless the selection is still on the clicked element; nothing reopens a panel without a new click.
+function syncPanelTool<TState>(context: RichTextEditorToolContext<TState>, command: string, selector: string, close: (context: RichTextEditorToolContext<TState>, options: InlineToolCloseOptions) => void): void {
+    const { element, host, toolState } = context;
+    const activeTarget = closestInSurface(host.getSurface(element), selector);
+    host.setToolbarButtonPressed(element, command, Boolean(activeTarget));
+    // Closing an already closed panel would still clear the selection that another open panel saved.
+    if (host.getToolPanel(element, command)?.hidden !== false) {
+        return;
+    }
+
+    const focusedToolCommand = host.getFocusedToolCommand(element);
+    const isInspectingClickedTarget = activeTarget !== null && clickedPanelTargets.get(toolState as object) === activeTarget;
+    if (focusedToolCommand !== command && !isInspectingClickedTarget) {
+        clickedPanelTargets.delete(toolState as object);
+        close(context, { preserveSelection: Boolean(focusedToolCommand) });
+    }
+}
+
+// Opens the settings of the innermost clicked element a tool edits (a link inside a table opens the link tool).
+function openToolForClickedElement(element: HTMLElement, state: EditorState, surface: HTMLElement, event: MouseEvent): void {
+    // An iframe takes its own clicks, so while editable it ignores pointer events (see SCSS) and is hit-tested here.
+    const clickedFrame = toArray(surface.querySelectorAll('iframe')).find((frame) => {
+        const rect = frame.getBoundingClientRect();
+        return event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
+    });
+    const clicked = clickedFrame ?? (event.target instanceof Element ? event.target : null);
+    if (!clicked || !surface.contains(clicked) || clicked === surface) {
+        return;
+    }
+
+    if (clicked instanceof HTMLImageElement || clicked instanceof HTMLIFrameElement) {
+        // Browsers do not select media on click; select it so the tool edits this element.
+        const range = document.createRange();
+        range.selectNode(clicked);
+        window.getSelection?.()?.removeAllRanges();
+        window.getSelection?.()?.addRange(range);
+    }
+
+    for (let node: Element | null = clicked; node && node !== surface; node = node.parentElement) {
+        for (const command of state.toolCommands) {
+            const tool = getRichTextEditorTool(command);
+            if (tool?.targetSelector && tool.openForTarget && node.matches(tool.targetSelector)) {
+                const context = createRichTextEditorToolContext(element, state, toolHost, tool);
+                tool.openForTarget(context);
+                clickedPanelTargets.set(context.toolState as object, node);
+                updateToolbarState(element);
+                return;
+            }
+        }
+    }
+}
+
 registerRichTextEditorTool<AriaLabelToolState>({
     command: 'ariaLabel',
     createState: () => ({ input: null, applyButton: null, cancelButton: null, target: null }),
@@ -2224,17 +2529,16 @@ registerRichTextEditorTool<AriaLabelToolState>({
         setDisabled(toolState.applyButton, disabled);
         setDisabled(toolState.cancelButton, disabled);
     },
-    execute: openAriaLabelEditor,
+    execute: (context) => openAriaLabelEditor(context),
     close: closeAriaLabelEditor,
-    syncState: ({ element, host }) => {
-        const target = getSelectionClosest(host.getSurface(element), 'span[role="group"][aria-label]', isHtmlSpanElement);
-        host.setToolbarButtonPressed(element, 'ariaLabel', Boolean(target));
-    }
+    targetSelector: 'span[role="group"][aria-label]',
+    openForTarget: (context) => { openAriaLabelEditor(context, { focusInput: false }); },
+    syncState: (context) => syncPanelTool(context, 'ariaLabel', 'span[role="group"][aria-label]', closeAriaLabelEditor)
 });
 
 registerRichTextEditorTool<ImageToolState>({
     command: 'image',
-    createState: () => ({ imageEditorInputs: [], imageFileInput: null, imageApplyButton: null, imageCancelButton: null, imageTarget: null }),
+    createState: () => ({ imageEditorInputs: [], imageFileInput: null, imageApplyButton: null, imageCancelButton: null, imageTarget: null, uploadedImageUrl: '' }),
     bind: bindImageToolControls,
     unbind: unbindImageToolControls,
     setDisabled: ({ toolState }, disabled) => {
@@ -2245,59 +2549,32 @@ registerRichTextEditorTool<ImageToolState>({
     },
     execute: (context) => openImageEditor(context),
     close: closeImageEditor,
-    syncState: (context) => {
-        const { element, host } = context;
-        const surface = host.getSurface(element);
-        const existingImage = getSelectionClosest(surface, 'img', isHtmlImageElement) instanceof HTMLImageElement;
-        const focusedToolCommand = host.getFocusedToolCommand(element);
-        host.setToolbarButtonPressed(element, 'image', existingImage);
-        if (focusedToolCommand === 'image') {
-            return;
-        }
-
-        if (focusedToolCommand || !existingImage) {
-            closeImageEditor(context, { preserveSelection: Boolean(focusedToolCommand) });
-            return;
-        }
-
-        openImageEditor(context, { focusInput: false, selectInputText: false });
-    }
+    targetSelector: 'img',
+    openForTarget: (context) => { openImageEditor(context, { focusInput: false }); },
+    syncState: (context) => syncPanelTool(context, 'image', 'img', closeImageEditor)
 });
 
 registerRichTextEditorTool<TableToolState>({
     command: 'table',
-    createState: () => ({ tableEditorInputs: [], tableApplyButton: null, tableCancelButton: null, tableTarget: null }),
+    createState: () => ({ tableEditorInputs: [], tableApplyButton: null, tableCancelButton: null, tableTarget: null, tableGrid: null, tableSurface: null, tableContextCell: null }),
     bind: bindTableToolControls,
     unbind: unbindTableToolControls,
     setDisabled: ({ toolState }, disabled) => {
         toolState.tableEditorInputs.forEach((input) => setDisabled(input, disabled));
+        getTableGridButtons(toolState.tableGrid).forEach((button) => setDisabled(button, disabled));
         setDisabled(toolState.tableApplyButton, disabled);
         setDisabled(toolState.tableCancelButton, disabled);
     },
     execute: (context) => openTableEditor(context),
     close: closeTableEditor,
-    syncState: (context) => {
-        const { element, host } = context;
-        const surface = host.getSurface(element);
-        const existingTable = getSelectionClosest(surface, 'table', (value): value is HTMLTableElement => value instanceof HTMLTableElement) instanceof HTMLTableElement;
-        const focusedToolCommand = host.getFocusedToolCommand(element);
-        host.setToolbarButtonPressed(element, 'table', existingTable);
-        if (focusedToolCommand === 'table') {
-            return;
-        }
-
-        if (focusedToolCommand || !existingTable) {
-            closeTableEditor(context, { preserveSelection: Boolean(focusedToolCommand) });
-            return;
-        }
-
-        openTableEditor(context, { focusInput: false, selectInputText: false });
-    }
+    targetSelector: 'table',
+    openForTarget: (context) => { openTableEditor(context, { focusInput: false }); },
+    syncState: (context) => syncPanelTool(context, 'table', 'table', closeTableEditor)
 });
 
 registerRichTextEditorTool<TextColorToolState>({
     command: 'textColor',
-    createState: () => ({ textColorEditorInputs: [], textColorApplyButton: null, textColorCancelButton: null, textColorTarget: null }),
+    createState: () => ({ textColorEditorInputs: [], textColorApplyButton: null, textColorCancelButton: null }),
     bind: bindTextColorToolControls,
     unbind: unbindTextColorToolControls,
     setDisabled: ({ toolState }, disabled) => {
@@ -2307,24 +2584,9 @@ registerRichTextEditorTool<TextColorToolState>({
     },
     execute: (context) => openTextColorEditor(context),
     close: closeTextColorEditor,
-    syncState: (context) => {
-        const { element, host } = context;
-        const surface = host.getSurface(element);
-        const selectionElement = host.getSelectionElement(surface);
-        const existingColor = selectionElement?.closest?.('span[style*="color"]') instanceof HTMLSpanElement;
-        const focusedToolCommand = host.getFocusedToolCommand(element);
-        host.setToolbarButtonPressed(element, 'textColor', existingColor);
-        if (focusedToolCommand === 'textColor') {
-            return;
-        }
-
-        if (focusedToolCommand || !existingColor) {
-            closeTextColorEditor(context, { preserveSelection: Boolean(focusedToolCommand) });
-            return;
-        }
-
-        openTextColorEditor(context, { focusInput: false, selectInputText: false });
-    }
+    targetSelector: 'span[style*="color"]',
+    openForTarget: (context) => { openTextColorEditor(context, { focusInput: false }); },
+    syncState: (context) => syncPanelTool(context, 'textColor', 'span[style*="color"]', closeTextColorEditor)
 });
 
 registerRichTextEditorTool<LinkToolState>({
@@ -2339,23 +2601,9 @@ registerRichTextEditorTool<LinkToolState>({
     },
     execute: (context) => openLinkEditor(context),
     close: closeLinkEditor,
-    syncState: (context) => {
-        const { element, host } = context;
-        const surface = host.getSurface(element);
-        const existingLink = getSelectionClosest(surface, 'a', isHtmlAnchorElement) instanceof HTMLAnchorElement;
-        const focusedToolCommand = host.getFocusedToolCommand(element);
-        host.setToolbarButtonPressed(element, 'link', existingLink);
-        if (focusedToolCommand === 'link') {
-            return;
-        }
-
-        if (focusedToolCommand || !existingLink) {
-            closeLinkEditor(context, { preserveSelection: Boolean(focusedToolCommand) });
-            return;
-        }
-
-        openLinkEditor(context, { focusInput: false, selectInputText: false });
-    }
+    targetSelector: 'a',
+    openForTarget: (context) => { openLinkEditor(context, { focusInput: false }); },
+    syncState: (context) => syncPanelTool(context, 'link', 'a', closeLinkEditor)
 });
 
 registerRichTextEditorTool<IframeToolState>({
@@ -2370,35 +2618,12 @@ registerRichTextEditorTool<IframeToolState>({
     },
     execute: (context) => openIframeEditor(context),
     close: closeIframeEditor,
-    syncState: (context) => {
-        const { element, host } = context;
-        const surface = host.getSurface(element);
-        const existingIframe = getSelectionClosest(surface, 'iframe', isHtmlIFrameElement) instanceof HTMLIFrameElement;
-        const focusedToolCommand = host.getFocusedToolCommand(element);
-        host.setToolbarButtonPressed(element, 'iframe', existingIframe);
-        if (focusedToolCommand === 'iframe') {
-            return;
-        }
-
-        if (focusedToolCommand || !existingIframe) {
-            closeIframeEditor(context, { preserveSelection: Boolean(focusedToolCommand) });
-            return;
-        }
-
-        openIframeEditor(context, { focusInput: false, selectInputText: false });
-    }
+    targetSelector: 'iframe',
+    openForTarget: (context) => { openIframeEditor(context, { focusInput: false }); },
+    syncState: (context) => syncPanelTool(context, 'iframe', 'iframe', closeIframeEditor)
 });
 
 setRichTextEditorToolRegistryChangedCallback(initializeAllEditors);
-
-function normalizeTableCells<T>(cells: T[], targetCount: number, filler?: T): T[] {
-    const normalized = cells.slice(0, targetCount);
-    while (normalized.length < targetCount) {
-        normalized.push(filler ?? ('' as T));
-    }
-
-    return normalized;
-}
 
 function getTableBorderColor(tableElement: Maybe<HTMLTableElement>): string {
     if (!(tableElement instanceof HTMLTableElement)) {
@@ -2460,8 +2685,13 @@ function getTableRows(tableElement: HTMLTableElement): HTMLTableRowElement[] {
     return rows;
 }
 
-function surfaceToValue(_element: HTMLElement, surface: HTMLElement): string {
-    return flattenEditorHtml(surface.innerHTML);
+// Browsers leave <p><br></p> behind when everything is deleted; that is still an empty editor.
+function isSurfaceEmpty(surface: HTMLElement): boolean {
+    return !surface.textContent?.trim() && !surface.querySelector('img, iframe, table');
+}
+
+function surfaceToValue(surface: HTMLElement): string {
+    return isSurfaceEmpty(surface) ? '' : flattenEditorHtml(surface.innerHTML);
 }
 
 // The value span belongs to Blazor: replacing its text node here would hide every later render from this script.
@@ -2477,23 +2707,7 @@ function updateEmptyState(surface: Maybe<HTMLElement>): void {
         return;
     }
 
-    const hasContent = Boolean(surface.textContent?.trim().length)
-        || Boolean(surface.querySelector('strong, b, em, i, u, br, p, div, ul, ol, li, blockquote, pre, table, img, iframe'));
-    surface.dataset.empty = hasContent ? 'false' : 'true';
-}
-
-function updateLength(element: HTMLElement, value: string): void {
-    const lengthElement = getLengthElement(element);
-    if (!lengthElement) {
-        return;
-    }
-
-    const maxLength = getSurface(element)?.dataset.maxlength;
-    if (!maxLength) {
-        return;
-    }
-
-    lengthElement.textContent = `${value.length}/${maxLength}`;
+    surface.dataset.empty = isSurfaceEmpty(surface) ? 'true' : 'false';
 }
 
 function applyHtmlToSurface(element: HTMLElement, html: string): void {
@@ -2506,7 +2720,6 @@ function applyHtmlToSurface(element: HTMLElement, html: string): void {
     const sanitizedHtml = flattenEditorHtml(html);
     surface.innerHTML = sanitizedHtml;
     updateEmptyState(surface);
-    updateLength(element, sanitizedHtml);
     updateSourceValue(element, sanitizedHtml);
     if (state) {
         state.lastValue = sanitizedHtml;
@@ -2514,10 +2727,6 @@ function applyHtmlToSurface(element: HTMLElement, html: string): void {
     }
 
     updateToolbarState(element);
-}
-
-function applySourceToSurface(element: HTMLElement, value: string): void {
-    applyHtmlToSurface(element, value);
 }
 
 function scheduleSyncValueFromSurface(element: HTMLElement, notifyDotNet: boolean): void {
@@ -2540,25 +2749,18 @@ function syncValueFromSurface(element: HTMLElement, notifyDotNet: boolean): void
         return;
     }
 
-    const sanitizedHtml = sanitizeEditorHtml(surface.innerHTML);
-    if (sanitizedHtml !== surface.innerHTML) {
-        surface.innerHTML = sanitizedHtml;
-    }
-
-    const html = flattenEditorHtml(sanitizedHtml);
-
-    const value = html;
-    const didValueChange = value !== state.lastValue || html !== state.lastHtml;
+    cleanSurface(surface, true);
+    const value = surfaceToValue(surface);
+    const didValueChange = value !== state.lastValue || value !== state.lastHtml;
     state.lastValue = value;
-    state.lastHtml = html;
+    state.lastHtml = value;
     updateEmptyState(surface);
-    updateLength(element, value);
     updateSourceValue(element, value);
     updateToolbarState(element);
 
     state.hasUncommittedEdit ||= didValueChange;
     if (notifyDotNet && didValueChange) {
-        sendValue(state, 'UpdateValueFromJs', value, html);
+        sendValue(state, 'UpdateValueFromJs', value);
     }
 }
 
@@ -2578,35 +2780,41 @@ function commitValue(element: HTMLElement): void {
     if (state.sourceMode) {
         const source = getHtmlSource(element);
         if (source) {
-            surface.innerHTML = flattenEditorHtml(source.value);
+            surface.innerHTML = readHtmlSource(source, state);
         }
     }
 
     clearPendingSync(state);
-    const sanitizedHtml = sanitizeEditorHtml(surface.innerHTML);
-    if (sanitizedHtml !== surface.innerHTML) {
-        surface.innerHTML = sanitizedHtml;
-    }
-
-    const html = flattenEditorHtml(sanitizedHtml);
+    // Only repair structure the user just produced; merely focusing and leaving must not rewrite a loaded value.
+    cleanSurface(surface, state.hasUncommittedEdit);
+    const value = surfaceToValue(surface);
+    // lastHtml is what the surface held at the last render or sync, so a tool that edits the DOM without input still counts.
+    const isEdited = state.hasUncommittedEdit || value !== state.lastHtml;
     if (state.sourceMode) {
         const source = getHtmlSource(element);
         if (source) {
-            source.value = formatHtmlSource(html);
+            writeHtmlSource(source, state, value);
             updateHtmlSourceView(source);
         }
     }
 
-    const value = html;
     state.lastValue = value;
-    state.lastHtml = html;
+    state.lastHtml = value;
     state.hasUncommittedEdit = false;
     updateEmptyState(surface);
-    updateLength(element, value);
     updateSourceValue(element, value);
     updateToolbarState(element);
 
-    sendValue(state, 'CommitValueFromJs', value, html);
+    if (isEdited) {
+        sendValue(state, 'CommitValueFromJs', value);
+        return;
+    }
+
+    // An unedited blur still reaches .NET for touch validation and OnBlurCallback, without the value.
+    const dotNetRef = state.dotNetRef;
+    if (dotNetRef) {
+        new Promise<unknown>(resolve => resolve(dotNetRef.invokeMethodAsync('BlurFromJs'))).catch(() => { });
+    }
 }
 
 function updateToolbarState(element: HTMLElement): void {
@@ -2791,7 +2999,7 @@ function restoreSelectionRange(surface: HTMLElement, state: Maybe<RichTextEditor
         return;
     }
 
-    surface.focus();
+    surface.focus({ preventScroll: true });
 
     const selection = window.getSelection?.();
     if (!selection) {
@@ -2800,6 +3008,97 @@ function restoreSelectionRange(surface: HTMLElement, state: Maybe<RichTextEditor
 
     selection.removeAllRanges();
     selection.addRange(selectionRange);
+}
+
+// Open panels float in the top layer next to what they edit, so opening one never pushes the document down.
+const floatingPanelAnchors = new Map<HTMLElement, Element | Range>();
+let floatingPanelFrame: number | null = null;
+
+function repositionFloatingPanels(): void {
+    floatingPanelFrame ??= window.requestAnimationFrame(() => {
+        floatingPanelFrame = null;
+        floatingPanelAnchors.forEach((anchor, panel) => {
+            if (panel.isConnected) {
+                placeFloatingPanel(panel, anchor);
+            } else {
+                floatingPanelAnchors.delete(panel);
+            }
+        });
+
+        // A panel still open when its editor was disposed is pruned above; detach once none remain.
+        if (!floatingPanelAnchors.size) {
+            window.removeEventListener('scroll', repositionFloatingPanels, true);
+            window.removeEventListener('resize', repositionFloatingPanels);
+        }
+    });
+}
+
+function setToolPanelFloating(element: HTMLElement, command: string, panel: HTMLElement, isOpen: boolean): void {
+    // Without popover support (older browsers, jsdom) the panel simply stays in the document flow.
+    if (typeof panel.showPopover !== 'function') {
+        return;
+    }
+
+    const isShown = panel.matches(':popover-open');
+    if (!isOpen) {
+        if (isShown) {
+            panel.hidePopover();
+        }
+
+        floatingPanelAnchors.delete(panel);
+        if (!floatingPanelAnchors.size) {
+            window.removeEventListener('scroll', repositionFloatingPanels, true);
+            window.removeEventListener('resize', repositionFloatingPanels);
+        }
+
+        return;
+    }
+
+    if (!isShown) {
+        panel.showPopover();
+    }
+
+    if (!floatingPanelAnchors.size) {
+        window.addEventListener('scroll', repositionFloatingPanels, { capture: true, passive: true });
+        window.addEventListener('resize', repositionFloatingPanels, { passive: true });
+    }
+
+    const anchor = getFloatingPanelAnchor(element, command);
+    floatingPanelAnchors.set(panel, anchor);
+    placeFloatingPanel(panel, anchor);
+}
+
+// The element the tool edits (clicked image, table, link...), else the selection, else the tool's toolbar button.
+function getFloatingPanelAnchor(element: HTMLElement, command: string): Element | Range {
+    const surface = getSurface(element);
+    const selector = getRichTextEditorTool(command)?.targetSelector;
+    const target = selector ? closestInSurface(surface, selector) : null;
+    if (target) {
+        return target;
+    }
+
+    const selection = window.getSelection?.();
+    const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+    if (range && surface?.contains(range.commonAncestorContainer) && range.getBoundingClientRect().height > 0) {
+        return range.cloneRange();
+    }
+
+    return getCurrentBlockElement(surface) ?? toolHost.getToolbarButton(element, command) ?? element;
+}
+
+// Below the anchor when it fits (or fits better than above), aligned to its start, kept inside the viewport.
+function placeFloatingPanel(panel: HTMLElement, anchor: Element | Range): void {
+    const edge = 8;
+    const gap = 6;
+    const anchorRect = anchor.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    const viewportWidth = document.documentElement.clientWidth;
+    const viewportHeight = window.innerHeight;
+    const spaceBelow = viewportHeight - anchorRect.bottom - gap - edge;
+    const spaceAbove = anchorRect.top - gap - edge;
+    const top = panelRect.height <= spaceBelow || spaceBelow >= spaceAbove ? anchorRect.bottom + gap : anchorRect.top - gap - panelRect.height;
+    panel.style.top = `${Math.round(Math.min(Math.max(top, edge), Math.max(edge, viewportHeight - panelRect.height - edge)))}px`;
+    panel.style.left = `${Math.round(Math.min(Math.max(anchorRect.left, edge), Math.max(edge, viewportWidth - panelRect.width - edge)))}px`;
 }
 
 const toolHost: RichTextEditorToolHost = {
@@ -2830,6 +3129,7 @@ const toolHost: RichTextEditorToolHost = {
 
         panel.hidden = !isOpen;
         panel.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+        setToolPanelFloating(element, command, panel, isOpen);
     },
     setToolbarButtonPressed: (element: HTMLElement, command: string, isPressed: boolean, value?: string) => {
         const button = toolHost.getToolbarButton(element, command, value);
@@ -2860,13 +3160,14 @@ function executeEditorCommand(element: HTMLElement, command: string | undefined,
         return false;
     }
 
-    surface.focus();
-    let didChange = true;
+    // Every surface refocus uses preventScroll: the caret is already in view, and a plain focus() scrolls the page to
+    // the editor's top whenever that top is above the viewport.
+    surface.focus({ preventScroll: true });
     const tool = state ? getRichTextEditorTool(command) : null;
     if (tool && state) {
+        // Panel tools return false from execute: opening a panel changes nothing yet.
         const toolContext = createRichTextEditorToolContext(element, state, toolHost, tool);
-        didChange = tool.execute?.(toolContext, value) ?? false;
-        if (!didChange) {
+        if (!tool.execute?.(toolContext, value)) {
             updateToolbarState(element);
             return false;
         }
@@ -2882,9 +3183,11 @@ function executeEditorCommand(element: HTMLElement, command: string | undefined,
         case 'redo':
             document.execCommand('redo', false);
             break;
-        case 'heading':
-            document.execCommand('formatBlock', false, `H${value ?? '1'}`);
+        case 'heading': {
+            const headingTag = `H${value ?? '1'}`;
+            document.execCommand('formatBlock', false, closestInSurface(surface, headingTag.toLowerCase()) ? 'P' : headingTag);
             break;
+        }
         case 'paragraph':
             document.execCommand('formatBlock', false, 'P');
             break;
@@ -2901,10 +3204,8 @@ function executeEditorCommand(element: HTMLElement, command: string | undefined,
             document.execCommand('justifyFull', false);
             break;
         case 'unorderedList':
-            document.execCommand('insertUnorderedList', false);
-            break;
         case 'orderedList':
-            document.execCommand('insertOrderedList', false);
+            keepCaretTextOffset(surface, () => document.execCommand(command === 'unorderedList' ? 'insertUnorderedList' : 'insertOrderedList', false));
             break;
         case 'blockquote':
             if (hasAncestorTag(surface, 'blockquote')) {
@@ -2913,26 +3214,73 @@ function executeEditorCommand(element: HTMLElement, command: string | undefined,
                 document.execCommand('formatBlock', false, 'BLOCKQUOTE');
             }
             break;
-        case 'codeBlock':
-            if (hasAncestorTag(surface, 'pre')) {
-                document.execCommand('formatBlock', false, 'P');
+        case 'codeBlock': {
+            const codeBlock = closestInSurface(surface, 'pre');
+            if (codeBlock) {
+                // formatBlock only converts the line holding the caret and leaves the rest of the block inside <pre>.
+                replaceCodeBlockWithParagraphs(codeBlock);
             } else {
                 document.execCommand('formatBlock', false, 'PRE');
             }
             break;
+        }
         default:
             document.execCommand(command, false);
             break;
     }
 
-    if (!didChange) {
-        updateToolbarState(element);
-        return false;
+    syncValueFromSurface(element, true);
+    return true;
+}
+
+// Chromium moves a collapsed caret to the start of the item when it turns a paragraph into a list, so the next
+// Enter splits the item instead of adding one. Put the caret back at the same text offset within its block.
+function keepCaretTextOffset(surface: HTMLElement, command: () => void): void {
+    const selection = window.getSelection?.();
+    const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+    const block = range?.collapsed ? closestInSurface(surface, blockSelector) : null;
+    if (!selection || !range || !block) {
+        command();
+        return;
     }
 
-    syncValueFromSurface(element, true);
-    updateToolbarState(element);
-    return true;
+    const prefix = document.createRange();
+    prefix.setStart(block, 0);
+    prefix.setEnd(range.startContainer, range.startOffset);
+    let remaining = prefix.toString().length;
+    command();
+
+    const newBlock = closestInSurface(surface, blockSelector);
+    const walker = newBlock ? document.createTreeWalker(newBlock, NodeFilter.SHOW_TEXT) : null;
+    while (walker?.nextNode()) {
+        const length = walker.currentNode.textContent?.length ?? 0;
+        if (remaining <= length) {
+            const caret = document.createRange();
+            caret.setStart(walker.currentNode, remaining);
+            caret.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(caret);
+            return;
+        }
+
+        remaining -= length;
+    }
+}
+
+function replaceCodeBlockWithParagraphs(codeBlock: Element): void {
+    const lines = ((codeBlock as HTMLElement).innerText ?? codeBlock.textContent ?? '').replace(/\n$/, '').split('\n');
+    const paragraphs = lines.map((line) => {
+        const paragraph = document.createElement('p');
+        paragraph.append(line || document.createElement('br'));
+        return paragraph;
+    });
+
+    codeBlock.replaceWith(...paragraphs);
+    const caret = document.createRange();
+    caret.selectNodeContents(paragraphs[paragraphs.length - 1]);
+    caret.collapse(false);
+    window.getSelection?.()?.removeAllRanges();
+    window.getSelection?.()?.addRange(caret);
 }
 
 function handleToolbarCommand(event: MouseEvent): void {
@@ -2968,10 +3316,12 @@ function eventMatchesShortcut(event: KeyboardEvent, shortcutExpression: string):
     const requiresShift = shortcutParts.includes('Shift');
     const hasPrimaryModifier = event.ctrlKey || event.metaKey;
 
+    // Alt and Shift change event.key on AZERTY and macOS layouts, so letters and digits also match their physical key.
+    const physicalKey = /^[a-z]$/.test(keyPart) ? `Key${keyPart.toUpperCase()}` : /^\d$/.test(keyPart) ? `Digit${keyPart}` : '';
     return hasPrimaryModifier === requiresPrimaryModifier
         && event.altKey === requiresAlt
         && event.shiftKey === requiresShift
-        && event.key.toLowerCase() === keyPart;
+        && (event.key?.toLowerCase() === keyPart || (physicalKey !== '' && event.code === physicalKey));
 }
 
 function tryHandleShortcut(element: HTMLElement, event: KeyboardEvent): boolean {
@@ -3012,13 +3362,42 @@ function handleEditorKeyDown(element: HTMLElement, event: KeyboardEvent): void {
         return;
     }
 
-    if (event.key === 'Tab' && hasAncestorTag(surface, 'li')) {
-        event.preventDefault();
-        document.execCommand(event.shiftKey ? 'outdent' : 'indent', false);
-        const shouldNotify = element.dataset.bindOnInput === 'true';
-        syncValueFromSurface(element, shouldNotify);
-        updateToolbarState(element);
+    if (event.key !== 'Tab') {
+        return;
     }
+
+    const cell = closestInSurface(surface, 'td, th');
+    if (cell) {
+        moveToAdjacentTableCell(cell, event);
+        return;
+    }
+
+    const listItem = closestInSurface(surface, 'li');
+    const outerList = listItem?.parentElement?.parentElement?.closest('ul, ol, li') ?? null;
+    // Shift+Tab on a top-level item would unwrap the list; let focus leave the editor instead.
+    if (!listItem || (event.shiftKey && !surface.contains(outerList))) {
+        return;
+    }
+
+    event.preventDefault();
+    document.execCommand(event.shiftKey ? 'outdent' : 'indent', false);
+    syncValueFromSurface(element, element.dataset.bindOnInput === 'true');
+}
+
+// Tab walks the cells of one table; past either end it leaves the table like any other Tab.
+function moveToAdjacentTableCell(cell: Element, event: KeyboardEvent): void {
+    const table = cell.closest('table');
+    const cells = toArray(table?.querySelectorAll('th, td')).filter((candidate) => candidate.closest('table') === table);
+    const target = cells[cells.indexOf(cell) + (event.shiftKey ? -1 : 1)];
+    if (!target) {
+        return;
+    }
+
+    event.preventDefault();
+    const range = document.createRange();
+    range.selectNodeContents(target);
+    window.getSelection?.()?.removeAllRanges();
+    window.getSelection?.()?.addRange(range);
 }
 
 function bindRegisteredToolControls(element: HTMLElement, state: EditorState): void {
@@ -3070,6 +3449,7 @@ function ensureState(element: Maybe<HTMLElement>, dotNetRef: DotNetEditorRef | n
         renderedValue: '',
         sentValueCount: 0,
         sourceMode: false,
+        sourceEmbeddedData: [],
         onInput: () => {
             state.hasUncommittedEdit = true;
             const shouldNotify = element.dataset.bindOnInput === 'true';
@@ -3087,10 +3467,9 @@ function ensureState(element: Maybe<HTMLElement>, dotNetRef: DotNetEditorRef | n
             }
 
             updateHtmlSourceView(source);
-            const html = flattenEditorHtml(source.value);
+            const html = readHtmlSource(source, state);
             surface.innerHTML = html;
             updateEmptyState(surface);
-            updateLength(element, html);
             const hiddenInput = getHiddenInput(element);
             if (hiddenInput) {
                 hiddenInput.value = html;
@@ -3102,7 +3481,7 @@ function ensureState(element: Maybe<HTMLElement>, dotNetRef: DotNetEditorRef | n
                     state.lastValue = html;
                     state.lastHtml = html;
                     updateSourceValue(element, html);
-                    sendValue(state, 'UpdateValueFromJs', html, html);
+                    sendValue(state, 'UpdateValueFromJs', html);
                 }
             }
         },
@@ -3119,6 +3498,8 @@ function ensureState(element: Maybe<HTMLElement>, dotNetRef: DotNetEditorRef | n
             }
         },
         onFocus: () => {
+            // Enter after a heading or quote otherwise creates <div>. Firefox only accepts this while an editor is focused.
+            document.execCommand('defaultParagraphSeparator', false, 'p');
             if (isAwaitingDotNet(element)) {
                 prerenderFocusedEditorIndex = getEditorIndex(element);
             }
@@ -3148,8 +3529,22 @@ function ensureState(element: Maybe<HTMLElement>, dotNetRef: DotNetEditorRef | n
         onMouseUp: () => {
             updateToolbarState(element);
         },
+        onClick: (event: MouseEvent) => {
+            if (isEditorEditable(element) && !state.sourceMode) {
+                openToolForClickedElement(element, state, surface, event);
+            }
+        },
         onKeyDown: (event: KeyboardEvent) => {
             handleEditorKeyDown(element, event);
+        },
+        onPanelKeyDown: (event: KeyboardEvent) => {
+            // Input handlers close their own panel; this covers focus on a panel's buttons.
+            const command = event.target instanceof Element ? event.target.closest('[data-tool-command]')?.getAttribute('data-tool-command') : null;
+            const tool = command ? getRichTextEditorTool(command) : null;
+            if (event.key === 'Escape' && !event.defaultPrevented && tool) {
+                event.preventDefault();
+                tool.close?.(createRichTextEditorToolContext(element, state, toolHost, tool), { focusSurface: true });
+            }
         },
         onToolbarMouseDown: (event: MouseEvent) => {
             event.preventDefault();
@@ -3160,12 +3555,14 @@ function ensureState(element: Maybe<HTMLElement>, dotNetRef: DotNetEditorRef | n
     surface.addEventListener('focus', state.onFocus);
     surface.addEventListener('keyup', state.onKeyUp);
     surface.addEventListener('mouseup', state.onMouseUp);
+    surface.addEventListener('click', state.onClick);
     surface.addEventListener('keydown', state.onKeyDown);
     getHtmlSource(element)?.addEventListener('input', state.onSourceInput);
     getHtmlSource(element)?.addEventListener('scroll', state.onSourceScroll);
     window.addEventListener('resize', state.onWindowResize);
     element.addEventListener('focusin', state.onFocusIn);
     element.addEventListener('focusout', state.onFocusOut);
+    element.addEventListener('keydown', state.onPanelKeyDown);
 
     state.toolCommands = collectToolCommands(element, state.toolbarButtons);
     bindToolbarButtons(element, state);
@@ -3195,17 +3592,16 @@ function synchronizeElement(element: Maybe<HTMLElement>, dotNetRef: DotNetEditor
     // Typed text wins until it is committed, and a render that has not seen everything sent to .NET carries older text.
     const isStaleRender = Number(element.dataset.receivedValueCount ?? 0) < state.sentValueCount;
     if (state.requiresInitialRender || (didRenderNewValue && !state.hasUncommittedEdit && !isStaleRender && value !== state.lastValue)) {
-        applySourceToSurface(element, value);
+        applyHtmlToSurface(element, value);
         if (state.sourceMode) {
             const source = getHtmlSource(element);
             if (source) {
-                source.value = formatHtmlSource(value);
+                writeHtmlSource(source, state, value);
                 updateHtmlSourceView(source);
             }
         }
         state.requiresInitialRender = false;
     } else {
-        updateLength(element, state.lastValue);
         updateEmptyState(getSurface(element));
         if (!state.sourceMode) {
             updateSourceValue(element, state.lastValue);
@@ -3246,16 +3642,14 @@ function synchronizeElement(element: Maybe<HTMLElement>, dotNetRef: DotNetEditor
         closeOtherTools(element, state);
     }
 
-    const sanitizedHtml = surface ? sanitizeEditorHtml(surface.innerHTML) : '';
-    if (surface && sanitizedHtml !== surface.innerHTML) {
-        surface.innerHTML = sanitizedHtml;
+    if (surface) {
+        cleanSurface(surface, false);
     }
 
-    const currentHtml = flattenEditorHtml(sanitizedHtml);
-
+    const currentHtml = surface ? surfaceToValue(surface) : '';
     if (currentHtml !== state.lastHtml) {
         state.lastHtml = currentHtml;
-        invokeDotNetVoid(state.dotNetRef, 'UpdateMarkupValueFromJs', currentHtml);
+        sendValue(state, 'UpdateMarkupValueFromJs', currentHtml);
     }
     updateToolbarState(element);
 }
@@ -3375,6 +3769,7 @@ export function onDispose(element: Maybe<HTMLElement>): void {
         surface.removeEventListener('focus', state.onFocus);
         surface.removeEventListener('keyup', state.onKeyUp);
         surface.removeEventListener('mouseup', state.onMouseUp);
+        surface.removeEventListener('click', state.onClick);
         surface.removeEventListener('keydown', state.onKeyDown);
     }
 
@@ -3387,6 +3782,7 @@ export function onDispose(element: Maybe<HTMLElement>): void {
     if (state) {
         editorElement.removeEventListener('focusin', state.onFocusIn);
         editorElement.removeEventListener('focusout', state.onFocusOut);
+        editorElement.removeEventListener('keydown', state.onPanelKeyDown);
     }
 
     unbindToolbarButtons(state?.toolbarButtons ?? getToolbarButtons(editorElement), state);
@@ -3422,12 +3818,11 @@ export const __testHooks = {
     getSurface,
     getSourceValueElement,
     getHiddenInput,
-    getLengthElement,
     getToolbarButtons,
     isEditorEditable,
     setActiveEditor,
     clearActiveEditor,
-    invokeDotNetVoid,
+    sendValue,
     extractUrlScheme,
     normalizeSafeUrl,
     unbindToolbarButtons,
@@ -3454,17 +3849,20 @@ export const __testHooks = {
     buildImageHtml,
     renderHtmlImage,
     getImageDetails,
-    normalizeTableCells,
+    buildTableHtml,
+    applyTableAction,
+    highlightTableGrid,
     getTableBorderColor,
     normalizeAlignment,
     getElementAlignment,
     getTableRows,
     surfaceToValue,
+    isSurfaceEmpty,
+    cleanSurface,
+    normalizeEditorStructure,
     updateSourceValue,
     updateEmptyState,
-    updateLength,
     applyHtmlToSurface,
-    applySourceToSurface,
     scheduleSyncValueFromSurface,
     syncValueFromSurface,
     commitValue,

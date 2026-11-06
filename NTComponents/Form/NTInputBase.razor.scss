@@ -83,12 +83,16 @@ $nt-input-textarea-filled-label-space-dense: 14px;
     }
 }
 
+// Textarea rules are anchored to the field's own parts with child combinators: a textarea-like field (the rich text
+// editor) holds other fields in its tool panels, and descendant selectors would collapse those nested fields too.
+$nt-textarea-field: '> .nt-input-container-overflow > .nt-input-container > .nt-input-field';
+
 @mixin nt-input-textarea-adornment-offset($offset) {
-    .nt-input-leading,
-    .nt-input-trailing,
-    .nt-input-error-icon,
-    .nt-input-prefix,
-    .nt-input-suffix {
+    #{$nt-textarea-field} > .nt-input-leading,
+    #{$nt-textarea-field} > .nt-input-trailing,
+    #{$nt-textarea-field} > .nt-input-error-icon,
+    #{$nt-textarea-field} > .nt-input-prefix,
+    #{$nt-textarea-field} > .nt-input-suffix {
         align-self: flex-start;
         margin-block-start: $offset;
     }
@@ -487,28 +491,26 @@ $nt-input-textarea-filled-label-space-dense: 14px;
     }
 
     &.nt-textarea {
-        .nt-input-container-overflow,
-        .nt-input-container,
-        .nt-input-field,
-        .nt-input-control-container {
+        > .nt-input-container-overflow,
+        > .nt-input-container-overflow > .nt-input-container,
+        #{$nt-textarea-field},
+        #{$nt-textarea-field} > .nt-input-control-container {
             height: auto;
             max-height: none;
             min-height: 0;
         }
 
-        .nt-input-container,
-        .nt-input-control-container {
+        > .nt-input-container-overflow > .nt-input-container,
+        #{$nt-textarea-field} > .nt-input-control-container {
             align-items: stretch;
         }
 
-        .nt-input-field {
+        #{$nt-textarea-field} {
             align-items: flex-start;
         }
 
-        .nt-input-control-container {
-            tnt-page-script {
-                display: none;
-            }
+        #{$nt-textarea-field} > .nt-input-control-container > tnt-page-script {
+            display: none;
         }
 
         @include nt-input-textarea-adornment-offset($nt-input-textarea-content-offset-standard);

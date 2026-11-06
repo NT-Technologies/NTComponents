@@ -1,5 +1,8 @@
+@use 'sass:map';
 @use '../Form/NTInputBase.razor';
+@use '../Styles/_Variables/_colors.scss' as colors;
 @use '../Styles/_Variables/_corner-radius.scss' as corners;
+@use '../Styles/_Variables/_elevation.scss' as elevation;
 @use '../Styles/_Variables/_motion.scss' as motion;
 @use '../Styles/_Variables/_scrollbar.scss' as scrollbar;
 @use '../Styles/_Variables/_typescale.scss' as typescale;
@@ -23,7 +26,9 @@ $nt-rich-text-outlined-label-top: -8px;
 $nt-rich-text-outlined-label-start: 16px;
 $nt-rich-text-disabled-content-opacity: 0.38;
 $nt-rich-text-focus-ring-width: 2px;
+$nt-rich-text-table-grid-cell-size: 20px;
 $nt-rich-text-media-radius: corners.$nt-corner-radius-extra-small;
+$nt-rich-text-panel-max-width: 36rem;
 
 @mixin nt-rich-text-focus-ring {
     outline: $nt-rich-text-focus-ring-width solid var(--nt-input-focus-color);
@@ -220,10 +225,17 @@ $nt-rich-text-media-radius: corners.$nt-corner-radius-extra-small;
         white-space: normal;
         word-break: break-word;
 
-        &:empty::before {
+        // Deleting everything leaves <p><br></p>, which is not :empty; out of flow so it overlays that empty line.
+        &[data-empty='true']::before {
+            position: absolute;
             color: var(--nt-input-placeholder-color);
             content: attr(data-placeholder);
             opacity: 0.72;
+            pointer-events: none;
+        }
+
+        // An iframe would swallow clicks into its own document; the editor hit-tests it to open its settings.
+        &[contenteditable='true'] ::deep iframe {
             pointer-events: none;
         }
 
@@ -233,132 +245,135 @@ $nt-rich-text-media-radius: corners.$nt-corner-radius-extra-small;
             box-shadow: none;
         }
 
-        p,
-        h1,
-        h2,
-        h3,
-        h4,
-        h5,
-        h6 {
-            margin: 0;
-        }
-
-        h1,
-        h2,
-        h3,
-        h4,
-        h5,
-        h6 {
-            line-height: 1.2;
-        }
-
-        ul,
-        ol {
-            margin: 0;
-            padding-left: 1.5rem;
-        }
-
-        li + li {
-            margin-top: 0.2rem;
-        }
-
-        blockquote {
-            margin: 0;
-            padding-left: 10px;
-            border-left: 3px solid color-mix(in srgb, var(--nt-input-focus-color) 36%, transparent);
-            color: color-mix(in srgb, currentColor 84%, transparent);
-        }
-
-        pre {
-            @include scrollbar.nt-scrollbar;
-
-            margin: 0;
-            padding: 10px 12px;
-            overflow-x: auto;
-            border-radius: $nt-rich-text-media-radius;
-            background-color: color-mix(in srgb, var(--nt-input-focus-color) 10%, transparent);
-            white-space: pre-wrap;
-
-            code {
-                font-family: Consolas, 'Courier New', monospace;
-                white-space: inherit;
+        // Typed content carries no CSS-isolation attribute, so these rules must be ::deep to apply at all.
+        ::deep {
+            p,
+            h1,
+            h2,
+            h3,
+            h4,
+            h5,
+            h6 {
+                margin: 0;
             }
-        }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
-            --nt-rich-text-table-border-color: color-mix(in srgb, currentColor 16%, transparent);
-        }
+            h1,
+            h2,
+            h3,
+            h4,
+            h5,
+            h6 {
+                line-height: 1.2;
+            }
 
-        th,
-        td {
-            padding: 8px 10px;
-            border: 1px solid var(--nt-rich-text-table-border-color);
-            text-align: left;
-            vertical-align: top;
-        }
+            ul,
+            ol {
+                margin: 0;
+                padding-left: 1.5rem;
+            }
 
-        th {
-            background-color: color-mix(in srgb, var(--nt-input-focus-color) 10%, transparent);
-            font-weight: 600;
-        }
+            li + li {
+                margin-top: 0.2rem;
+            }
 
-        img,
-        iframe {
-            display: block;
-            width: 100%;
-            max-width: 100%;
-            border-radius: $nt-rich-text-media-radius;
-        }
+            blockquote {
+                margin: 0;
+                padding-left: 10px;
+                border-left: 3px solid color-mix(in srgb, var(--nt-input-focus-color) 36%, transparent);
+                color: color-mix(in srgb, currentColor 84%, transparent);
+            }
 
-        img {
-            height: auto;
-        }
+            pre {
+                @include scrollbar.nt-scrollbar;
 
-        iframe {
-            border: 0;
-            background-color: color-mix(in srgb, var(--nt-input-focus-color) 6%, transparent);
-        }
+                margin: 0;
+                padding: 10px 12px;
+                overflow-x: auto;
+                border-radius: $nt-rich-text-media-radius;
+                background-color: color-mix(in srgb, var(--nt-input-focus-color) 10%, transparent);
+                white-space: pre-wrap;
 
-        a {
-            color: var(--nt-input-focus-color);
-            text-decoration: underline;
-            text-underline-offset: 2px;
-        }
+                code {
+                    font-family: Consolas, 'Courier New', monospace;
+                    white-space: inherit;
+                }
+            }
 
-        p + p,
-        h1 + p,
-        h2 + p,
-        h3 + p,
-        h4 + p,
-        h5 + p,
-        h6 + p,
-        p + h1,
-        p + h2,
-        p + h3,
-        p + h4,
-        p + h5,
-        p + h6,
-        h1 + h2,
-        h2 + h3,
-        h3 + h4,
-        p + ul,
-        p + ol,
-        p + blockquote,
-        p + pre,
-        ul + p,
-        ol + p,
-        blockquote + p,
-        pre + p,
-        table + p,
-        p + table,
-        img + p,
-        p + img,
-        iframe + p,
-        p + iframe {
-            margin-top: 0.55rem;
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                table-layout: fixed;
+                --nt-rich-text-table-border-color: color-mix(in srgb, currentColor 16%, transparent);
+            }
+
+            th,
+            td {
+                padding: 8px 10px;
+                border: 1px solid var(--nt-rich-text-table-border-color);
+                text-align: left;
+                vertical-align: top;
+            }
+
+            th {
+                background-color: color-mix(in srgb, var(--nt-input-focus-color) 10%, transparent);
+                font-weight: 600;
+            }
+
+            // No forced width: the image panel's width setting must show, max-width only keeps media inside the editor.
+            img,
+            iframe {
+                display: block;
+                max-width: 100%;
+                border-radius: $nt-rich-text-media-radius;
+            }
+
+            img {
+                height: auto;
+            }
+
+            iframe {
+                border: 0;
+                background-color: color-mix(in srgb, var(--nt-input-focus-color) 6%, transparent);
+            }
+
+            a {
+                color: var(--nt-input-focus-color);
+                text-decoration: underline;
+                text-underline-offset: 2px;
+            }
+
+            p + p,
+            h1 + p,
+            h2 + p,
+            h3 + p,
+            h4 + p,
+            h5 + p,
+            h6 + p,
+            p + h1,
+            p + h2,
+            p + h3,
+            p + h4,
+            p + h5,
+            p + h6,
+            h1 + h2,
+            h2 + h3,
+            h3 + h4,
+            p + ul,
+            p + ol,
+            p + blockquote,
+            p + pre,
+            ul + p,
+            ol + p,
+            blockquote + p,
+            pre + p,
+            table + p,
+            p + table,
+            img + p,
+            p + img,
+            iframe + p,
+            p + iframe {
+                margin-top: 0.55rem;
+            }
         }
     }
 
@@ -374,6 +389,26 @@ $nt-rich-text-media-radius: corners.$nt-corner-radius-extra-small;
             &[hidden] {
                 display: none;
             }
+
+            // Open panels float above the content (see setToolPanelFloating) instead of pushing it down.
+            &:popover-open {
+                position: fixed;
+                inset: auto;
+                width: min(#{$nt-rich-text-panel-max-width}, calc(100vw - 16px));
+                max-height: calc(100vh - 16px);
+                margin: 0;
+                overflow: auto;
+                border: 0;
+                color: inherit;
+                background-color: colors.$nt-color-surface-container;
+                box-shadow: map.get(elevation.$nt-elevation-shadows, 2);
+            }
+        }
+
+        // Fixed-size content: the panel shrinks to it instead of taking the full panel width.
+        .tnt-rich-text-editor-text-color-editor:popover-open,
+        .tnt-rich-text-editor-table-editor:popover-open:has(> [data-role='table-insert']:not([hidden])) {
+            width: auto;
         }
 
         .tnt-rich-text-editor-inline-tool-fields {
@@ -394,8 +429,71 @@ $nt-rich-text-media-radius: corners.$nt-corner-radius-extra-small;
             grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
         }
 
+        .tnt-rich-text-editor-table-insert {
+            display: grid;
+            gap: 4px;
+            justify-items: start;
+
+            &[hidden] {
+                display: none;
+            }
+        }
+
+        .tnt-rich-text-editor-table-edit {
+            display: grid;
+            gap: 8px;
+
+            &[hidden] {
+                display: none;
+            }
+        }
+
+        .tnt-rich-text-editor-table-grid {
+            display: grid;
+            grid-template-columns: repeat(8, $nt-rich-text-table-grid-cell-size);
+            gap: 2px;
+
+            button {
+                width: $nt-rich-text-table-grid-cell-size;
+                height: $nt-rich-text-table-grid-cell-size;
+                padding: 0;
+                border: 1px solid var(--nt-input-outline-color);
+                border-radius: corners.$nt-corner-radius-extra-small;
+                background-color: transparent;
+                cursor: pointer;
+
+                &[data-selected] {
+                    border-color: var(--nt-input-focus-color);
+                    background-color: color-mix(in srgb, var(--nt-input-focus-color) 16%, transparent);
+                }
+
+                &:hover:not(:disabled) {
+                    background-color: color-mix(in srgb, var(--nt-input-state-layer-color) 8%, transparent);
+                }
+
+                &:focus-visible {
+                    @include nt-rich-text-focus-ring;
+                }
+
+                &:disabled {
+                    cursor: default;
+                    opacity: $nt-rich-text-disabled-content-opacity;
+                }
+            }
+        }
+
+        .tnt-rich-text-editor-table-grid-label {
+            @include typescale.nt-label-large;
+        }
+
         .tnt-rich-text-editor-text-color-editor .tnt-rich-text-editor-inline-tool-fields {
             grid-template-columns: minmax(0, 88px);
+        }
+
+        // The image source (URL or uploaded file) gets full rows; the chooser and file name need the room.
+        .tnt-rich-text-editor-image-editor .nt-input:has([data-role='image-url']),
+        .tnt-rich-text-editor-image-editor .nt-file-upload {
+            grid-column: 1 / -1;
         }
 
         .tnt-rich-text-editor-link-editor .tnt-rich-text-editor-inline-tool-fields {

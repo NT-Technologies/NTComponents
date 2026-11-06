@@ -21,4 +21,11 @@ public class NTComponentsDefaultOptions {
     /// specified. Defaults to <see cref="FormAppearance.OutlinedCompact"/>.
     /// </summary>
     public FormAppearance DefaultFormAppearance { get; set; } = FormAppearance.OutlinedCompact;
+
+    /// <summary>
+    /// Gets or sets the largest value, in bytes, that the server accepts from an <see cref="NTRichTextEditor"/> as one
+    /// streamed update. The server rejects a larger stream before reading it, so the value is not applied. Values short
+    /// enough to send inline are limited by the hub's <c>MaximumReceiveMessageSize</c> instead. Defaults to 50 MB.
+    /// </summary>
+    public long RichTextEditorMaxValueBytes { get; set; } = 50 * 1024 * 1024;
 }

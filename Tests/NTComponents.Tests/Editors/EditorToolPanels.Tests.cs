@@ -2,7 +2,15 @@ namespace NTComponents.Tests.Editors;
 
 public class EditorToolPanels_Tests : BunitContext {
 
-    public EditorToolPanels_Tests() => SetRendererInfo(new Microsoft.AspNetCore.Components.RendererInfo("Static", false));
+    public EditorToolPanels_Tests() {
+        SetRendererInfo(new Microsoft.AspNetCore.Components.RendererInfo("Static", false));
+        foreach (var path in new[] { "./_content/NTComponents/Menus/NTContextMenu.razor.js", "./_content/NTComponents/Menus/NTMenu.razor.js" }) {
+            var menuModule = JSInterop.SetupModule(path);
+            menuModule.SetupVoid("onLoad", _ => true).SetVoidResult();
+            menuModule.SetupVoid("onUpdate", _ => true).SetVoidResult();
+            menuModule.SetupVoid("onDispose", _ => true).SetVoidResult();
+        }
+    }
 
     [Fact]
     public void ImagePanel_Renders_Expected_Interactive_Fields() {
@@ -35,10 +43,10 @@ public class EditorToolPanels_Tests : BunitContext {
 
         cut.Find("[data-tool-command='table']").GetAttribute("role").Should().Be("group");
         cut.Find("[data-tool-command='table']").GetAttribute("aria-label").Should().Be("Table settings");
-        cut.Find("[data-role='table-columns']").GetAttribute("type").Should().Be("number");
-        cut.Find("[data-role='table-columns']").GetAttribute("max").Should().Be("8");
-        cut.Find("[data-role='table-rows']").GetAttribute("type").Should().Be("number");
-        cut.Find("[data-role='table-rows']").GetAttribute("max").Should().Be("12");
+        cut.FindAll("[data-role='table-grid'] button[data-col][data-row]").Should().HaveCount(80);
+        cut.Find("[data-role='table-grid'] button[data-col='3'][data-row='2']").GetAttribute("aria-label").Should().Be("Insert 3 by 2 table");
+        cut.FindAll("[data-role='table-grid'] button[tabindex='0']").Should().ContainSingle();
+        cut.FindAll("[data-role='table-columns'], [data-role='table-rows']").Should().BeEmpty();
         cut.Find("[data-role='table-border-color']").GetAttribute("type").Should().Be("text");
         cut.Find("[data-role='table-apply']").TextContent.Should().Contain("Apply table");
         cut.Find("[data-role='table-cancel']").TextContent.Should().Contain("Cancel");
@@ -50,7 +58,17 @@ public class EditorToolPanels_Tests : BunitContext {
     public void TablePanel_Disables_All_Controls_When_Disabled() {
         var cut = Render<EditorToolTablePanel>(parameters => parameters.Add(x => x.Disabled, true));
 
-        cut.FindAll("input, button").Should().OnlyContain(element => element.HasAttribute("disabled"));
+        cut.FindAll("[data-tool-command='table'] input, [data-tool-command='table'] button").Should().OnlyContain(element => element.HasAttribute("disabled"));
+    }
+
+    [Fact]
+    public void TablePanel_Renders_Context_Menu_Targeting_Table_Cells_Of_The_Surface() {
+        var cut = Render<EditorToolTablePanel>(parameters => parameters.Add(x => x.Disabled, false).AddCascadingValue("RichTextEditorSurfaceId", "editor-surface"));
+
+        var menu = cut.Find("nt-context-menu");
+        menu.GetAttribute("data-target-id").Should().Be("editor-surface");
+        menu.GetAttribute("data-target-selector").Should().Be("td, th");
+        cut.FindAll("[data-table-action]").Select(item => item.GetAttribute("data-table-action")).Should().Equal("row-above", "row-below", "column-left", "column-right", "delete-row", "delete-column", "delete-table");
     }
 
     [Fact]
