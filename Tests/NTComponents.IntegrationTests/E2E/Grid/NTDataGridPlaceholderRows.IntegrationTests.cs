@@ -39,6 +39,25 @@ public class NTDataGridPlaceholderRows_IntegrationTests : IAsyncLifetime {
     }
 
     [Theory]
+    [InlineData("compact", "0.9")]
+    [InlineData("standard", "0.9")]
+    [InlineData("standard", "1.1")]
+    public async Task Placeholder_Rows_Match_Data_Row_Height_Under_An_Ancestor_Css_Zoom(string density, string zoom) {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        // An ancestor zoom makes the 1px divider a fractional width; a skeleton sized to "row minus divider" outgrew the row.
+        await OpenAsync(_page, density, details: false);
+        await _page.AddStyleTagAsync(new PageAddStyleTagOptions { Content = $"body {{ zoom: {zoom}; }}" });
+        await WaitForRowsAsync(_page, "tbody tr.nt-data-grid-row-placeholder");
+        await _page.EvaluateAsync("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
+
+        var heights = await GetRowHeightsAsync(_page);
+        var dataRowHeight = GetTypicalHeight(heights.Data);
+        dataRowHeight.Should().BeGreaterThan(0);
+        heights.Placeholder.Should().NotBeEmpty().And.AllSatisfy(height => height.Should().BeApproximately(dataRowHeight, 0.01));
+    }
+
+    [Theory]
     [InlineData("compact")]
     [InlineData("standard")]
     public async Task Placeholder_Rows_Match_Data_Row_Height_With_Row_Details_And_Custom_Item_Size(string density) {
