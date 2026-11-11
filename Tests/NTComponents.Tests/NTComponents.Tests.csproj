@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
 	<PropertyGroup>
-		<TargetFrameworks>net9.0;net10.0;net11.0</TargetFrameworks>
+		<TargetFrameworks>net10.0;net11.0</TargetFrameworks>
 		<TestTfmsInParallel>true</TestTfmsInParallel>
 		<NoWarn>$(NoWarn);CS0618;NTC1077;NTC1078;NTC1079</NoWarn>
 	</PropertyGroup>
@@ -25,7 +25,7 @@
 		<ProjectReference Include="..\..\NTComponents.Documentation\NTComponents.Documentation.csproj" />
 		<ProjectReference Include="..\..\NTComponents.AspNetCore\NTComponents.AspNetCore.csproj" />
 		<ProjectReference Include="..\..\NTComponents.Extensions\NTComponents.Extensions.csproj" />
-		<ProjectReference Include="..\..\NTComponents.Site\NTComponents.Site.csproj" Condition="'$(TargetFramework)' != 'net9.0'" />
+		<ProjectReference Include="..\..\NTComponents.Site\NTComponents.Site.csproj" />
 		<ProjectReference Include="..\..\Submodules\NTComponents.Charts\NTComponents.Charts\NTComponents.Charts.csproj" />
 	</ItemGroup>
 

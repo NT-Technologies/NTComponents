@@ -49,9 +49,8 @@ jobs:
         with:
           dotnet-version: |
             8.0.x
-            9.0.x
             10.0.x
-            11.0.100-rc.2.26504.105
+            11.0.x
 
       - name: Setup Node.js
         if: steps.check-tags.outputs.is_tagged == 'false'
