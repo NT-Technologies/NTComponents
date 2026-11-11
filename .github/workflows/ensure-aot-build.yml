@@ -45,6 +45,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v7
+      with:
+        submodules: recursive
 
     - name: Setup dotnet
       uses: actions/setup-dotnet@v6
@@ -75,11 +77,17 @@ jobs:
       shell: pwsh
       run: python3 --version
 
-    - name: Setup Node for Playwright browser install
-      if: runner.os == 'Linux'
+    - name: Setup Node
       uses: actions/setup-node@v7
       with:
         node-version: 24.x
+
+    # The components' .razor.js modules are compiled from TypeScript and are not checked in.
+    - name: Install node dependencies
+      run: npm ci
+
+    - name: Build TypeScript modules
+      run: npm run build:ts:release
 
     - name: Install Chromium for AOT browser smoke
       if: runner.os == 'Linux'
