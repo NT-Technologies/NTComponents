@@ -4,8 +4,6 @@ using Bunit;
 using Microsoft.AspNetCore.Components;
 using NTComponents;
 using NTComponents.Core;
-using NTComponents.Tests.TestingUtility;
-using TestingUtilityHelpers = NTComponents.Tests.TestingUtility.TestingUtility;
 
 namespace NTComponents.Tests.Buttons.NTButtonGroup;
 
@@ -23,7 +21,6 @@ public abstract class NTButtonGroupTestContext : BunitContext {
     /// </summary>
     protected NTButtonGroupTestContext() {
         Fixture = new Fixture();
-        TestingUtilityHelpers.SetupRippleEffectModule(this);
     }
 
     /// <summary>

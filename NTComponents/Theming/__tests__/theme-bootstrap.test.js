@@ -14,7 +14,6 @@ describe('theme bootstrap', () => {
     beforeEach(() => {
         document.head.innerHTML = '';
         window.__ntThemeBootstrapped = false;
-        window.__tntThemeBootstrapped = false;
         window.__ntThemeEnhancedNavigationState = { preserveHeadAttributes: false };
         window.NTComponents = {
             NTThemeRuntime: {

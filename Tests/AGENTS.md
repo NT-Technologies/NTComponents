@@ -39,7 +39,7 @@ For Blazor components, place component tests in the appropriate Blazor test proj
 - Use `xUnit` and bUnit with the approved test libraries above when their capabilities are needed.
 - Prefer assertions against rendered behavior, accessible text, roles, labels, and callback effects over brittle markup details.
 - Register injected dependencies explicitly and keep component setup readable. Substitute only the dependencies that must be isolated.
-- When component structure or TnTComponents usage is unclear, inspect existing tests and match the local pattern before adding new helpers.
+- When component structure or NTComponents usage is unclear, inspect existing tests and match the local pattern before adding new helpers.
 
 ## Coverage & Bug Reporting
 

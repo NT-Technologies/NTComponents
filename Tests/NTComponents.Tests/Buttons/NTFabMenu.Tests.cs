@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.AspNetCore.Components.Web;
-using RippleTestingUtility = NTComponents.Tests.TestingUtility.TestingUtility;
 
 namespace NTComponents.Tests.Buttons;
 
@@ -9,8 +8,6 @@ public class NTFabMenu_Tests : BunitContext {
     private static NTIcon SampleIcon => MaterialIcon.Add;
 
     public NTFabMenu_Tests() {
-        RippleTestingUtility.SetupRippleEffectModule(this);
-
         var fabMenuModule = JSInterop.SetupModule("./_content/NTComponents/Buttons/NTFabMenu.razor.js");
         fabMenuModule.SetupVoid("onLoad", _ => true).SetVoidResult();
         fabMenuModule.SetupVoid("onUpdate", _ => true).SetVoidResult();

@@ -129,7 +129,7 @@ Add app-level hosts once near the route or layout level when you use these servi
 
 ## Component Model
 
-NTComponents uses the `NT*` API surface for new component work. Some legacy `TnT*` components and services remain for compatibility, but new code should prefer `NTButton`, `NTCard`, `NTDialog`, `NTToast`, `NTSnackbar`, `NTThemeToggle`, `NTNavigationRail`, `NTProgress`, `NTLoader`, `NTCarousel`, and the `NTInput*` form components.
+NTComponents uses the `NT*` API surface. Start with `NTButton`, `NTCard`, `NTDialog`, `NTToast`, `NTSnackbar`, `NTThemeToggle`, `NTNavigationRail`, `NTProgress`, `NTLoader`, `NTCarousel`, and the `NTInput*` form components.
 
 The library's component model is built around:
 

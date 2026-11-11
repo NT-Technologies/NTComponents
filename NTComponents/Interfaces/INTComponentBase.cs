@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Components;
 namespace NTComponents.Interfaces;
 
 /// <summary>
-///     Simple interface that represents a TnTComponent. Each TnTComponent can be thought of as a single Html Element.
+///     Simple interface that represents an NTComponents component. Each component can be thought of as a single Html Element.
 /// </summary>
 public interface INTComponentBase : IComponent {
 

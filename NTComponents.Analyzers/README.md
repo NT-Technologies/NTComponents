@@ -31,6 +31,6 @@ dotnet format analyzers --diagnostics NTC1077 NTC1079 --severity warn
 
 Pass a project or solution path after `analyzers` when needed. The CLI covers C# and `.razor.cs` files; update `.razor` expressions through your editor. `NTC1078` reports removed `None`, `Black`, and `White` values for manual replacement. Use an omitted/null optional color for defaults or choose a semantic role; those members have no safe automatic replacement.
 
-Fix All converts color references throughout the selected C# scope. Legacy TnT components and obsolete `NTInputSelect` still accept `TnTColor`; retain their legacy arguments or use `ToLegacyColor()` for migrated shared colors, and review mixed NT/TnT bindings after applying fixes.
+Fix All converts color references throughout the selected C# scope.
 
 Source and issue tracking: <https://github.com/NT-Technologies/NTComponents>

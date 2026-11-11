@@ -196,7 +196,6 @@ public class GeneratedCodeDocumentation_Tests {
             .Where(type => !type.IsAbstract)
             .Where(type => typeof(IComponent).IsAssignableFrom(type))
             .Where(type => type.Name.StartsWith("NT", StringComparison.Ordinal))
-            .Where(type => !type.Name.StartsWith("TnT", StringComparison.Ordinal))
             .Select(type => new {
                 Type = type,
                 Documentation = documentedTypes[NormalizeRuntimeFullName(type)]

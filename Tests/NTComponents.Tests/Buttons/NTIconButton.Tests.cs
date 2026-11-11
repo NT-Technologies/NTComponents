@@ -1,13 +1,10 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using RippleTestingUtility = NTComponents.Tests.TestingUtility.TestingUtility;
 
 namespace NTComponents.Tests.Buttons;
 
 public class NTIconButton_Tests : BunitContext {
     private static NTIcon SampleIcon => MaterialIcon.Menu;
-
-    public NTIconButton_Tests() => RippleTestingUtility.SetupRippleEffectModule(this);
 
     [Fact]
     public void Default_Render_Uses_Standard_Variant_Button_Type_And_AriaLabel() {

@@ -10,7 +10,6 @@ namespace NTComponents.Tests.Wizard;
 public class NTWizard_Tests : BunitContext {
 
     public NTWizard_Tests() {
-        TestingUtility.TestingUtility.SetupRippleEffectModule(this);
         SetRendererInfo(new RendererInfo("WebAssembly", true));
     }
 

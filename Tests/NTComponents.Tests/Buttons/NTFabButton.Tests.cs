@@ -1,13 +1,10 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using RippleTestingUtility = NTComponents.Tests.TestingUtility.TestingUtility;
 
 namespace NTComponents.Tests.Buttons;
 
 public class NTFabButton_Tests : BunitContext {
     private static NTIcon SampleIcon => MaterialIcon.Add;
-
-    public NTFabButton_Tests() => RippleTestingUtility.SetupRippleEffectModule(this);
 
     [Fact]
     public void Default_Render_Uses_IconOnly_Mode_Small_Size_Elevation_And_Button_Type() {

@@ -8,12 +8,11 @@
         'nt-theme-pending-slot',
     ];
 
-    if (rootWindow.__ntThemeBootstrapped || rootWindow.__tntThemeBootstrapped) {
+    if (rootWindow.__ntThemeBootstrapped) {
         return;
     }
 
     rootWindow.__ntThemeBootstrapped = true;
-    rootWindow.__tntThemeBootstrapped = true;
 
     const runtime = rootWindow.NTComponents?.NTThemeRuntime;
     if (!runtime) {

@@ -205,8 +205,7 @@ public sealed partial class DocumentationCatalog {
 
     private static bool IsReferenceType(TypeDocumentation type, HashSet<string> referencedTypeNames) =>
         referencedTypeNames.Contains(type.FullName) ||
-        (!type.Name.StartsWith("TnT", StringComparison.Ordinal) &&
-            (type.Kind == "Enum" || type.Fields.Any(field => IsPublicOrProtected(field.Accessibility) && !string.IsNullOrWhiteSpace(field.ConstantValue))));
+        ((type.Kind == "Enum" || type.Fields.Any(field => IsPublicOrProtected(field.Accessibility) && !string.IsNullOrWhiteSpace(field.ConstantValue))));
 
     private static IEnumerable<string> GetReferencedTypeNames(string typeFullName) =>
         string.IsNullOrWhiteSpace(typeFullName)

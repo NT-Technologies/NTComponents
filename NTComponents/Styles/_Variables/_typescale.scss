@@ -82,7 +82,7 @@ $nt-typescale-title-large-letter-spacing: 0px;
 /* title - medium */
 $nt-typescale-title-medium-font-family-name: Roboto;
 $nt-typescale-title-medium-font-weight: 500;
-$nt-typescale-title-medium-font-size: 18px;
+$nt-typescale-title-medium-font-size: 16px;
 $nt-typescale-title-medium-line-height: 24px;
 $nt-typescale-title-medium-letter-spacing: 0.15px;
 /* title - small */
@@ -302,7 +302,7 @@ $nt-typescale-emphasized: (
 }
 
 @mixin nt-typescale($font-weight, $font-size, $line-height, $font-tracking, $font-family: _nt-ref-typeface(brand)) {
-    font-family: $font-family;
+    font-family: $font-family, sans-serif;
     font-weight: $font-weight;
     font-size: $font-size;
     line-height: $line-height;

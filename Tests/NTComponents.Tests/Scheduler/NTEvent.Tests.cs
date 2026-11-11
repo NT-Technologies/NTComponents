@@ -18,13 +18,13 @@ public class NTEvent_Tests {
     [InlineData(NTColor.Info)]
     public void BackgroundColor_SetValue_ReturnsCorrectValue(NTColor color) {
         // Arrange
-        var tnTEvent = new NTEvent();
+        var ntEvent = new NTEvent();
 
         // Act
-        tnTEvent.BackgroundColor = color;
+        ntEvent.BackgroundColor = color;
 
         // Assert
-        tnTEvent.BackgroundColor.Should().Be(color);
+        ntEvent.BackgroundColor.Should().Be(color);
     }
 
     [Fact]
@@ -46,19 +46,19 @@ public class NTEvent_Tests {
     [Fact]
     public void Constructor_WithDefaultValues_SetsDefaultProperties() {
         // Arrange & Act
-        var tnTEvent = new NTEvent();
+        var ntEvent = new NTEvent();
 
         // Assert
-        tnTEvent.Id.Should().BeGreaterThan(0);
-        tnTEvent.Title.Should().BeNull();
-        tnTEvent.Description.Should().BeNull();
-        tnTEvent.EventStart.Should().Be(default(DateTimeOffset));
-        tnTEvent.EventEnd.Should().Be(default(DateTimeOffset));
-        tnTEvent.IsAllDay.Should().BeFalse();
-        tnTEvent.BackgroundColor.Should().Be(NTColor.Tertiary);
-        tnTEvent.ForegroundColor.Should().Be(NTColor.OnTertiary);
-        tnTEvent.TintColor.Should().Be(NTColor.SurfaceTint);
-        tnTEvent.OnTintColor.Should().Be(NTColor.OnTertiary);
+        ntEvent.Id.Should().BeGreaterThan(0);
+        ntEvent.Title.Should().BeNull();
+        ntEvent.Description.Should().BeNull();
+        ntEvent.EventStart.Should().Be(default(DateTimeOffset));
+        ntEvent.EventEnd.Should().Be(default(DateTimeOffset));
+        ntEvent.IsAllDay.Should().BeFalse();
+        ntEvent.BackgroundColor.Should().Be(NTColor.Tertiary);
+        ntEvent.ForegroundColor.Should().Be(NTColor.OnTertiary);
+        ntEvent.TintColor.Should().Be(NTColor.SurfaceTint);
+        ntEvent.OnTintColor.Should().Be(NTColor.OnTertiary);
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class NTEvent_Tests {
         var eventEnd = new DateTimeOffset(2024, 1, 15, 12, 0, 0, TimeSpan.Zero);
 
         // Act
-        var tnTEvent = new NTEvent {
+        var ntEvent = new NTEvent {
             Title = title,
             Description = description,
             EventStart = eventStart,
@@ -81,13 +81,13 @@ public class NTEvent_Tests {
         };
 
         // Assert
-        tnTEvent.Title.Should().Be(title);
-        tnTEvent.Description.Should().Be(description);
-        tnTEvent.EventStart.Should().Be(eventStart);
-        tnTEvent.EventEnd.Should().Be(eventEnd);
-        tnTEvent.IsAllDay.Should().BeTrue();
-        tnTEvent.BackgroundColor.Should().Be(NTColor.Primary);
-        tnTEvent.ForegroundColor.Should().Be(NTColor.OnPrimary);
+        ntEvent.Title.Should().Be(title);
+        ntEvent.Description.Should().Be(description);
+        ntEvent.EventStart.Should().Be(eventStart);
+        ntEvent.EventEnd.Should().Be(eventEnd);
+        ntEvent.IsAllDay.Should().BeTrue();
+        ntEvent.BackgroundColor.Should().Be(NTColor.Primary);
+        ntEvent.ForegroundColor.Should().Be(NTColor.OnPrimary);
     }
 
     [Theory]
@@ -97,13 +97,13 @@ public class NTEvent_Tests {
     [InlineData("A very long description with multiple sentences. This should test the flexibility of the description property.")]
     public void Description_SetValue_ReturnsCorrectValue(string? description) {
         // Arrange
-        var tnTEvent = new NTEvent();
+        var ntEvent = new NTEvent();
 
         // Act
-        tnTEvent.Description = description;
+        ntEvent.Description = description;
 
         // Assert
-        tnTEvent.Description.Should().Be(description);
+        ntEvent.Description.Should().Be(description);
     }
 
     [Fact]
@@ -111,13 +111,13 @@ public class NTEvent_Tests {
         // Arrange
         var eventStart = new DateTimeOffset(2024, 1, 15, 12, 0, 0, TimeSpan.Zero);
         var eventEnd = new DateTimeOffset(2024, 1, 15, 10, 0, 0, TimeSpan.Zero);
-        var tnTEvent = new NTEvent {
+        var ntEvent = new NTEvent {
             EventStart = eventStart,
             EventEnd = eventEnd
         };
 
         // Act
-        var duration = tnTEvent.Duration;
+        var duration = ntEvent.Duration;
 
         // Assert
         duration.Should().Be(TimeSpan.FromHours(-2));
@@ -128,14 +128,14 @@ public class NTEvent_Tests {
         // Arrange
         var eventStart = new DateTimeOffset(2024, 1, 15, 10, 0, 0, TimeSpan.Zero);
         var eventEnd = new DateTimeOffset(2024, 1, 17, 14, 30, 0, TimeSpan.Zero);
-        var tnTEvent = new NTEvent {
+        var ntEvent = new NTEvent {
             EventStart = eventStart,
             EventEnd = eventEnd
         };
         var expectedDuration = TimeSpan.FromDays(2) + TimeSpan.FromHours(4.5);
 
         // Act
-        var duration = tnTEvent.Duration;
+        var duration = ntEvent.Duration;
 
         // Assert
         duration.Should().Be(expectedDuration);
@@ -145,13 +145,13 @@ public class NTEvent_Tests {
     public void Duration_WithSameStartAndEnd_ReturnsZeroDuration() {
         // Arrange
         var eventDateTime = new DateTimeOffset(2024, 1, 15, 10, 0, 0, TimeSpan.Zero);
-        var tnTEvent = new NTEvent {
+        var ntEvent = new NTEvent {
             EventStart = eventDateTime,
             EventEnd = eventDateTime
         };
 
         // Act
-        var duration = tnTEvent.Duration;
+        var duration = ntEvent.Duration;
 
         // Assert
         duration.Should().Be(TimeSpan.Zero);
@@ -162,13 +162,13 @@ public class NTEvent_Tests {
         // Arrange
         var eventStart = new DateTimeOffset(2024, 1, 15, 10, 0, 0, TimeSpan.Zero);
         var eventEnd = new DateTimeOffset(2024, 1, 15, 12, 30, 0, TimeSpan.Zero);
-        var tnTEvent = new NTEvent {
+        var ntEvent = new NTEvent {
             EventStart = eventStart,
             EventEnd = eventEnd
         };
 
         // Act
-        var duration = tnTEvent.Duration;
+        var duration = ntEvent.Duration;
 
         // Assert
         duration.Should().Be(TimeSpan.FromHours(2.5));
@@ -178,10 +178,10 @@ public class NTEvent_Tests {
     public void EndDate_WithEventEnd_ReturnsCorrectDate() {
         // Arrange
         var eventEnd = new DateTimeOffset(2024, 12, 31, 23, 59, 59, TimeSpan.Zero);
-        var tnTEvent = new NTEvent { EventEnd = eventEnd };
+        var ntEvent = new NTEvent { EventEnd = eventEnd };
 
         // Act
-        var endDate = tnTEvent.EndDate;
+        var endDate = ntEvent.EndDate;
 
         // Assert
         endDate.Should().Be(new DateOnly(2024, 12, 31));
@@ -191,10 +191,10 @@ public class NTEvent_Tests {
     public void EndTime_WithEventEnd_ReturnsCorrectTime() {
         // Arrange
         var eventEnd = new DateTimeOffset(2024, 1, 15, 14, 15, 30, TimeSpan.FromHours(2));
-        var tnTEvent = new NTEvent { EventEnd = eventEnd };
+        var ntEvent = new NTEvent { EventEnd = eventEnd };
 
         // Act
-        var endTime = tnTEvent.EndTime;
+        var endTime = ntEvent.EndTime;
 
         // Assert LocalDateTime converts to system local time, so we expect the converted time
         var expectedTime = TimeOnly.FromTimeSpan(eventEnd.LocalDateTime.TimeOfDay);
@@ -205,26 +205,26 @@ public class NTEvent_Tests {
     public void EventEnd_SetValue_ReturnsCorrectValue() {
         // Arrange
         var eventEnd = new DateTimeOffset(2024, 3, 15, 16, 0, 0, TimeSpan.FromHours(-5));
-        var tnTEvent = new NTEvent();
+        var ntEvent = new NTEvent();
 
         // Act
-        tnTEvent.EventEnd = eventEnd;
+        ntEvent.EventEnd = eventEnd;
 
         // Assert
-        tnTEvent.EventEnd.Should().Be(eventEnd);
+        ntEvent.EventEnd.Should().Be(eventEnd);
     }
 
     [Fact]
     public void EventStart_SetValue_ReturnsCorrectValue() {
         // Arrange
         var eventStart = new DateTimeOffset(2024, 3, 15, 14, 30, 0, TimeSpan.FromHours(-5));
-        var tnTEvent = new NTEvent();
+        var ntEvent = new NTEvent();
 
         // Act
-        tnTEvent.EventStart = eventStart;
+        ntEvent.EventStart = eventStart;
 
         // Assert
-        tnTEvent.EventStart.Should().Be(eventStart);
+        ntEvent.EventStart.Should().Be(eventStart);
     }
 
     [Theory]
@@ -235,23 +235,23 @@ public class NTEvent_Tests {
     [InlineData(NTColor.OnSuccess)]
     public void ForegroundColor_SetValue_ReturnsCorrectValue(NTColor color) {
         // Arrange
-        var tnTEvent = new NTEvent();
+        var ntEvent = new NTEvent();
 
         // Act
-        tnTEvent.ForegroundColor = color;
+        ntEvent.ForegroundColor = color;
 
         // Assert
-        tnTEvent.ForegroundColor.Should().Be(color);
+        ntEvent.ForegroundColor.Should().Be(color);
     }
 
     [Fact]
     public void Id_IsReadOnly_CannotBeSetDirectly() {
         // Arrange
-        var tnTEvent = new NTEvent();
-        var originalId = tnTEvent.Id;
+        var ntEvent = new NTEvent();
+        var originalId = ntEvent.Id;
 
         // Act & Assert - Id should be get-only from external perspective The Id property is marked as internal set, so this test verifies it behaves correctly
-        tnTEvent.Id.Should().Be(originalId);
+        ntEvent.Id.Should().Be(originalId);
     }
 
     [Theory]
@@ -260,13 +260,13 @@ public class NTEvent_Tests {
     [InlineData(NTColor.OnSecondary)]
     public void OnTintColor_SetValue_ReturnsCorrectValue(NTColor color) {
         // Arrange
-        var tnTEvent = new NTEvent();
+        var ntEvent = new NTEvent();
 
         // Act
-        tnTEvent.OnTintColor = color;
+        ntEvent.OnTintColor = color;
 
         // Assert
-        tnTEvent.OnTintColor.Should().Be(color);
+        ntEvent.OnTintColor.Should().Be(color);
     }
 
     [Fact]
@@ -448,13 +448,13 @@ public class NTEvent_Tests {
     [Fact]
     public void Overlaps_WithSameEvent_ReturnsTrue() {
         // Arrange
-        var tnTEvent = new NTEvent {
+        var ntEvent = new NTEvent {
             EventStart = new DateTimeOffset(2024, 1, 15, 10, 0, 0, TimeSpan.Zero),
             EventEnd = new DateTimeOffset(2024, 1, 15, 12, 0, 0, TimeSpan.Zero)
         };
 
         // Act
-        var overlaps = tnTEvent.Overlaps(tnTEvent);
+        var overlaps = ntEvent.Overlaps(ntEvent);
 
         // Assert
         overlaps.Should().BeTrue();
@@ -493,21 +493,21 @@ public class NTEvent_Tests {
         var minDateTime = DateTimeOffset.MinValue;
         var maxDateTime = DateTimeOffset.MaxValue;
 
-        var tnTEvent = new NTEvent {
+        var ntEvent = new NTEvent {
             EventStart = minDateTime,
             EventEnd = maxDateTime
         };
 
         // Act & Assert
-        tnTEvent.EventStart.Should().Be(minDateTime);
-        tnTEvent.EventEnd.Should().Be(maxDateTime);
-        tnTEvent.Duration.Should().Be(maxDateTime - minDateTime);
+        ntEvent.EventStart.Should().Be(minDateTime);
+        ntEvent.EventEnd.Should().Be(maxDateTime);
+        ntEvent.Duration.Should().Be(maxDateTime - minDateTime);
 
         // These should not throw exceptions
-        var startTime = tnTEvent.StartTime;
-        var endTime = tnTEvent.EndTime;
-        var startDate = tnTEvent.StartDate;
-        var endDate = tnTEvent.EndDate;
+        var startTime = ntEvent.StartTime;
+        var endTime = ntEvent.EndTime;
+        var startDate = ntEvent.StartDate;
+        var endDate = ntEvent.EndDate;
 
         // Verify the computed properties work without exceptions
         startTime.Should().Be(TimeOnly.FromTimeSpan(minDateTime.LocalDateTime.TimeOfDay));
@@ -542,10 +542,10 @@ public class NTEvent_Tests {
     public void StartDate_WithEventStart_ReturnsCorrectDate() {
         // Arrange
         var eventStart = new DateTimeOffset(2024, 3, 22, 10, 30, 0, TimeSpan.FromHours(-5));
-        var tnTEvent = new NTEvent { EventStart = eventStart };
+        var ntEvent = new NTEvent { EventStart = eventStart };
 
         // Act
-        var startDate = tnTEvent.StartDate;
+        var startDate = ntEvent.StartDate;
 
         // Assert
         startDate.Should().Be(new DateOnly(2024, 3, 22));
@@ -577,10 +577,10 @@ public class NTEvent_Tests {
     public void StartTime_WithEventStart_ReturnsCorrectTime() {
         // Arrange
         var eventStart = new DateTimeOffset(2024, 1, 15, 10, 30, 45, TimeSpan.FromHours(-8));
-        var tnTEvent = new NTEvent { EventStart = eventStart };
+        var ntEvent = new NTEvent { EventStart = eventStart };
 
         // Act
-        var startTime = tnTEvent.StartTime;
+        var startTime = ntEvent.StartTime;
 
         // Assert LocalDateTime converts to system local time, so we expect the converted time
         var expectedTime = TimeOnly.FromTimeSpan(eventStart.LocalDateTime.TimeOfDay);
@@ -594,13 +594,13 @@ public class NTEvent_Tests {
     [InlineData(NTColor.Tertiary)]
     public void TintColor_SetValue_ReturnsCorrectValue(NTColor color) {
         // Arrange
-        var tnTEvent = new NTEvent();
+        var ntEvent = new NTEvent();
 
         // Act
-        tnTEvent.TintColor = color;
+        ntEvent.TintColor = color;
 
         // Assert
-        tnTEvent.TintColor.Should().Be(color);
+        ntEvent.TintColor.Should().Be(color);
     }
 
     [Theory]
@@ -610,10 +610,10 @@ public class NTEvent_Tests {
     [InlineData("Title with numbers 123 and symbols")]
     public void Title_SetValue_ReturnsCorrectValue(string title) {
         // Arrange & Act
-        var tnTEvent = new NTEvent { Title = title };
+        var ntEvent = new NTEvent { Title = title };
 
         // Assert
-        tnTEvent.Title.Should().Be(title);
+        ntEvent.Title.Should().Be(title);
     }
 
     [Fact]
@@ -674,7 +674,7 @@ public class NTEvent_Tests {
     [Fact]
     public void NTEvent_ToString_ReturnsStringRepresentation() {
         // Arrange
-        var tnTEvent = new NTEvent {
+        var ntEvent = new NTEvent {
             Title = "Test Event",
             Description = "Test Description",
             EventStart = new DateTimeOffset(2024, 1, 15, 10, 0, 0, TimeSpan.Zero),
@@ -682,7 +682,7 @@ public class NTEvent_Tests {
         };
 
         // Act
-        var result = tnTEvent.ToString();
+        var result = ntEvent.ToString();
 
         // Assert
         result.Should().NotBeNullOrEmpty();

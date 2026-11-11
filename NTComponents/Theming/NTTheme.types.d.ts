@@ -56,7 +56,6 @@ type NTThemeHostWindow = Window & {
     __ntThemeBootstrapped?: boolean;
     __ntThemeEnhancedNavigationState?: { preserveHeadAttributes: boolean };
     __ntThemeDomParserPatched?: boolean;
-    __tntThemeBootstrapped?: boolean;
     Blazor?: {
         addEventListener?: (eventName: string, listener: () => void) => void;
     };

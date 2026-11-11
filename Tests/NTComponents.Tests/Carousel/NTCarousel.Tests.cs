@@ -1,12 +1,10 @@
 using Microsoft.AspNetCore.Components;
-using RippleTestingUtility = NTComponents.Tests.TestingUtility.TestingUtility;
 
 namespace NTComponents.Tests.Carousel;
 
 public class NTCarousel_Tests : BunitContext {
 
     public NTCarousel_Tests() {
-        RippleTestingUtility.SetupRippleEffectModule(this);
         var module = JSInterop.SetupModule("./_content/NTComponents/Carousel/NTCarousel.razor.js");
         module.SetupVoid("onLoad", _ => true).SetVoidResult();
         module.SetupVoid("onUpdate", _ => true).SetVoidResult();

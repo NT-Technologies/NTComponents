@@ -1,12 +1,9 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using RippleTestingUtility = NTComponents.Tests.TestingUtility.TestingUtility;
 
 namespace NTComponents.Tests.Buttons;
 
 public class NTButton_Tests : BunitContext {
-    public NTButton_Tests() => RippleTestingUtility.SetupRippleEffectModule(this);
-
     [Fact]
     public void Default_Render_Uses_Filled_Variant_And_Button_Type() {
         var cut = Render<NTButton>(parameters => parameters.Add(x => x.Label, "Save"));
