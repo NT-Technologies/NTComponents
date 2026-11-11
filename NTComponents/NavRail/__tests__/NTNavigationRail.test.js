@@ -1109,7 +1109,7 @@ describe('NTNavigationRail module', () => {
       <main id="content"><button id="outside">Outside</button></main>
       <nav class="nt-navigation-rail nt-navigation-rail-modal nt-navigation-rail-collapsed"
            b-testscope=""
-           style="--nt-navigation-rail-scrim-color: var(--tnt-color-primary);">
+           style="--nt-navigation-rail-scrim-color: var(--nt-color-primary);">
         <button class="nt-navigation-rail-menu-button"
                 type="button"
                 aria-label="Expand navigation rail"
@@ -1138,7 +1138,7 @@ describe('NTNavigationRail module', () => {
     expect(dialog.classList.contains('nt-navigation-rail-modal-dialog-entering')).toBe(true);
     expect(dialog.contains(rail)).toBe(true);
     expect(dialog.hasAttribute('b-testscope')).toBe(true);
-    expect(dialog.style.getPropertyValue('--nt-navigation-rail-scrim-color')).toBe('var(--tnt-color-primary)');
+    expect(dialog.style.getPropertyValue('--nt-navigation-rail-scrim-color')).toBe('var(--nt-color-primary)');
     expect(document.querySelector('.nt-navigation-rail-modal-placeholder').hasAttribute('b-testscope')).toBe(true);
     expect(main.inert).toBe(true);
     expect(main.getAttribute('aria-hidden')).toBe('true');

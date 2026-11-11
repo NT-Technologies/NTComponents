@@ -18,7 +18,7 @@
     @include typescale.nt-body-small;
 
     min-height: 16px;
-    color: colors.$tnt-color-on-surface-variant;
+    color: colors.$nt-color-on-surface-variant;
 }
 
 .rich-text-editor-output {
@@ -30,7 +30,7 @@
         @include typescale.nt-label-large;
 
         cursor: pointer;
-        color: colors.$tnt-color-primary;
+        color: colors.$nt-color-primary;
     }
 
     pre {
@@ -43,9 +43,9 @@
         margin: 0;
         padding: 12px;
         overflow: auto;
-        color: colors.$tnt-color-on-surface;
+        color: colors.$nt-color-on-surface;
         white-space: pre-wrap;
         border-radius: 8px;
-        background: colors.$tnt-color-surface-container;
+        background: colors.$nt-color-surface-container;
     }
 }

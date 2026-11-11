@@ -25,12 +25,12 @@
 .window-demo-header p,
 .window-demo-section-header p,
 .window-demo-note {
-    color: colors.$tnt-color-on-surface-variant;
+    color: colors.$nt-color-on-surface-variant;
 }
 
 .window-demo-section {
-    background: colors.$tnt-color-surface-container-low;
-    border: 1px solid colors.$tnt-color-outline-variant;
+    background: colors.$nt-color-surface-container-low;
+    border: 1px solid colors.$nt-color-outline-variant;
     border-radius: corners.$nt-corner-radius-large;
     gap: 16px;
     padding: 24px;

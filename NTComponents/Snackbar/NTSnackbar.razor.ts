@@ -86,9 +86,9 @@ declare global {
 
 const snackbarHostSelector = '[data-nt-snackbar-host="true"]';
 const closeDelayMilliseconds = 200;
-const defaultActionColor = 'var(--tnt-color-inverse-primary)';
-const defaultBackgroundColor = 'var(--tnt-color-inverse-surface)';
-const defaultTextColor = 'var(--tnt-color-inverse-on-surface)';
+const defaultActionColor = 'var(--nt-color-inverse-primary)';
+const defaultBackgroundColor = 'var(--nt-color-inverse-surface)';
+const defaultTextColor = 'var(--nt-color-inverse-on-surface)';
 const maxPendingSnackbars = 50;
 const maxQueuedSnackbars = 50;
 const pendingSnackbars: SnackbarRecord[] = [];

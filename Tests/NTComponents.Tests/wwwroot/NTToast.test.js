@@ -180,9 +180,9 @@ describe('NTToast module', () => {
          9,
          false,
          'check_circle',
-         'var(--tnt-color-success-container)',
-         'var(--tnt-color-on-success-container)',
-         'var(--tnt-color-success)',
+         'var(--nt-color-success-container)',
+         'var(--nt-color-on-success-container)',
+         'var(--nt-color-success)',
          dotNetReference,
          'NotifyClosedFromJavaScript');
 
@@ -192,9 +192,9 @@ describe('NTToast module', () => {
       expect(toast.querySelector('.nt-toast-title').textContent).toBe('Saved');
       expect(toast.querySelector('.nt-toast-message').textContent).toBe('Changes stored');
       expect(toast.querySelector('.nt-toast-close')).toBeNull();
-      expect(toast.style.getPropertyValue('--nt-toast-background-color')).toBe('var(--tnt-color-success-container)');
-      expect(toast.style.getPropertyValue('--nt-toast-text-color')).toBe('var(--tnt-color-on-success-container)');
-      expect(toast.style.getPropertyValue('--nt-toast-icon-color')).toBe('var(--tnt-color-success)');
+      expect(toast.style.getPropertyValue('--nt-toast-background-color')).toBe('var(--nt-color-success-container)');
+      expect(toast.style.getPropertyValue('--nt-toast-text-color')).toBe('var(--nt-color-on-success-container)');
+      expect(toast.style.getPropertyValue('--nt-toast-icon-color')).toBe('var(--nt-color-success)');
       expect(toast.style.getPropertyValue('--nt-toast-timeout')).toBe('9s');
    });
 

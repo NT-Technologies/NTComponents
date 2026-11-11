@@ -15,20 +15,13 @@ describe('NTComponents.getColorValueFromEnumName', () => {
    });
 
    test('converts PascalCase color name to kebab-case CSS variable', () => {
-      document.documentElement.style.setProperty('--tnt-color-primary', '#ff0000');
+      document.documentElement.style.setProperty('--nt-color-primary', '#ff0000');
       const result = NTComponents.getColorValueFromEnumName('Primary');
       expect(result).toBe('#ff0000');
    });
 
-   test('prefers NT tokens when both theme namespaces are present', () => {
-      document.documentElement.style.setProperty('--nt-color-primary', 'rgb(12, 34, 56)');
-      document.documentElement.style.setProperty('--tnt-color-primary', '#ff0000');
-
-      expect(NTComponents.getColorValueFromEnumName('Primary')).toBe('#0c2238');
-   });
-
    test('converts complex camelCase color names correctly', () => {
-      document.documentElement.style.setProperty('--tnt-color-on-primary-container', '#00ff00');
+      document.documentElement.style.setProperty('--nt-color-on-primary-container', '#00ff00');
       const result = NTComponents.getColorValueFromEnumName('OnPrimaryContainer');
       expect(result).toBe('#00ff00');
    });
@@ -39,25 +32,25 @@ describe('NTComponents.getColorValueFromEnumName', () => {
    });
 
    test('converts rgb format to hex', () => {
-      document.documentElement.style.setProperty('--tnt-color-test', 'rgb(255, 0, 0)');
+      document.documentElement.style.setProperty('--nt-color-test', 'rgb(255, 0, 0)');
       const result = NTComponents.getColorValueFromEnumName('Test');
       expect(result).toBe('#ff0000');
    });
 
    test('converts rgb with spaces to hex', () => {
-      document.documentElement.style.setProperty('--tnt-color-test', 'rgb(0 255 0)');
+      document.documentElement.style.setProperty('--nt-color-test', 'rgb(0 255 0)');
       const result = NTComponents.getColorValueFromEnumName('Test');
       expect(result).toBe('#00ff00');
    });
 
    test('converts rgba format to hex (ignoring alpha)', () => {
-      document.documentElement.style.setProperty('--tnt-color-test', 'rgba(0, 0, 255, 0.5)');
+      document.documentElement.style.setProperty('--nt-color-test', 'rgba(0, 0, 255, 0.5)');
       const result = NTComponents.getColorValueFromEnumName('Test');
       expect(result).toBe('#0000ff');
    });
 
    test('returns original value if not rgb/rgba format', () => {
-      document.documentElement.style.setProperty('--tnt-color-test', '#abcdef');
+      document.documentElement.style.setProperty('--nt-color-test', '#abcdef');
       const result = NTComponents.getColorValueFromEnumName('Test');
       expect(result).toBe('#abcdef');
    });

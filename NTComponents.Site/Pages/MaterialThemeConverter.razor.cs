@@ -31,11 +31,11 @@ public partial class MaterialThemeConverter {
         new("NTComponents status", "success, info, warning, assert", "Application-specific status messages and semantic accents not covered by Material core roles.", "Keep each meaning consistent throughout the product; harmonization may shift hue without changing meaning.")
     ];
     private static readonly ThemeSwatch[] _previewSwatches = [
-        new("Primary", "--tnt-color-primary", "--tnt-color-on-primary"),
-        new("Secondary", "--tnt-color-secondary", "--tnt-color-on-secondary"),
-        new("Tertiary", "--tnt-color-tertiary", "--tnt-color-on-tertiary"),
-        new("Surface", "--tnt-color-surface-container", "--tnt-color-on-surface"),
-        new("Error", "--tnt-color-error", "--tnt-color-on-error")
+        new("Primary", "--nt-color-primary", "--nt-color-on-primary"),
+        new("Secondary", "--nt-color-secondary", "--nt-color-on-secondary"),
+        new("Tertiary", "--nt-color-tertiary", "--nt-color-on-tertiary"),
+        new("Surface", "--nt-color-surface-container", "--nt-color-on-surface"),
+        new("Error", "--nt-color-error", "--nt-color-on-error")
     ];
 
     private readonly ThemeCreatorModel _creator = new();

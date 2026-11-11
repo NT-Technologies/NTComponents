@@ -236,7 +236,7 @@ dotnet format analyzers --diagnostics NTC1077 NTC1079 --severity warn
 
 `NTC1078` flags `None`, `Black`, and `White`, which have no NTColor equivalent. Use `null` or omit an optional color parameter to get the component default. For fixed black or white, pick an appropriate semantic role instead.
 
-Existing themes that define `--tnt-color-*` on `:root` continue to work through the compatibility stylesheet loaded by `NTHeadDependencies`.
+Themes must define `--nt-color-*` tokens. 2.0 no longer reads `--tnt-color-*`, so rename those tokens in your theme files, for example `--tnt-color-primary` → `--nt-color-primary`. Do the same in any custom CSS that uses `var(--tnt-color-*)`.
 
 ## Development
 

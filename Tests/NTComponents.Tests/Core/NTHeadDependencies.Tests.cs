@@ -44,14 +44,10 @@ public class NTHeadDependencies_Tests : BunitContext {
     }
 
     [Fact]
-    public void Render_LoadsThemeCompatibilityStylesheetBeforeThemes() {
+    public void Render_DoesNotLoadLegacyThemeCompatibilityStylesheet() {
         var cut = Render<NTHeadDependencies>();
-        var stylesheet = cut.FindAll("link#nt-theme-compat-stylesheet").Should().ContainSingle().Subject;
 
-        stylesheet.GetAttribute("rel").Should().Be("stylesheet");
-        stylesheet.GetAttribute("href").Should().Be("_content/NTComponents/nt-theme-compat.css");
-        stylesheet.GetAttribute("data-permanent").Should().Be(stylesheet.Id);
-        cut.Markup.IndexOf("id=\"nt-theme-compat-stylesheet\"", StringComparison.Ordinal).Should().BeLessThan(cut.Markup.IndexOf("data-nt-theme-default", StringComparison.Ordinal));
+        cut.Markup.Should().NotContain("nt-theme-compat");
     }
 
     [Fact]

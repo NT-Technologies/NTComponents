@@ -41,7 +41,7 @@
     );
 }
 
-$elevation-shadows: _elevation-shadows(colors.$tnt-color-shadow);
+$elevation-shadows: _elevation-shadows(colors.$nt-color-shadow);
 $nt-elevation-shadows: _nt-elevation-shadows(colors.$nt-color-shadow);
 
 @mixin tnt-elevations($shadows: $elevation-shadows) {

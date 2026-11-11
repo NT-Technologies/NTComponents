@@ -5,7 +5,7 @@
     color: $fg-color;
 }
 
-@mixin tnt-button-outlined-colors($fg-color, $outline-color: colors.$tnt-color-outline-variant) {
+@mixin tnt-button-outlined-colors($fg-color, $outline-color: colors.$nt-color-outline-variant) {
     background-color: transparent;
     color: $fg-color;
     border: 1px solid $outline-color;

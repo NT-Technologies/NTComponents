@@ -1129,8 +1129,7 @@ window.NTComponents = Object.assign(window.NTComponents || {}, {
         const kebab = colorName.replace(/(?<=.)([A-Z])/g, '-$1').toLowerCase();
         // Compose the CSS variable name
         const rootStyle = getComputedStyle(document.documentElement);
-        let value = rootStyle.getPropertyValue(`--nt-color-${kebab}`)
-            || rootStyle.getPropertyValue(`--tnt-color-${kebab}`);
+        let value = rootStyle.getPropertyValue(`--nt-color-${kebab}`);
         if (!value) return null;
         value = value.trim();
 

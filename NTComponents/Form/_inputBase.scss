@@ -140,7 +140,7 @@ $supporting-text-color: var(--tnt-input-supporting-text-color);
     }
 }
 
-@mixin outlined($outline-color: colors.$tnt-color-outline) {
+@mixin outlined($outline-color: colors.$nt-color-outline) {
 
     &.tnt-form-outlined {
         border-radius: 4px;
@@ -245,7 +245,7 @@ $supporting-text-color: var(--tnt-input-supporting-text-color);
     }
 }
 
-@mixin filled($element: input, $outline-color: colors.$tnt-color-outline-variant) {
+@mixin filled($element: input, $outline-color: colors.$nt-color-outline-variant) {
     &.tnt-form-filled {
         border-bottom: 1px solid $outline-color;
         border-radius: 4px 4px 0 0;

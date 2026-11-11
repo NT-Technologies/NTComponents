@@ -2,8 +2,8 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using NTComponents
 
-<section style="display:grid;gap:16px;max-width:1180px;padding:16px;background:var(--tnt-color-surface);color:var(--tnt-color-on-surface);">
-    <div style="display:grid;gap:12px;padding:12px;border:1px solid var(--tnt-color-outline-variant);background:var(--tnt-color-surface);">
+<section style="display:grid;gap:16px;max-width:1180px;padding:16px;background:var(--nt-color-surface);color:var(--nt-color-on-surface);">
+    <div style="display:grid;gap:12px;padding:12px;border:1px solid var(--nt-color-outline-variant);background:var(--nt-color-surface);">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
             <h3 style="margin:0;">NTForm Fields</h3>
             <button type="button" @onclick="ToggleControls">@(_showControls ? "Hide controls" : "Show controls")</button>
@@ -134,7 +134,7 @@
             <label>Textarea max lines <input type="number" min="1" @bind="_textAreaMaxVisibleLines" disabled="@(!_textAreaAutoGrow)" /></label>
             </div>
 
-            <fieldset style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:0;padding:12px;border:1px solid var(--tnt-color-outline-variant);">
+            <fieldset style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:0;padding:12px;border:1px solid var(--nt-color-outline-variant);">
             <legend>Field overrides</legend>
             <label><input type="checkbox" @bind="_overrideAppearance" /> Override appearance</label>
             <label><input type="checkbox" @bind="_overrideDensity" /> Override density</label>
@@ -160,7 +160,7 @@
             </label>
             </fieldset>
 
-            <fieldset style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:0;padding:12px;border:1px solid var(--tnt-color-outline-variant);">
+            <fieldset style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:0;padding:12px;border:1px solid var(--nt-color-outline-variant);">
             <legend>Color overrides</legend>
             <label><input type="checkbox" @bind="_useCustomColors" /> Use custom colors</label>
 
@@ -1296,7 +1296,7 @@
                 <span>@_submitMessage</span>
             </div>
 
-            <pre style="margin:0;padding:12px;overflow:auto;background:var(--tnt-color-surface-container);color:var(--tnt-color-on-surface);">@Summary</pre>
+            <pre style="margin:0;padding:12px;overflow:auto;background:var(--nt-color-surface-container);color:var(--nt-color-on-surface);">@Summary</pre>
         </div>
     </NTForm>
 </section>

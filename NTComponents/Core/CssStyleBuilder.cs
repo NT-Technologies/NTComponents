@@ -92,7 +92,7 @@ public sealed class CssStyleBuilder {
     /// <summary>
     ///     Builds the final CSS style string composed of any raw fragments and collected property/value pairs.
     /// </summary>
-    /// <returns>A combined CSS style string (for example, "margin:4px;color:var(--tnt-color-primary);") or <c>null</c> if no styles were added.</returns>
+    /// <returns>A combined CSS style string (for example, "margin:4px;color:var(--nt-color-primary);") or <c>null</c> if no styles were added.</returns>
     public string? Build() {
         if (_styles.Count == 0) {
             return string.IsNullOrEmpty(_styleString) ? null : _styleString;

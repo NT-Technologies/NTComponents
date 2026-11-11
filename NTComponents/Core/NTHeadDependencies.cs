@@ -196,15 +196,6 @@ public class NTHeadDependencies : IComponent {
         builder.AddContent(5, "html, body, #app { background-color: Canvas; color: CanvasText; }");
         builder.CloseElement();
 
-        builder.OpenRegion(6);
-        builder.OpenElement(0, "link");
-        builder.AddAttribute(1, "id", "nt-theme-compat-stylesheet");
-        builder.AddAttribute(2, "rel", "stylesheet");
-        builder.AddAttribute(3, "href", ResolveAssetPath(_renderHandle.Assets, "_content/NTComponents/nt-theme-compat.css"));
-        builder.AddAttribute(4, "data-permanent", "nt-theme-compat-stylesheet");
-        builder.CloseElement();
-        builder.CloseRegion();
-
         builder.OpenRegion(7);
         RenderFirstPaintThemeLinks(builder);
         builder.CloseRegion();

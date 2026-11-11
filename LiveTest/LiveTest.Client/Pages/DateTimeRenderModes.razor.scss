@@ -3,8 +3,8 @@
 @use '../../../NTComponents/Styles/_Variables/_typescale.scss' as typescale;
 
 .date-time-render-modes-page {
-    background: colors.$tnt-color-surface;
-    color: colors.$tnt-color-on-surface;
+    background: colors.$nt-color-surface;
+    color: colors.$nt-color-on-surface;
     display: grid;
     gap: 24px;
     max-inline-size: 1200px;
@@ -27,7 +27,7 @@
     p {
         @include typescale.nt-body-medium;
 
-        color: colors.$tnt-color-on-surface-variant;
+        color: colors.$nt-color-on-surface-variant;
     }
 }
 
@@ -38,7 +38,7 @@
 }
 
 .date-time-render-modes-demo {
-    border: 1px solid colors.$tnt-color-outline-variant;
+    border: 1px solid colors.$nt-color-outline-variant;
     border-radius: corners.$nt-corner-radius-small;
     display: grid;
     gap: 16px;
@@ -62,13 +62,13 @@
     p {
         @include typescale.nt-body-small;
 
-        color: colors.$tnt-color-on-surface-variant;
+        color: colors.$nt-color-on-surface-variant;
     }
 
     ::deep .date-time-render-mode-runtime {
         @include typescale.nt-body-medium;
 
-        color: colors.$tnt-color-on-surface-variant;
+        color: colors.$nt-color-on-surface-variant;
         margin: 0;
     }
 

@@ -19,27 +19,27 @@
     }
 
     .eyebrow {
-        color: colors.$tnt-color-primary;
+        color: colors.$nt-color-primary;
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
     }
 
     .expected-behavior {
-        background: colors.$tnt-color-secondary-container;
+        background: colors.$nt-color-secondary-container;
         border-radius: corners.$nt-corner-radius-medium;
-        color: colors.$tnt-color-on-secondary-container;
+        color: colors.$nt-color-on-secondary-container;
         display: grid;
         gap: 4px;
         padding: 16px;
     }
 
     .wizard-frame {
-        background: colors.$tnt-color-surface;
+        background: colors.$nt-color-surface;
         block-size: clamp(28rem, 65vh, 40rem);
-        border: 1px solid colors.$tnt-color-outline-variant;
+        border: 1px solid colors.$nt-color-outline-variant;
         border-radius: corners.$nt-corner-radius-large;
-        box-shadow: 0 2px 8px colors.$tnt-color-shadow;
+        box-shadow: 0 2px 8px colors.$nt-color-shadow;
         min-inline-size: 0;
         overflow: hidden;
     }
@@ -59,7 +59,7 @@
         }
 
         p {
-            color: colors.$tnt-color-on-surface-variant;
+            color: colors.$nt-color-on-surface-variant;
         }
     }
 
