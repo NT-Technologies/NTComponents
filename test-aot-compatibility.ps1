@@ -145,6 +145,7 @@ function Start-StaticFileServer {
                 }
 
                 $client = $listener.AcceptTcpClient()
+                $client.ReceiveTimeout = 5000
                 try {
                     $stream = $client.GetStream()
                     $buffer = [byte[]]::new(8192)
@@ -206,6 +207,9 @@ function Start-StaticFileServer {
                     if ($method -ne 'HEAD') {
                         $stream.Write($bytes, 0, $bytes.Length)
                     }
+                }
+                catch {
+                    # Drop a connection that times out or resets so one idle socket cannot stall the server.
                 }
                 finally {
                     $client.Close()
@@ -297,7 +301,9 @@ function Invoke-ChromiumRuntimeExpression {
         $cancellation.Dispose()
         if ($socket.State -eq [System.Net.WebSockets.WebSocketState]::Open) {
             try {
-                $socket.CloseAsync([System.Net.WebSockets.WebSocketCloseStatus]::NormalClosure, 'done', [System.Threading.CancellationToken]::None).GetAwaiter().GetResult()
+                if (-not $socket.CloseAsync([System.Net.WebSockets.WebSocketCloseStatus]::NormalClosure, 'done', [System.Threading.CancellationToken]::None).Wait(5000)) {
+                    $socket.Abort()
+                }
             }
             catch {
                 $socket.Abort()
@@ -453,6 +459,8 @@ function Invoke-BrowserSmoke {
                 '--no-first-run',
                 '--disable-background-networking',
                 '--disable-search-engine-choice-screen',
+                '--use-mock-keychain',
+                '--password-store=basic',
                 '--remote-allow-origins=*',
                 "--remote-debugging-port=$debugPort",
                 "--user-data-dir=$browserUserDataDirectory",
@@ -473,6 +481,7 @@ function Invoke-BrowserSmoke {
                 $browserArgs = @('--disable-gpu-sandbox') + $browserArgs
             }
 
+            Write-Host "Browser smoke attempt ${attempt}: launching $browser against $($server.Url)"
             $browserRun = Start-BrowserProcess -Browser $browser -Arguments $browserArgs
             $browserProcess = $browserRun.Process
 
@@ -500,6 +509,7 @@ function Invoke-BrowserSmoke {
                 }
 
                 if ($devToolsPage) {
+                    Write-Host "Browser smoke attempt ${attempt}: DevTools connected, waiting for the smoke marker"
                     while ([DateTimeOffset]::UtcNow -lt $deadline) {
                         if ($browserProcess.HasExited) {
                             $lastBrowserExitCode = $browserProcess.ExitCode
@@ -530,6 +540,7 @@ function Invoke-BrowserSmoke {
                 $browserProcess.Dispose()
             }
 
+            Write-Host "Browser smoke attempt ${attempt}: did not render the smoke marker (exit code: $lastBrowserExitCode, DevTools error: $lastBrowserError)"
             Remove-Item -LiteralPath $browserUserDataDirectory -Recurse -Force -ErrorAction SilentlyContinue
             Start-Sleep -Milliseconds 500
         }
