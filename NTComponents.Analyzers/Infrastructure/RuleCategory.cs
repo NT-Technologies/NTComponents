@@ -7,5 +7,5 @@ internal static class RuleCategory {
     public const string Migration = "Migration";
 
     /// <summary>Each rule links to its RULES.md section: <c>HelpUri + "#ntc1003"</c>.</summary>
-    public const string HelpUri = "https://github.com/Notallthatevil/NTComponents/blob/main/NTComponents.Analyzers/RULES.md";
+    public const string HelpUri = "https://github.com/NT-Technologies/NTComponents/blob/main/NTComponents.Analyzers/RULES.md";
 }

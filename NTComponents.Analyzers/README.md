@@ -17,7 +17,7 @@ Diagnostics use the `NTC` prefix and run during IDE analysis and builds. They ch
 - **Accessibility** rules report controls that would render without an accessible name.
 - **Info** suggestions report values a component ignores or adjusts, such as a parameter that only applies in another mode.
 
-The analyzers only report what they can prove from constant values; anything computed at runtime is left alone. See [RULES.md](https://github.com/Notallthatevil/NTComponents/blob/main/NTComponents.Analyzers/RULES.md) for every rule, and tune one with `dotnet_diagnostic.NTC1003.severity` or a category with `dotnet_analyzer_diagnostic.category-Accessibility.severity` in `.editorconfig`.
+The analyzers only report what they can prove from constant values; anything computed at runtime is left alone. See [RULES.md](https://github.com/NT-Technologies/NTComponents/blob/main/NTComponents.Analyzers/RULES.md) for every rule, and tune one with `dotnet_diagnostic.NTC1003.severity` or a category with `dotnet_analyzer_diagnostic.category-Accessibility.severity` in `.editorconfig`.
 
 ## Color Migration
 
@@ -33,4 +33,4 @@ Pass a project or solution path after `analyzers` when needed. The CLI covers C#
 
 Fix All converts color references throughout the selected C# scope. Legacy TnT components and obsolete `NTInputSelect` still accept `TnTColor`; retain their legacy arguments or use `ToLegacyColor()` for migrated shared colors, and review mixed NT/TnT bindings after applying fixes.
 
-Source and issue tracking: <https://github.com/Notallthatevil/NTComponents>
+Source and issue tracking: <https://github.com/NT-Technologies/NTComponents>

@@ -2,8 +2,8 @@
   <PropertyGroup>
     <Authors>NT Technologies</Authors>
     <Company>NT Technologies</Company>
-    <PackageProjectUrl>https://github.com/Notallthatevil/NTComponents</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/Notallthatevil/NTComponents</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/NT-Technologies/NTComponents</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/NT-Technologies/NTComponents</RepositoryUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>Logo.png</PackageIcon>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
