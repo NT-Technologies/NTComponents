@@ -90,6 +90,10 @@ jobs:
       shell: pwsh
       run: dotnet workload restore Tests/AotCompatibility.TestApp/AotCompatibility.TestApp.csproj --skip-manifest-update
 
+    - name: Enable Safari automation for AOT browser smoke
+      if: runner.os == 'macOS'
+      run: sudo safaridriver --enable
+
     - name: Publish AOT smoke app, assert static analysis warning count, and browser-smoke the app
       # A step timeout keeps the log; a job timeout discards it.
       timeout-minutes: 20
