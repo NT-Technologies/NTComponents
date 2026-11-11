@@ -112,8 +112,8 @@ public abstract class NTIcon : NTComponentBase {
         builder.AddElementReferenceCapture(60, e => Element = e);
 
         if (Tooltip is not null) {
-            builder.OpenComponent<TnTTooltip>(70);
-            builder.AddComponentParameter(80, nameof(TnTTooltip.ChildContent), Tooltip);
+            builder.OpenComponent<NTTooltip>(70);
+            builder.AddComponentParameter(80, nameof(NTTooltip.ChildContent), Tooltip);
             builder.CloseComponent();
         }
 

@@ -126,7 +126,7 @@
                     @foreach (var swatch in _previewSwatches) {
                         <div class="theme-swatch" style="@($"--theme-swatch: var({swatch.Token}); --theme-swatch-text: var({swatch.OnToken})")">
                             <span>@swatch.Label</span>
-                            <code>@swatch.Token.Replace("--tnt-color-", string.Empty)</code>
+                            <code>@swatch.Token.Replace("--nt-color-", string.Empty)</code>
                         </div>
                     }
                 </div>

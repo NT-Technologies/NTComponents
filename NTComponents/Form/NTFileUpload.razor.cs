@@ -379,7 +379,7 @@ public partial class NTFileUpload {
         await UpdateProgressAsync(item, 0, UploadingText, false);
         try {
             await using var inner = item.BrowserFile.OpenReadStream(MaximumFileSize);
-            await using var tracked = new NTInputFileProgressTrackingReadStream(inner, bytesRead => UpdateReadProgressAsync(item, args, bytesRead), () => UpdateProcessingAsync(item, args));
+            await using var tracked = new NTUploadProgressStream(inner, bytesRead => UpdateReadProgressAsync(item, args, bytesRead), () => UpdateProcessingAsync(item, args));
             args.Stream = tracked;
 
             await OnUploadFile.InvokeAsync(args);

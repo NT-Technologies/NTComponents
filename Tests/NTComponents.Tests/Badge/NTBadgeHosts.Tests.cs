@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Components;
-using RippleTestingUtility = NTComponents.Tests.TestingUtility.TestingUtility;
 
 namespace NTComponents.Tests.Badge;
 
@@ -7,7 +6,6 @@ public class NTBadgeHosts_Tests : BunitContext {
 
     public NTBadgeHosts_Tests() {
         Renderer.SetRendererInfo(new RendererInfo("Static", false));
-        RippleTestingUtility.SetupRippleEffectModule(this);
         foreach (var path in new[] { "./_content/NTComponents/Menus/NTMenu.razor.js", "./_content/NTComponents/NavRail/NTNavigationRail.razor.js", "./_content/NTComponents/TabView/NTTabView.razor.js" }) {
             var module = JSInterop.SetupModule(path);
             module.SetupVoid("onLoad", _ => true).SetVoidResult();

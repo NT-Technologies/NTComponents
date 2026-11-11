@@ -13,7 +13,7 @@
 
     legend {
         margin-block-end: 8px;
-        color: var(--tnt-color-on-surface-variant);
+        color: var(--nt-color-on-surface-variant);
         font-size: 12px;
         font-weight: 500;
         line-height: 16px;
@@ -48,7 +48,7 @@
     }
 
     &[aria-pressed='true'] {
-        outline: 2px solid var(--tnt-color-primary);
+        outline: 2px solid var(--nt-color-primary);
         outline-offset: 2px;
 
         .selection-mark {
@@ -57,7 +57,7 @@
     }
 
     &:focus-visible {
-        outline: 3px solid var(--tnt-color-primary);
+        outline: 3px solid var(--nt-color-primary);
         outline-offset: 2px;
     }
 }

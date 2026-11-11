@@ -45,14 +45,6 @@ public static class JSRuntimeExt {
     }
 
     /// <summary>
-    ///     Gets the hex code for a specific color.
-    /// </summary>
-    /// <param name="jsRuntime">The JavaScript runtime instance.</param>
-    /// <param name="color">    The color to get the hex code for.</param>
-    /// <returns>A <see cref="ValueTask{TResult}" /> representing the asynchronous operation that returns the hex code as a string.</returns>
-    public static ValueTask<string> GetColorHexCodeAsync(this IJSRuntime jsRuntime, TnTColor color) => jsRuntime.InvokeAsync<string>("NTComponents.getColorValueFromEnumName", color.ToString());
-
-    /// <summary>
     ///     Gets the current browser location URL.
     /// </summary>
     /// <param name="jsRuntime">The JavaScript runtime instance.</param>

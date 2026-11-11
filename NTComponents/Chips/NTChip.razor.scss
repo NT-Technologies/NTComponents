@@ -266,7 +266,7 @@ $nt-chip-elevations: (
     }
 
     ::deep {
-        .tnt-icon {
+        .nt-icon {
             align-items: center;
             color: inherit;
             display: inline-flex;
@@ -280,7 +280,7 @@ $nt-chip-elevations: (
 
     &.nt-chip-input.nt-chip-with-leading {
         .nt-chip-leading,
-        .nt-chip-leading ::deep .tnt-icon {
+        .nt-chip-leading ::deep .nt-icon {
             block-size: $nt-chip-avatar-size;
             border-radius: var(--nt-sys-shape-corner-medium, 12px);
             flex-basis: $nt-chip-avatar-size;
@@ -289,7 +289,7 @@ $nt-chip-elevations: (
         }
     }
 
-    &:not(.tnt-disabled) {
+    &:not(.nt-disabled) {
         .nt-chip-control:not(.nt-chip-static-control):hover .nt-chip-container::before,
         .nt-chip-remove:hover::before {
             opacity: $nt-chip-state-opacity-hover;
@@ -315,7 +315,7 @@ $nt-chip-elevations: (
         }
     }
 
-    &.tnt-disabled {
+    &.nt-disabled {
         color: $nt-chip-disabled-text-color;
         cursor: not-allowed;
 

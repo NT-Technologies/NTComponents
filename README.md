@@ -1,9 +1,9 @@
 # NTComponents
 
-[![PR Build](https://github.com/Notallthatevil/NTComponents/actions/workflows/pr-build.yml/badge.svg)](https://github.com/Notallthatevil/NTComponents/actions/workflows/pr-build.yml)
-[![AOT Compatibility](https://github.com/Notallthatevil/NTComponents/actions/workflows/ensure-aot-build.yml/badge.svg)](https://github.com/Notallthatevil/NTComponents/actions/workflows/ensure-aot-build.yml)
+[![PR Build](https://github.com/NT-Technologies/NTComponents/actions/workflows/pr-build.yml/badge.svg)](https://github.com/NT-Technologies/NTComponents/actions/workflows/pr-build.yml)
+[![AOT Compatibility](https://github.com/NT-Technologies/NTComponents/actions/workflows/ensure-aot-build.yml/badge.svg)](https://github.com/NT-Technologies/NTComponents/actions/workflows/ensure-aot-build.yml)
 
-NTComponents is a Material 3 inspired Blazor component library for .NET 9, .NET 10, and .NET 11 applications. The current component model is `NT*` first, with source-generated documentation metadata, render-compatibility guidance, static web assets, scoped CSS, optional JavaScript enhancement, and analyzer coverage for component usage rules.
+NTComponents is a Material 3 inspired Blazor component library for .NET 10 and .NET 11 applications. The current component model is `NT*` first, with source-generated documentation metadata, render-compatibility guidance, static web assets, scoped CSS, optional JavaScript enhancement, and analyzer coverage for component usage rules.
 
 The package is designed for Blazor Web Apps, Blazor WebAssembly, interactive render modes, and static SSR scenarios where components can render useful HTML before browser enhancement.
 
@@ -85,7 +85,7 @@ Register the library services in `Program.cs`:
 builder.Services.AddNTServices();
 ```
 
-`AddNTServices()` registers the NT snackbar, toast, dialog, local storage, session storage, and default option services used by the component library. The legacy `AddTnTServices()` extension remains available as an obsolete compatibility shim.
+`AddNTServices()` registers the NT snackbar, toast, dialog, local storage, session storage, and default option services used by the component library.
 
 ### 4. Add head dependencies
 
@@ -129,7 +129,7 @@ Add app-level hosts once near the route or layout level when you use these servi
 
 ## Component Model
 
-NTComponents uses the `NT*` API surface for new component work. Some legacy `TnT*` components and services remain for compatibility, but new code should prefer `NTButton`, `NTCard`, `NTDialog`, `NTToast`, `NTSnackbar`, `NTThemeToggle`, `NTNavigationRail`, `NTProgress`, `NTLoader`, `NTCarousel`, and the `NTInput*` form components.
+NTComponents uses the `NT*` API surface. Start with `NTButton`, `NTCard`, `NTDialog`, `NTToast`, `NTSnackbar`, `NTThemeToggle`, `NTNavigationRail`, `NTProgress`, `NTLoader`, `NTCarousel`, and the `NTInput*` form components.
 
 The library's component model is built around:
 
@@ -149,7 +149,7 @@ The library includes components for:
 - Navigation: `NTNavLink`, `NTNavigationRail`, `NTNavigationRailItem`, `NTNavigationRailGroup`.
 - Surfaces and content: `NTCard`, `NTDivider`, `NTTag`, `NTChip`, `NTSkeleton`, `NTShape`, `NTTooltip`.
 - Feedback: `NTToast`, `NTSnackbar`, `NTProgress`, `NTLoader`.
-- Forms: `NTForm`, `NTInputText`, `NTTextArea`, `NTInputCheckbox`, `NTInputSwitch`, `NTInputRadioGroup`, `NTInputSelect`, `NTSelect`, `NTCombobox`, `NTAutocomplete`, `NTTypeahead`, `NTInputSlider`, `NTInputRangeSlider`, `NTInputDateTime`, `NTFileUpload`.
+- Forms: `NTForm`, `NTInputText`, `NTTextArea`, `NTInputCheckbox`, `NTInputSwitch`, `NTInputRadioGroup`, `NTSelect`, `NTCombobox`, `NTAutocomplete`, `NTTypeahead`, `NTInputSlider`, `NTInputRangeSlider`, `NTInputDateTime`, `NTFileUpload`.
 - Overlays and menus: `NTDialog`, `NTMenu`, `NTContextMenu`.
 - Rich components: `NTDataGrid`, `NTCarousel`, `NTCarouselItem`, `NTTabView`, `NTTab`, `NTWizard`, `NTRichTextEditor`, `NTVirtualize`.
 
@@ -220,23 +220,25 @@ The repository produces:
 
 The component package includes analyzer projects during build so component rules stay close to the public API.
 
-## Migrating Colors To NTColor
+## Upgrading To 2.0
 
-Active NT-prefixed components, their models, and services now use `NTColor`. This is a breaking API change: replace `TnTColor.Primary` with `NTColor.Primary`, update color property and variable types, and use `ToCssNTColorVariable()` when generating styles. Legacy TnT components and obsolete `NTInputSelect` retain `TnTColor`; use `NTAutocomplete` or `NTSelect` for new code.
+2.0 targets .NET 10 and .NET 11 only, and removes every API that 1.x marked `[Obsolete]`, along with the legacy `TnT*` components. Move to the `NT*` equivalents before upgrading:
 
-The `NTComponents` and `NTComponents.Analyzers` packages include the migration analyzer and code fixer. After updating your package reference, run this from your application's solution directory to analyze and apply supported C# fixes in one command:
+- Components: `TnTButton` → `NTButton`, `TnTInput*` → `NTInput*`, `TnTDataGrid` → `NTDataGrid`, `TnTSideNav` → `NTNavigationRail`, `TnTWizard` → `NTWizard`, and so on. Replace `NTInputSelect` with `NTSelect` or `NTAutocomplete`, and `NTInputFile` with `NTFileUpload`.
+- Services: `AddTnTServices()` → `AddNTServices()`. `ITnTDialogService` and `ITnTToastService` are gone; use owned `NTDialog` components and `INTToastService` with `NTToast`.
+- Enums: `TnTColor` → `NTColor`, `Size` → `NTSize`, `TextAlign` → `NTTextAlign`, `LayoutDirection` → `NTLayoutDirection`.
+
+To migrate colors, run the migration fixer while still on a 1.x or 2.0 preview package. It cannot run after upgrading, because it needs `TnTColor` to exist:
 
 ```shell
 dotnet format analyzers --diagnostics NTC1077 NTC1079 --severity warn
 ```
 
-You can also pass a project or solution path after `analyzers`. The same fixes are available through your editor's Quick Actions and Fix All commands. The command covers C# files, including `.razor.cs`; `.razor` markup must be updated in the editor. Build diagnostics identify legacy references in Razor expressions.
+`NTC1078` flags `None`, `Black`, and `White`, which have no NTColor equivalent. Use `null` or omit an optional color parameter to get the component default. For fixed black or white, pick an appropriate semantic role instead.
 
-The fixer converts legacy color references throughout the selected C# scope. If you still use TnT components, keep their `TnTColor` arguments or pass migrated shared colors through `ToLegacyColor()`; review those bindings after applying Fix All.
+Themes must define `--nt-color-*` tokens. 2.0 no longer reads `--tnt-color-*`, so rename those tokens in your theme files, for example `--tnt-color-primary` → `--nt-color-primary`. Do the same in any custom CSS that uses `var(--tnt-color-*)`.
 
-`NTC1078` identifies `None`, `Black`, and `White`, which have no NTColor equivalent and are left for manual migration. Use `null` or omit an optional color parameter for the component default; choose an appropriate semantic role for fixed black or white colors. Do not cast those three legacy values into NTColor.
-
-Existing themes that define `--tnt-color-*` on `:root` continue to work through the compatibility stylesheet loaded by `NTHeadDependencies`. Theme CSS files do not need to change for this migration.
+Every other `tnt-` name is now `nt-`: CSS classes (`tnt-icon` → `nt-icon`), custom properties, `data-tnt-*` attributes, the `<tnt-page-script>` element, and the `tnt-theme-changed` event (`nt-theme-changed`). Update any custom CSS, JavaScript, or test selectors that target the old names.
 
 ## Development
 

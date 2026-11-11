@@ -74,7 +74,7 @@ $fab-menu-sizes: (
         }
     }
 
-    ::deep .nt-fab-menu-open-icon .tnt-icon {
+    ::deep .nt-fab-menu-open-icon .nt-icon {
         font-size: $source-icon-size;
     }
 }
@@ -88,7 +88,7 @@ $fab-menu-sizes: (
     vertical-align: middle;
 
     @each $name, $tokens in $fab-menu-sizes {
-        &.tnt-size-#{$name} {
+        &.nt-size-#{$name} {
             @include fab-menu-size($tokens);
         }
     }
@@ -538,8 +538,8 @@ $fab-menu-sizes: (
             transition: border-radius $shape-transition;
         }
 
-        .nt-fab-menu-button .tnt-icon,
-        .nt-fab-menu-item-icon .tnt-icon {
+        .nt-fab-menu-button .nt-icon,
+        .nt-fab-menu-item-icon .nt-icon {
             color: inherit;
             font-size: $item-icon-size;
             pointer-events: none;
@@ -680,33 +680,33 @@ $fab-menu-sizes: (
     }
 }
 
-body:has(.tnt-footer, .nt-footer) {
+body:has(.nt-footer) {
     .nt-fab-menu {
         &.nt-fab-menu-placement-lower-right,
         &.nt-fab-menu-placement-lower-left {
-            inset-block-end: calc(#{measurements.$tnt-footer-height} + #{$compact-placement-offset});
+            inset-block-end: calc(#{measurements.$nt-footer-height} + #{$compact-placement-offset});
         }
 
         @media (min-width: 600px) {
             &.nt-fab-menu-placement-lower-right,
             &.nt-fab-menu-placement-lower-left {
-                inset-block-end: calc(#{measurements.$tnt-footer-height} + #{$medium-placement-offset});
+                inset-block-end: calc(#{measurements.$nt-footer-height} + #{$medium-placement-offset});
             }
         }
     }
 }
 
-body:has(.tnt-header, .nt-header) {
+body:has(.nt-header) {
     .nt-fab-menu {
         &.nt-fab-menu-placement-upper-right,
         &.nt-fab-menu-placement-upper-left {
-            inset-block-start: calc(#{measurements.$tnt-header-height} + #{$compact-placement-offset});
+            inset-block-start: calc(#{measurements.$nt-header-height} + #{$compact-placement-offset});
         }
 
         @media (min-width: 600px) {
             &.nt-fab-menu-placement-upper-right,
             &.nt-fab-menu-placement-upper-left {
-                inset-block-start: calc(#{measurements.$tnt-header-height} + #{$medium-placement-offset});
+                inset-block-start: calc(#{measurements.$nt-header-height} + #{$medium-placement-offset});
             }
         }
     }

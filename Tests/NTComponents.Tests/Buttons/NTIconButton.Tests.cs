@@ -1,13 +1,10 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using RippleTestingUtility = NTComponents.Tests.TestingUtility.TestingUtility;
 
 namespace NTComponents.Tests.Buttons;
 
 public class NTIconButton_Tests : BunitContext {
     private static NTIcon SampleIcon => MaterialIcon.Menu;
-
-    public NTIconButton_Tests() => RippleTestingUtility.SetupRippleEffectModule(this);
 
     [Fact]
     public void Default_Render_Uses_Standard_Variant_Button_Type_And_AriaLabel() {
@@ -121,7 +118,7 @@ public class NTIconButton_Tests : BunitContext {
         var iconWrapper = cut.Find(".nt-icon-button-icon");
 
         iconWrapper.GetAttribute("aria-hidden")!.Should().Be("true");
-        iconWrapper.QuerySelector(".tnt-icon")!.TextContent.Should().Be(MaterialIcon.Menu.Icon);
+        iconWrapper.QuerySelector(".nt-icon")!.TextContent.Should().Be(MaterialIcon.Menu.Icon);
     }
 
     [Fact]
@@ -182,7 +179,7 @@ public class NTIconButton_Tests : BunitContext {
 
         button.HasAttribute("disabled").Should().BeTrue();
         button.GetAttribute("class")!.Should().Contain("nt-button-progress-active");
-        button.GetAttribute("class")!.Should().NotContain("tnt-disabled");
+        button.GetAttribute("class")!.Should().NotContain("nt-disabled");
         cut.Find(".nt-button-progress .nt-progress").GetAttribute("class")!.Should().Contain("nt-progress-ring");
     }
 
@@ -226,7 +223,7 @@ public class NTIconButton_Tests : BunitContext {
             .Add(x => x.AriaLabel, "Open menu")
             .Add(x => x.EnableRipple, false));
 
-        cut.Markup.Should().NotContain("tnt-ripple-effect");
+        cut.FindAll(".nt-button-ripple-host").Should().BeEmpty();
         cut.Markup.Should().NotContain("nt-button-ripple-host");
         cut.Markup.Should().Contain("startButtonInteraction");
     }
@@ -238,7 +235,6 @@ public class NTIconButton_Tests : BunitContext {
             .Add(x => x.AriaLabel, "Open menu"));
 
         cut.Find(".nt-button-ripple-host").Should().NotBeNull();
-        cut.Markup.Should().NotContain("tnt-ripple-effect");
     }
 
     [Theory]
@@ -389,7 +385,7 @@ public class NTIconButton_Tests : BunitContext {
 
         var classes = cut.Find("button").GetAttribute("class")!;
 
-        classes.Should().Contain("tnt-size-xl");
+        classes.Should().Contain("nt-size-xl");
         classes.Should().Contain("nt-icon-button-width-wide");
         classes.Should().Contain("nt-icon-button-shape-square");
     }

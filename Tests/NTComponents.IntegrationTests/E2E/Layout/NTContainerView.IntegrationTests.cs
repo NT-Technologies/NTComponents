@@ -88,7 +88,7 @@ public class NTContainerView_IntegrationTests : IAsyncLifetime {
                 }
 
                 const headerHeight = header.getBoundingClientRect().height;
-                view.style.setProperty('--tnt-header-height', `${headerHeight}px`);
+                view.style.setProperty('--nt-header-height', `${headerHeight}px`);
                 const stickyOffset = Number.parseFloat(getComputedStyle(quickNav).top);
                 return getComputedStyle(quickNav).position === 'sticky'
                     && stickyOffset >= headerHeight + 16;

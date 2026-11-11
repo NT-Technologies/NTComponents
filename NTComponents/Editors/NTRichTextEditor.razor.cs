@@ -298,12 +298,12 @@ public partial class NTRichTextEditor : INTPageScriptComponent<NTRichTextEditor>
 
     // Constant for the common case; custom classes still go through the builder so dedupe and trimming stay identical.
     private static string GetToolbarButtonClass(INTRichTextEditorButton toolbarButton) => string.IsNullOrWhiteSpace(toolbarButton.CssClass)
-        ? "tnt-components tnt-rich-text-editor-toolbar-button"
-        : CssClassBuilder.Create().AddClass("tnt-rich-text-editor-toolbar-button").AddClass(toolbarButton.CssClass).Build();
+        ? "nt-components nt-rich-text-editor-toolbar-button"
+        : CssClassBuilder.Create().AddClass("nt-rich-text-editor-toolbar-button").AddClass(toolbarButton.CssClass).Build();
 
     private static string GetToolbarDividerClass(INTRichTextEditorButton toolbarButton) => string.IsNullOrWhiteSpace(toolbarButton.CssClass)
-        ? "tnt-components tnt-rich-text-editor-toolbar-divider"
-        : CssClassBuilder.Create().AddClass("tnt-rich-text-editor-toolbar-divider").AddClass(toolbarButton.CssClass).Build();
+        ? "nt-components nt-rich-text-editor-toolbar-divider"
+        : CssClassBuilder.Create().AddClass("nt-rich-text-editor-toolbar-divider").AddClass(toolbarButton.CssClass).Build();
 
     /// <inheritdoc />
     protected override void OnParametersSet() {
@@ -324,7 +324,7 @@ public partial class NTRichTextEditor : INTPageScriptComponent<NTRichTextEditor>
         }
 
         TooltipIcon.Tooltip = Tooltip;
-        TooltipIcon.AdditionalClass = "tnt-tooltip-icon";
+        TooltipIcon.AdditionalClass = "nt-tooltip-icon";
         TooltipIcon.Size = IconSize.Small;
 
         base.OnParametersSet();

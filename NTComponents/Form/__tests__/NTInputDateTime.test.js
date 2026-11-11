@@ -54,15 +54,15 @@ describe('NTInputDateTime picker behavior', () => {
         value = '',
     } = {}) {
         const suffix = ++idCounter;
-        const pickerId = `tnt-dtp-test-${suffix}`;
+        const pickerId = `nt-dtp-test-${suffix}`;
 
         const input = document.createElement('input');
         input.type = mode === 'datetime' ? 'datetime-local' : mode;
         input.value = value;
-        input.dataset.tntDtpInput = 'true';
-        input.dataset.tntDtpTarget = pickerId;
-        input.dataset.tntDtpMode = mode;
-        input.dataset.tntDtpOpenOnFocus = openOnFocus ? 'true' : 'false';
+        input.dataset.ntDtpInput = 'true';
+        input.dataset.ntDtpTarget = pickerId;
+        input.dataset.ntDtpMode = mode;
+        input.dataset.ntDtpOpenOnFocus = openOnFocus ? 'true' : 'false';
 
         if (format) {
             input.setAttribute('format', format);
@@ -74,8 +74,8 @@ describe('NTInputDateTime picker behavior', () => {
 
         const trigger = document.createElement('button');
         trigger.type = 'button';
-        trigger.dataset.tntDtpTrigger = 'true';
-        trigger.dataset.tntDtpTarget = pickerId;
+        trigger.dataset.ntDtpTrigger = 'true';
+        trigger.dataset.ntDtpTarget = pickerId;
 
         if (min) {
             input.min = min;
@@ -84,101 +84,101 @@ describe('NTInputDateTime picker behavior', () => {
             input.max = max;
         }
         if (disabledDates) {
-            input.dataset.tntDtpDisabledDates = disabledDates;
+            input.dataset.ntDtpDisabledDates = disabledDates;
         }
         if (disabledTimes) {
-            input.dataset.tntDtpDisabledTimes = disabledTimes;
+            input.dataset.ntDtpDisabledTimes = disabledTimes;
         }
 
         const picker = document.createElement('div');
         picker.id = pickerId;
         picker.tabIndex = -1;
-        picker.dataset.tntDtpPicker = 'true';
-        picker.dataset.tntDtpMode = mode;
+        picker.dataset.ntDtpPicker = 'true';
+        picker.dataset.ntDtpMode = mode;
         const rendersDatePanel = mode === 'date' || mode === 'datetime';
         const rendersMonthPanel = mode === 'date' || mode === 'datetime' || mode === 'month';
         const rendersYearPanel = mode === 'date' || mode === 'datetime';
         const rendersTimePanel = mode === 'datetime' || mode === 'time';
 
         const headline = document.createElement('div');
-        headline.dataset.tntDtpHeadline = '';
+        headline.dataset.ntDtpHeadline = '';
         picker.appendChild(headline);
 
         const subhead = document.createElement('div');
-        subhead.dataset.tntDtpSubhead = '';
+        subhead.dataset.ntDtpSubhead = '';
         picker.appendChild(subhead);
 
         const datePanel = document.createElement('div');
-        datePanel.dataset.tntDtpDatePanel = '';
+        datePanel.dataset.ntDtpDatePanel = '';
         const monthLabel = document.createElement('div');
-        monthLabel.dataset.tntDtpMonthLabel = '';
+        monthLabel.dataset.ntDtpMonthLabel = '';
         datePanel.appendChild(monthLabel);
         const calendarYearLabel = document.createElement('div');
-        calendarYearLabel.dataset.tntDtpCalendarYearLabel = '';
+        calendarYearLabel.dataset.ntDtpCalendarYearLabel = '';
         datePanel.appendChild(calendarYearLabel);
         const showMonthsButton = document.createElement('button');
         showMonthsButton.type = 'button';
-        showMonthsButton.dataset.tntDtpAction = 'show-months';
+        showMonthsButton.dataset.ntDtpAction = 'show-months';
         showMonthsButton.appendChild(monthLabel);
         const menuIcon = document.createElement('span');
-        menuIcon.className = 'tnt-dtp-menu-button-icon';
+        menuIcon.className = 'nt-dtp-menu-button-icon';
         showMonthsButton.appendChild(menuIcon);
         datePanel.appendChild(showMonthsButton);
         const showYearsButton = document.createElement('button');
         showYearsButton.type = 'button';
-        showYearsButton.dataset.tntDtpAction = 'show-years';
+        showYearsButton.dataset.ntDtpAction = 'show-years';
         showYearsButton.appendChild(calendarYearLabel);
         datePanel.appendChild(showYearsButton);
         const dayGrid = document.createElement('div');
         for (let i = 0; i < 42; i += 1) {
             const dayButton = document.createElement('button');
             dayButton.type = 'button';
-            dayButton.dataset.tntDtpDayIndex = String(i);
+            dayButton.dataset.ntDtpDayIndex = String(i);
             dayGrid.appendChild(dayButton);
         }
         datePanel.appendChild(dayGrid);
         picker.appendChild(datePanel);
 
         const monthPanel = document.createElement('div');
-        monthPanel.dataset.tntDtpMonthPanel = '';
+        monthPanel.dataset.ntDtpMonthPanel = '';
         const yearLabel = document.createElement('div');
-        yearLabel.dataset.tntDtpYearLabel = '';
+        yearLabel.dataset.ntDtpYearLabel = '';
         monthPanel.appendChild(yearLabel);
         const monthGrid = document.createElement('div');
-        monthGrid.dataset.tntDtpMonthGrid = '';
+        monthGrid.dataset.ntDtpMonthGrid = '';
         for (let i = 0; i < 12; i += 1) {
             const monthButton = document.createElement('button');
             monthButton.type = 'button';
-            monthButton.dataset.tntDtpMonthIndex = String(i);
+            monthButton.dataset.ntDtpMonthIndex = String(i);
             monthGrid.appendChild(monthButton);
         }
         monthPanel.appendChild(monthGrid);
         picker.appendChild(monthPanel);
 
         const yearPanel = document.createElement('div');
-        yearPanel.dataset.tntDtpYearPanel = '';
+        yearPanel.dataset.ntDtpYearPanel = '';
         const yearList = document.createElement('div');
-        yearList.dataset.tntDtpYearList = '';
+        yearList.dataset.ntDtpYearList = '';
         yearPanel.appendChild(yearList);
         picker.appendChild(yearPanel);
 
         const timePanel = document.createElement('div');
-        timePanel.dataset.tntDtpTimePanel = '';
+        timePanel.dataset.ntDtpTimePanel = '';
         const hourInput = document.createElement('input');
-        hourInput.dataset.tntDtpHour = '';
+        hourInput.dataset.ntDtpHour = '';
         timePanel.appendChild(hourInput);
         const minuteInput = document.createElement('input');
-        minuteInput.dataset.tntDtpMinute = '';
+        minuteInput.dataset.ntDtpMinute = '';
         timePanel.appendChild(minuteInput);
         const amButton = document.createElement('button');
         amButton.type = 'button';
-        amButton.dataset.tntDtpAction = 'set-am';
-        amButton.dataset.tntDtpMeridiem = 'am';
+        amButton.dataset.ntDtpAction = 'set-am';
+        amButton.dataset.ntDtpMeridiem = 'am';
         timePanel.appendChild(amButton);
         const pmButton = document.createElement('button');
         pmButton.type = 'button';
-        pmButton.dataset.tntDtpAction = 'set-pm';
-        pmButton.dataset.tntDtpMeridiem = 'pm';
+        pmButton.dataset.ntDtpAction = 'set-pm';
+        pmButton.dataset.ntDtpMeridiem = 'pm';
         timePanel.appendChild(pmButton);
         picker.appendChild(timePanel);
 
@@ -198,11 +198,11 @@ describe('NTInputDateTime picker behavior', () => {
         const actions = document.createElement('div');
         const confirmButton = document.createElement('button');
         confirmButton.type = 'button';
-        confirmButton.dataset.tntDtpAction = 'confirm';
+        confirmButton.dataset.ntDtpAction = 'confirm';
         actions.appendChild(confirmButton);
         const cancelButton = document.createElement('button');
         cancelButton.type = 'button';
-        cancelButton.dataset.tntDtpAction = 'cancel';
+        cancelButton.dataset.ntDtpAction = 'cancel';
         actions.appendChild(cancelButton);
         picker.appendChild(actions);
 
@@ -249,7 +249,7 @@ describe('NTInputDateTime picker behavior', () => {
 
     function createPageScriptFixture(options = {}) {
         const fixture = createPickerFixture(options);
-        const script = document.createElement('tnt-page-script');
+        const script = document.createElement('nt-page-script');
         document.body.insertBefore(script, fixture.root);
         return { ...fixture, script };
     }
@@ -259,13 +259,13 @@ describe('NTInputDateTime picker behavior', () => {
         input.type = type;
         input.disabled = disabled;
         input.readOnly = readOnly;
-        input.dataset.tntDtpNativeInput = 'true';
+        input.dataset.ntDtpNativeInput = 'true';
         input.showPicker = jest.fn();
 
         const trigger = document.createElement('button');
         trigger.type = 'button';
         trigger.tabIndex = -1;
-        trigger.dataset.tntDtpNativeTrigger = 'true';
+        trigger.dataset.ntDtpNativeTrigger = 'true';
 
         const root = document.createElement('div');
         root.className = 'nt-input-date-time nt-input-date-time-native-picker';
@@ -292,7 +292,7 @@ describe('NTInputDateTime picker behavior', () => {
     });
 
     afterEach(() => {
-        const trackedInputs = document.querySelectorAll('input[data-tnt-dtp-input="true"], input[data-tnt-dtp-native-input="true"]');
+        const trackedInputs = document.querySelectorAll('input[data-nt-dtp-input="true"], input[data-nt-dtp-native-input="true"]');
         trackedInputs.forEach(input => onDispose(input, null));
         document.body.innerHTML = '';
         jest.useRealTimers();
@@ -308,7 +308,7 @@ describe('NTInputDateTime picker behavior', () => {
         const expectedMonthLabel = new Intl.DateTimeFormat(undefined, { month: 'long' }).format(new Date(2026, 2, 1));
         const expectedYearLabel = new Intl.DateTimeFormat(undefined, { year: 'numeric' }).format(new Date(2026, 2, 1));
 
-        expect(picker.classList.contains('tnt-dtp-open')).toBe(true);
+        expect(picker.classList.contains('nt-dtp-open')).toBe(true);
         expect(monthLabel.textContent).toBe(expectedMonthLabel);
         expect(calendarYearLabel.textContent).toBe(expectedYearLabel);
         expect(document.activeElement).toBe(input);
@@ -338,15 +338,15 @@ describe('NTInputDateTime picker behavior', () => {
     test('creates picker panel controls lazily on first open', () => {
         const { picker, trigger } = createPickerFixture({ lazy: true, mode: 'date', value: '' });
 
-        expect(picker.querySelectorAll('[data-tnt-dtp-day-index]')).toHaveLength(0);
-        expect(picker.querySelectorAll('[data-tnt-dtp-month-index]')).toHaveLength(0);
+        expect(picker.querySelectorAll('[data-nt-dtp-day-index]')).toHaveLength(0);
+        expect(picker.querySelectorAll('[data-nt-dtp-month-index]')).toHaveLength(0);
 
         openPicker(trigger);
 
-        expect(picker.querySelectorAll('[data-tnt-dtp-day-index]')).toHaveLength(42);
-        expect(picker.querySelectorAll('[data-tnt-dtp-month-index]')).toHaveLength(12);
-        expect(picker.querySelector('[data-tnt-dtp-year-list]')).not.toBeNull();
-        expect(picker.querySelector('[data-tnt-dtp-hour]')).toBeNull();
+        expect(picker.querySelectorAll('[data-nt-dtp-day-index]')).toHaveLength(42);
+        expect(picker.querySelectorAll('[data-nt-dtp-month-index]')).toHaveLength(12);
+        expect(picker.querySelector('[data-nt-dtp-year-list]')).not.toBeNull();
+        expect(picker.querySelector('[data-nt-dtp-hour]')).toBeNull();
     });
 
     test.each([
@@ -358,10 +358,10 @@ describe('NTInputDateTime picker behavior', () => {
 
         openPicker(trigger);
 
-        expect(picker.querySelectorAll('[data-tnt-dtp-day-index]')).toHaveLength(expectations.dayCount);
-        expect(picker.querySelectorAll('[data-tnt-dtp-month-index]')).toHaveLength(expectations.monthCount);
-        expect(picker.querySelector('[data-tnt-dtp-year-list]') !== null).toBe(expectations.hasYearList);
-        expect(picker.querySelector('[data-tnt-dtp-hour]') !== null).toBe(expectations.hasTime);
+        expect(picker.querySelectorAll('[data-nt-dtp-day-index]')).toHaveLength(expectations.dayCount);
+        expect(picker.querySelectorAll('[data-nt-dtp-month-index]')).toHaveLength(expectations.monthCount);
+        expect(picker.querySelector('[data-nt-dtp-year-list]') !== null).toBe(expectations.hasYearList);
+        expect(picker.querySelector('[data-nt-dtp-hour]') !== null).toBe(expectations.hasTime);
     });
 
     test('month menu button switches docked date picker to month selection view', () => {
@@ -370,14 +370,14 @@ describe('NTInputDateTime picker behavior', () => {
         openPicker(trigger);
         showMonthsButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-        expect(picker.classList.contains('tnt-dtp-view-month')).toBe(true);
+        expect(picker.classList.contains('nt-dtp-view-month')).toBe(true);
         expect(cancelButton.textContent).toBe('Back');
         expect(cancelButton.getAttribute('aria-label')).toBe('Back to calendar');
         expect(confirmButton.hidden).toBe(true);
 
         cancelButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-        expect(picker.classList.contains('tnt-dtp-view-month')).toBe(false);
+        expect(picker.classList.contains('nt-dtp-view-month')).toBe(false);
         expect(cancelButton.textContent).toBe('Cancel');
         expect(confirmButton.hidden).toBe(false);
     });
@@ -389,9 +389,9 @@ describe('NTInputDateTime picker behavior', () => {
         openPicker(trigger);
         showYearsButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-        const selectedYear = yearList.querySelector('[data-tnt-dtp-year-option="2026"]');
+        const selectedYear = yearList.querySelector('[data-nt-dtp-year-option="2026"]');
 
-        expect(picker.classList.contains('tnt-dtp-view-year')).toBe(true);
+        expect(picker.classList.contains('nt-dtp-view-year')).toBe(true);
         expect(cancelButton.textContent).toBe('Back');
         expect(confirmButton.hidden).toBe(true);
         expect(yearList.children.length).toBeLessThanOrEqual(300);
@@ -399,9 +399,9 @@ describe('NTInputDateTime picker behavior', () => {
         expect(selectedYear).not.toBeNull();
         expect(selectedYear.hasAttribute('b-testscope')).toBe(true);
 
-        yearList.querySelector('[data-tnt-dtp-year-option="2030"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        yearList.querySelector('[data-nt-dtp-year-option="2030"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-        expect(picker.classList.contains('tnt-dtp-view-year')).toBe(false);
+        expect(picker.classList.contains('nt-dtp-view-year')).toBe(false);
         expect(calendarYearLabel.textContent).toBe('2030');
     });
 
@@ -414,12 +414,12 @@ describe('NTInputDateTime picker behavior', () => {
         openPicker(trigger);
         showYearsButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-        expect(yearList.querySelector('[data-tnt-dtp-year-option="1"]')).toBeNull();
+        expect(yearList.querySelector('[data-nt-dtp-year-option="1"]')).toBeNull();
 
         yearList.scrollTop = 0;
         yearList.dispatchEvent(new Event('scroll'));
 
-        const firstYear = yearList.querySelector('[data-tnt-dtp-year-option="1"]');
+        const firstYear = yearList.querySelector('[data-nt-dtp-year-option="1"]');
         expect(firstYear).not.toBeNull();
         expect(firstYear.textContent).toBe('0001');
         expect(yearList.children.length).toBeLessThanOrEqual(300);
@@ -434,13 +434,13 @@ describe('NTInputDateTime picker behavior', () => {
         openPicker(trigger);
         showYearsButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-        expect(yearList.querySelector('[data-tnt-dtp-year-option="9999"]')).toBeNull();
+        expect(yearList.querySelector('[data-nt-dtp-year-option="9999"]')).toBeNull();
 
         yearList.scrollTop = 960;
         yearList.dispatchEvent(new Event('scroll'));
         yearList.dispatchEvent(new Event('scroll'));
 
-        const lastYear = yearList.querySelector('[data-tnt-dtp-year-option="9999"]');
+        const lastYear = yearList.querySelector('[data-nt-dtp-year-option="9999"]');
         expect(lastYear).not.toBeNull();
         expect(lastYear.textContent).toBe('9999');
         expect(yearList.children.length).toBeLessThanOrEqual(300);
@@ -477,8 +477,8 @@ describe('NTInputDateTime picker behavior', () => {
 
         openPicker(trigger);
 
-        const outOfRange = picker.querySelector('[data-tnt-dtp-year="2026"][data-tnt-dtp-month="2"][data-tnt-dtp-day="5"]');
-        const inRange = picker.querySelector('[data-tnt-dtp-year="2026"][data-tnt-dtp-month="2"][data-tnt-dtp-day="15"]');
+        const outOfRange = picker.querySelector('[data-nt-dtp-year="2026"][data-nt-dtp-month="2"][data-nt-dtp-day="5"]');
+        const inRange = picker.querySelector('[data-nt-dtp-year="2026"][data-nt-dtp-month="2"][data-nt-dtp-day="15"]');
 
         expect(outOfRange).not.toBeNull();
         expect(inRange).not.toBeNull();
@@ -495,7 +495,7 @@ describe('NTInputDateTime picker behavior', () => {
 
         openPicker(trigger);
 
-        const disabledDate = picker.querySelector('[data-tnt-dtp-year="2026"][data-tnt-dtp-month="2"][data-tnt-dtp-day="15"]');
+        const disabledDate = picker.querySelector('[data-nt-dtp-year="2026"][data-nt-dtp-month="2"][data-nt-dtp-day="15"]');
 
         expect(disabledDate).not.toBeNull();
         expect(disabledDate.disabled).toBe(true);
@@ -505,13 +505,13 @@ describe('NTInputDateTime picker behavior', () => {
         const { input, picker, root, trigger } = createPickerFixture({ mode: 'date', value: '' });
 
         openPicker(trigger);
-        let targetDate = picker.querySelector('[data-tnt-dtp-year="2026"][data-tnt-dtp-month="2"][data-tnt-dtp-day="15"]');
+        let targetDate = picker.querySelector('[data-nt-dtp-year="2026"][data-nt-dtp-month="2"][data-nt-dtp-day="15"]');
         expect(targetDate.disabled).toBe(false);
 
-        input.dataset.tntDtpDisabledDates = '2026-03-15';
+        input.dataset.ntDtpDisabledDates = '2026-03-15';
         onUpdate(root, null);
 
-        targetDate = picker.querySelector('[data-tnt-dtp-year="2026"][data-tnt-dtp-month="2"][data-tnt-dtp-day="15"]');
+        targetDate = picker.querySelector('[data-nt-dtp-year="2026"][data-nt-dtp-month="2"][data-nt-dtp-day="15"]');
         expect(targetDate.disabled).toBe(true);
     });
 
@@ -559,7 +559,7 @@ describe('NTInputDateTime picker behavior', () => {
         trigger.dispatchEvent(mouseDown);
         trigger.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-        expect(root.dataset.tntDtpNativeEnhanced).toBe('true');
+        expect(root.dataset.ntDtpNativeEnhanced).toBe('true');
         expect(trigger.tabIndex).toBe(-1);
         expect(mouseDown.defaultPrevented).toBe(true);
         expect(input.showPicker).toHaveBeenCalledTimes(1);
@@ -568,7 +568,7 @@ describe('NTInputDateTime picker behavior', () => {
         onDispose(root, null);
         trigger.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-        expect(root.dataset.tntDtpNativeEnhanced).toBeUndefined();
+        expect(root.dataset.ntDtpNativeEnhanced).toBeUndefined();
         expect(input.showPicker).toHaveBeenCalledTimes(1);
     });
 
@@ -613,7 +613,7 @@ describe('NTInputDateTime picker behavior', () => {
 
         expect(input.type).toBe('text');
         expect(input.value).toBe('03/15/2026 02:05 PM');
-        expect(picker.querySelector('[data-tnt-dtp-meridiem="pm"]').getAttribute('aria-pressed')).toBe('true');
+        expect(picker.querySelector('[data-nt-dtp-meridiem="pm"]').getAttribute('aria-pressed')).toBe('true');
 
         minuteInput.value = '45';
         minuteInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -641,7 +641,7 @@ describe('NTInputDateTime picker behavior', () => {
         jest.runOnlyPendingTimers();
 
         expect(input.value).toBe(expected);
-        expect(picker.querySelector('[data-tnt-dtp-meridiem="am"]').getAttribute('aria-pressed')).toBe('true');
+        expect(picker.querySelector('[data-nt-dtp-meridiem="am"]').getAttribute('aria-pressed')).toBe('true');
     });
 
     test.each([
@@ -770,7 +770,7 @@ describe('NTInputDateTime picker behavior', () => {
 
         openPicker(second.trigger);
 
-        expect(second.picker.classList.contains('tnt-dtp-open')).toBe(true);
+        expect(second.picker.classList.contains('nt-dtp-open')).toBe(true);
     });
 
     test('disposing page-script element scope removes disconnected input listeners', () => {
@@ -778,10 +778,10 @@ describe('NTInputDateTime picker behavior', () => {
 
         openPicker(trigger);
         onDispose(root, null);
-        picker.classList.add('tnt-dtp-open');
+        picker.classList.add('nt-dtp-open');
         input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Tab' }));
 
-        expect(picker.classList.contains('tnt-dtp-open')).toBe(true);
+        expect(picker.classList.contains('nt-dtp-open')).toBe(true);
     });
 
     test('disposing disconnected page-script element scope removes input listeners', () => {
@@ -791,10 +791,10 @@ describe('NTInputDateTime picker behavior', () => {
         trigger.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         script.remove();
         onDispose(script, null);
-        picker.classList.add('tnt-dtp-open');
+        picker.classList.add('nt-dtp-open');
         input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Tab' }));
 
-        expect(picker.classList.contains('tnt-dtp-open')).toBe(true);
+        expect(picker.classList.contains('nt-dtp-open')).toBe(true);
     });
 
     test('tab on input closes picker', () => {
@@ -803,7 +803,7 @@ describe('NTInputDateTime picker behavior', () => {
         openPicker(trigger);
         input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Tab' }));
 
-        expect(picker.classList.contains('tnt-dtp-open')).toBe(false);
+        expect(picker.classList.contains('nt-dtp-open')).toBe(false);
     });
 
     test('enter on input confirms current selection and closes picker', () => {
@@ -813,7 +813,7 @@ describe('NTInputDateTime picker behavior', () => {
         input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Enter' }));
 
         expect(input.value).toBe('2026-03-15');
-        expect(picker.classList.contains('tnt-dtp-open')).toBe(false);
+        expect(picker.classList.contains('nt-dtp-open')).toBe(false);
     });
 
     test('typed date updates the open picker selection before Enter confirms it', () => {
@@ -824,14 +824,14 @@ describe('NTInputDateTime picker behavior', () => {
 
         input.value = '04/20/2030';
         input.dispatchEvent(new Event('input', { bubbles: true }));
-        const selectedDate = picker.querySelector('[data-tnt-dtp-year="2030"][data-tnt-dtp-month="3"][data-tnt-dtp-day="20"]');
+        const selectedDate = picker.querySelector('[data-nt-dtp-year="2030"][data-nt-dtp-month="3"][data-nt-dtp-day="20"]');
         const enterEvent = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Enter' });
         input.dispatchEvent(enterEvent);
 
         expect(selectedDate.getAttribute('aria-selected')).toBe('true');
         expect(input.value).toBe('04/20/2030');
         expect(enterEvent.defaultPrevented).toBe(true);
-        expect(picker.classList.contains('tnt-dtp-open')).toBe(false);
+        expect(picker.classList.contains('nt-dtp-open')).toBe(false);
     });
 
     test('typed time updates the open picker controls before Enter confirms it', () => {
@@ -845,9 +845,9 @@ describe('NTInputDateTime picker behavior', () => {
         input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Enter' }));
 
         expect(hourInput.value).toBe('1');
-        expect(picker.querySelector('[data-tnt-dtp-meridiem="am"]').getAttribute('aria-pressed')).toBe('true');
+        expect(picker.querySelector('[data-nt-dtp-meridiem="am"]').getAttribute('aria-pressed')).toBe('true');
         expect(input.value).toBe('01:30 AM');
-        expect(picker.classList.contains('tnt-dtp-open')).toBe(false);
+        expect(picker.classList.contains('nt-dtp-open')).toBe(false);
     });
 
     test('Enter preserves invalid typed text instead of confirming the stale picker selection', () => {
@@ -863,7 +863,7 @@ describe('NTInputDateTime picker behavior', () => {
 
         expect(input.value).toBe('02/31/2026');
         expect(enterEvent.defaultPrevented).toBe(true);
-        expect(picker.classList.contains('tnt-dtp-open')).toBe(true);
+        expect(picker.classList.contains('nt-dtp-open')).toBe(true);
     });
 
     test('Enter on an open picker input does not propagate to its form', () => {
@@ -906,22 +906,22 @@ describe('NTInputDateTime picker behavior', () => {
         input.addEventListener('change', changeHandler);
 
         openPicker(trigger);
-        picker.querySelector('[data-tnt-dtp-year="2026"][data-tnt-dtp-month="2"][data-tnt-dtp-day="16"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        picker.querySelector('[data-nt-dtp-year="2026"][data-nt-dtp-month="2"][data-nt-dtp-day="16"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
         expect(input.value).toBe('2026-03-16');
         expect(inputHandler).toHaveBeenCalledTimes(1);
         expect(changeHandler).toHaveBeenCalledTimes(1);
-        expect(picker.classList.contains('tnt-dtp-open')).toBe(false);
+        expect(picker.classList.contains('nt-dtp-open')).toBe(false);
     });
 
     test('selecting a datetime day fills the field and keeps the picker open for time edits', () => {
         const { input, minuteInput, picker, trigger } = createPickerFixture({ mode: 'datetime', value: '2026-03-15T14:05:00' });
 
         openPicker(trigger);
-        picker.querySelector('[data-tnt-dtp-year="2026"][data-tnt-dtp-month="2"][data-tnt-dtp-day="16"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        picker.querySelector('[data-nt-dtp-year="2026"][data-nt-dtp-month="2"][data-nt-dtp-day="16"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
         expect(input.value).toBe('2026-03-16T14:05');
-        expect(picker.classList.contains('tnt-dtp-open')).toBe(true);
+        expect(picker.classList.contains('nt-dtp-open')).toBe(true);
 
         minuteInput.value = '30';
         minuteInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -937,17 +937,17 @@ describe('NTInputDateTime picker behavior', () => {
         hourInput.dispatchEvent(new Event('input', { bubbles: true }));
 
         expect(input.value).toBe('11:15:00');
-        expect(picker.classList.contains('tnt-dtp-open')).toBe(true);
+        expect(picker.classList.contains('nt-dtp-open')).toBe(true);
     });
 
     test('selecting a month fills the month field and closes the picker', () => {
         const { input, picker, trigger } = createPickerFixture({ mode: 'month', value: '2026-03' });
 
         openPicker(trigger);
-        picker.querySelector('[data-tnt-dtp-month-index][data-tnt-dtp-month="5"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        picker.querySelector('[data-nt-dtp-month-index][data-nt-dtp-month="5"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
         expect(input.value).toBe('2026-06');
-        expect(picker.classList.contains('tnt-dtp-open')).toBe(false);
+        expect(picker.classList.contains('nt-dtp-open')).toBe(false);
     });
 
     test('cancel restores the value the field had when the picker opened', () => {
@@ -955,7 +955,7 @@ describe('NTInputDateTime picker behavior', () => {
 
         openPicker(trigger);
         const openValue = input.value;
-        picker.querySelector('[data-tnt-dtp-year="2026"][data-tnt-dtp-month="2"][data-tnt-dtp-day="20"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        picker.querySelector('[data-nt-dtp-year="2026"][data-nt-dtp-month="2"][data-nt-dtp-day="20"]').dispatchEvent(new MouseEvent('click', { bubbles: true }));
         minuteInput.value = '45';
         minuteInput.dispatchEvent(new Event('input', { bubbles: true }));
         expect(input.value).not.toBe(openValue);
@@ -963,7 +963,7 @@ describe('NTInputDateTime picker behavior', () => {
         cancelButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
         expect(input.value).toBe(openValue);
-        expect(picker.classList.contains('tnt-dtp-open')).toBe(false);
+        expect(picker.classList.contains('nt-dtp-open')).toBe(false);
     });
 
     test('picker controls are removed from tab order', () => {
@@ -983,7 +983,7 @@ describe('NTInputDateTime picker behavior', () => {
 
         openPicker(trigger);
 
-        expect(picker.classList.contains('tnt-dtp-modal')).toBe(true);
+        expect(picker.classList.contains('nt-dtp-modal')).toBe(true);
         expect(picker.getAttribute('aria-modal')).toBe('true');
     });
 
@@ -996,7 +996,7 @@ describe('NTInputDateTime picker behavior', () => {
         openPicker(trigger);
 
         expect(rafSpy).not.toHaveBeenCalled();
-        expect(picker.classList.contains('tnt-dtp-modal')).toBe(true);
+        expect(picker.classList.contains('nt-dtp-modal')).toBe(true);
         expect(picker.style.visibility).toBe('visible');
     });
 
@@ -1007,8 +1007,8 @@ describe('NTInputDateTime picker behavior', () => {
         onLoad(root, null);
         input.dispatchEvent(new Event('focus'));
 
-        expect(picker.classList.contains('tnt-dtp-open')).toBe(false);
-        expect(picker.classList.contains('tnt-dtp-modal')).toBe(false);
+        expect(picker.classList.contains('nt-dtp-open')).toBe(false);
+        expect(picker.classList.contains('nt-dtp-modal')).toBe(false);
     });
 
     test('desktop input focus opens docked picker when open on focus is enabled', () => {
@@ -1017,8 +1017,8 @@ describe('NTInputDateTime picker behavior', () => {
         onLoad(root, null);
         input.dispatchEvent(new Event('focus'));
 
-        expect(picker.classList.contains('tnt-dtp-open')).toBe(true);
-        expect(picker.classList.contains('tnt-dtp-modal')).toBe(false);
+        expect(picker.classList.contains('nt-dtp-open')).toBe(true);
+        expect(picker.classList.contains('nt-dtp-modal')).toBe(false);
     });
 
     test('clicking the input after trigger-open does not trigger a second open render cycle', () => {
@@ -1055,7 +1055,7 @@ describe('NTInputDateTime picker behavior', () => {
 
         openPicker(trigger);
 
-        expect(picker.classList.contains('tnt-dtp-modal')).toBe(false);
+        expect(picker.classList.contains('nt-dtp-modal')).toBe(false);
         expect(picker.style.left).toBe('36px');
     });
 
@@ -1066,7 +1066,7 @@ describe('NTInputDateTime picker behavior', () => {
 
         openPicker(trigger);
 
-        expect(picker.classList.contains('tnt-dtp-modal')).toBe(false);
+        expect(picker.classList.contains('nt-dtp-modal')).toBe(false);
         expect(picker.style.top).toBe('166px');
     });
 
@@ -1079,7 +1079,7 @@ describe('NTInputDateTime picker behavior', () => {
 
         onLoad(root, null);
 
-        expect(picker.classList.contains('tnt-dtp-open')).toBe(false);
-        expect(picker.classList.contains('tnt-dtp-modal')).toBe(false);
+        expect(picker.classList.contains('nt-dtp-open')).toBe(false);
+        expect(picker.classList.contains('nt-dtp-modal')).toBe(false);
     });
 });

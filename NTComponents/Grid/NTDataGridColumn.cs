@@ -23,8 +23,8 @@ public abstract class NTDataGridColumn<TItem> : ComponentBase, IDisposable where
     private string? _previousTitle;
     private string? _previousWidth;
     private SortDirection? _previousInitialSortDirection;
-    private TextAlign? _previousHeaderTextAlign;
-    private TextAlign? _previousTextAlign;
+    private NTTextAlign? _previousHeaderTextAlign;
+    private NTTextAlign? _previousTextAlign;
     private NTBreakpoint? _previousHideBelow;
     private bool _hasParameterState;
     private bool _previousSortable;
@@ -51,13 +51,13 @@ public abstract class NTDataGridColumn<TItem> : ComponentBase, IDisposable where
     ///     Gets or sets the body cell text alignment.
     /// </summary>
     [Parameter]
-    public TextAlign? TextAlign { get; set; }
+    public NTTextAlign? TextAlign { get; set; }
 
     /// <summary>
     ///     Gets or sets the header cell text alignment.
     /// </summary>
     [Parameter]
-    public TextAlign? HeaderTextAlign { get; set; }
+    public NTTextAlign? HeaderTextAlign { get; set; }
 
     /// <summary>
     ///     Gets or sets the preferred column width.
@@ -247,7 +247,7 @@ public abstract class NTDataGridColumn<TItem> : ComponentBase, IDisposable where
 
     private static string? Declaration(string propertyName, string? value) => string.IsNullOrWhiteSpace(value) ? null : $"{propertyName}: {value};";
 
-    private static string AddTextAlignment(string className, TextAlign? textAlign) => textAlign is null ? className : $"{className} nt-data-grid-align-{textAlign.ToCssString()}";
+    private static string AddTextAlignment(string className, NTTextAlign? textAlign) => textAlign is null ? className : $"{className} nt-data-grid-align-{textAlign.Value.ToString().ToLowerInvariant()}";
 
     internal static string GetMemberName<TValue>(Expression<Func<TItem, TValue>>? expression) {
         if (expression?.Body is MemberExpression memberExpression) {

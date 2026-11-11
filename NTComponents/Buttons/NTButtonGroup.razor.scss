@@ -10,15 +10,15 @@
 @use './buttonFocusRing' as focus;
 
 $nt-button-group-sizes: (
-    xs: (32px, 56px, 12px, 18px, 4px, 20px, measurements.$tnt-pill-border-radius-xs, corners.$nt-corner-radius-extra-small, corners.$nt-corner-radius-medium, 500, 14px, 20px, 0.1px),
-    s: (40px, 64px, 16px, 12px, 8px, 20px, measurements.$tnt-pill-border-radius-small, corners.$nt-corner-radius-small, corners.$nt-corner-radius-medium, 500, 14px, 20px, 0.1px),
-    m: (56px, 80px, 24px, 8px, 8px, 24px, measurements.$tnt-pill-border-radius-medium, corners.$nt-corner-radius-small, corners.$nt-corner-radius-large, 500, 16px, 24px, 0.15px),
-    l: (96px, 128px, 48px, 8px, 12px, 32px, measurements.$tnt-pill-border-radius-large, corners.$nt-corner-radius-large, corners.$nt-corner-radius-extra-large, 400, 24px, 32px, 0),
-    xl: (136px, 168px, 64px, 8px, 16px, 40px, measurements.$tnt-pill-border-radius-xl, corners.$nt-corner-radius-large-increased, corners.$nt-corner-radius-extra-large, 400, 32px, 40px, 0)
+    xs: (32px, 56px, 12px, 18px, 4px, 20px, measurements.$nt-pill-border-radius-xs, corners.$nt-corner-radius-extra-small, corners.$nt-corner-radius-medium, 500, 14px, 20px, 0.1px),
+    s: (40px, 64px, 16px, 12px, 8px, 20px, measurements.$nt-pill-border-radius-small, corners.$nt-corner-radius-small, corners.$nt-corner-radius-medium, 500, 14px, 20px, 0.1px),
+    m: (56px, 80px, 24px, 8px, 8px, 24px, measurements.$nt-pill-border-radius-medium, corners.$nt-corner-radius-small, corners.$nt-corner-radius-large, 500, 16px, 24px, 0.15px),
+    l: (96px, 128px, 48px, 8px, 12px, 32px, measurements.$nt-pill-border-radius-large, corners.$nt-corner-radius-large, corners.$nt-corner-radius-extra-large, 400, 24px, 32px, 0),
+    xl: (136px, 168px, 64px, 8px, 16px, 40px, measurements.$nt-pill-border-radius-xl, corners.$nt-corner-radius-large-increased, corners.$nt-corner-radius-extra-large, 400, 32px, 40px, 0)
 );
 
 @mixin nt-button-group-size($height, $icon-only-width, $padding, $disconnected-gap, $content-gap, $icon-size, $round-radius, $connected-radius, $square-radius, $weight, $font-size, $line-height, $tracking) {
-    @include typescale.tnt-typescale($weight, $font-size, $line-height, $tracking);
+    @include typescale.nt-typescale($weight, $font-size, $line-height, $tracking);
 
     &.nt-button-group-disconnected {
         gap: $disconnected-gap;
@@ -89,7 +89,7 @@ $nt-button-group-sizes: (
         inset-block: buttonChrome.touch-inset($height);
     }
 
-    ::deep .tnt-icon {
+    ::deep .nt-icon {
         font-size: $icon-size;
     }
 }
@@ -104,7 +104,7 @@ $nt-button-group-sizes: (
     vertical-align: middle;
 
     @each $size, $tokens in $nt-button-group-sizes {
-        &.tnt-size-#{$size} {
+        &.nt-size-#{$size} {
             @include nt-button-group-size($tokens...);
         }
     }
@@ -300,21 +300,21 @@ $nt-button-group-sizes: (
             transition: border-radius buttonMotion.$nt-button-shape-transition;
         }
 
-        .tnt-icon {
+        .nt-icon {
             color: inherit;
             pointer-events: none;
         }
 
-        tnt-page-script {
+        nt-page-script {
             position: absolute;
         }
     }
 }
 
-.tnt-supporting-text {
+.nt-supporting-text {
     inline-size: 100%;
     text-wrap: wrap;
-    @include typescale.tnt-body-small;
+    @include typescale.nt-body-small;
 }
 
 @media (prefers-reduced-motion: reduce) {

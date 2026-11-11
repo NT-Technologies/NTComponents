@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Components;
 namespace NTComponents.Interfaces;
 
 /// <summary>
-///     Simple interface that represents a TnTComponent. Each TnTComponent can be thought of as a single Html Element.
+///     Simple interface that represents an NTComponents component. Each component can be thought of as a single Html Element.
 /// </summary>
 public interface INTComponentBase : IComponent {
 
@@ -53,57 +53,4 @@ public interface INTComponentBase : IComponent {
     ///     <see href="https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/title" />
     /// </summary>
     string? ElementTitle { get; }
-}
-
-/// <summary>
-///     Obsolete compatibility alias for <see cref="INTComponentBase" />.
-/// </summary>
-[Obsolete("ITnTComponentBase is obsolete. Use INTComponentBase instead.")]
-public interface ITnTComponentBase : INTComponentBase {
-
-    /// <inheritdoc cref="INTComponentBase.AdditionalAttributes" />
-    new IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
-
-    IReadOnlyDictionary<string, object>? INTComponentBase.AdditionalAttributes {
-        get => AdditionalAttributes;
-        set => AdditionalAttributes = value;
-    }
-
-    /// <inheritdoc cref="INTComponentBase.AutoFocus" />
-    new bool? AutoFocus { get; set; }
-
-    bool? INTComponentBase.AutoFocus {
-        get => AutoFocus;
-        set => AutoFocus = value;
-    }
-
-    /// <inheritdoc cref="INTComponentBase.Element" />
-    new ElementReference Element { get; }
-
-    ElementReference INTComponentBase.Element => Element;
-
-    /// <inheritdoc cref="INTComponentBase.ElementClass" />
-    new string? ElementClass { get; }
-
-    string? INTComponentBase.ElementClass => ElementClass;
-
-    /// <inheritdoc cref="INTComponentBase.ElementId" />
-    new string? ElementId { get; }
-
-    string? INTComponentBase.ElementId => ElementId;
-
-    /// <inheritdoc cref="INTComponentBase.ElementLang" />
-    new string? ElementLang { get; }
-
-    string? INTComponentBase.ElementLang => ElementLang;
-
-    /// <inheritdoc cref="INTComponentBase.ElementStyle" />
-    new string? ElementStyle { get; }
-
-    string? INTComponentBase.ElementStyle => ElementStyle;
-
-    /// <inheritdoc cref="INTComponentBase.ElementTitle" />
-    new string? ElementTitle { get; }
-
-    string? INTComponentBase.ElementTitle => ElementTitle;
 }

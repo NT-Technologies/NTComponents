@@ -45,7 +45,7 @@ $state-transition: motion.$nt-motion-duration-short_3 motion.$nt-motion-easing-s
         --nt-accordion-header-color: var(--nt-color-surface-container-low);
 
         ::deep .nt-accordion-item {
-            @include elevation.tnt-elevation(1, false, elevation.$nt-elevation-shadows);
+            @include elevation.nt-elevation(1, false, elevation.$nt-elevation-shadows);
         }
     }
 

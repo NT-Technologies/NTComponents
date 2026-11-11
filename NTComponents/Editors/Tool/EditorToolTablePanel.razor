@@ -1,7 +1,7 @@
 @namespace NTComponents
 @using Microsoft.AspNetCore.Components
 
-<div class="tnt-rich-text-editor-inline-tool tnt-rich-text-editor-table-editor"
+<div class="nt-rich-text-editor-inline-tool nt-rich-text-editor-table-editor"
      popover="manual"
      data-tool-command="table"
      data-role="table-editor"
@@ -9,8 +9,8 @@
      aria-label="Table settings"
      hidden
      aria-hidden="true">
-    <div class="tnt-rich-text-editor-table-insert" data-role="table-insert">
-        <div class="tnt-rich-text-editor-table-grid" data-role="table-grid" role="group" aria-label="Table size">
+    <div class="nt-rich-text-editor-table-insert" data-role="table-insert">
+        <div class="nt-rich-text-editor-table-grid" data-role="table-grid" role="group" aria-label="Table size">
             @for (var row = 1; row <= 10; row++) {
                 for (var column = 1; column <= 8; column++) {
                     <button type="button"
@@ -22,10 +22,10 @@
                 }
             }
         </div>
-        <span class="tnt-rich-text-editor-table-grid-label" data-role="table-grid-label" aria-live="polite">Insert table</span>
+        <span class="nt-rich-text-editor-table-grid-label" data-role="table-grid-label" aria-live="polite">Insert table</span>
     </div>
-    <div class="tnt-rich-text-editor-table-edit" data-role="table-edit" hidden>
-        <div class="tnt-rich-text-editor-inline-tool-fields">
+    <div class="nt-rich-text-editor-table-edit" data-role="table-edit" hidden>
+        <div class="nt-rich-text-editor-inline-tool-fields">
             <NTInputColor Label="Border color"
                           @bind-Value="_tableBorderColor"
                           Appearance="NTFormAppearance.Outlined"
@@ -42,7 +42,7 @@
                          SubmitValue="false"
                          data-role="table-caption" />
         </div>
-        <div class="tnt-rich-text-editor-inline-tool-actions">
+        <div class="nt-rich-text-editor-inline-tool-actions">
             <NTButton Label="Apply table"
                       ButtonSize="NTSize.Small"
                       Disabled="@Disabled"

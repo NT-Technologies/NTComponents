@@ -63,20 +63,20 @@ $nt-navigation-rail-group-shape-transition: motion.$nt-motion-duration-short_4 m
     text-decoration: none;
     user-select: none;
 
-    &.tnt-disabled,
+    &.nt-disabled,
     &:disabled {
         color: color-mix(in srgb, #{colors.$nt-color-on-surface} 38%, transparent);
         cursor: not-allowed;
         pointer-events: none;
     }
 
-    &:not(.tnt-disabled):not(:disabled):hover {
+    &:not(.nt-disabled):not(:disabled):hover {
         .nt-navigation-rail-item-body::before {
             opacity: 0.08;
         }
     }
 
-    &:not(.tnt-disabled):not(:disabled):focus-visible {
+    &:not(.nt-disabled):not(:disabled):focus-visible {
         .nt-navigation-rail-item-body::before {
             opacity: 0.1;
         }
@@ -86,7 +86,7 @@ $nt-navigation-rail-group-shape-transition: motion.$nt-motion-duration-short_4 m
         }
     }
 
-    &:not(.tnt-disabled):not(:disabled):active {
+    &:not(.nt-disabled):not(:disabled):active {
         .nt-navigation-rail-item-body::before {
             opacity: 0.1;
         }
@@ -206,7 +206,7 @@ $nt-navigation-rail-group-shape-transition: motion.$nt-motion-duration-short_4 m
     z-index: 2;
 
     ::deep {
-        .tnt-icon {
+        .nt-icon {
             color: inherit;
             font-size: $nt-navigation-rail-icon-size;
         }
@@ -237,7 +237,7 @@ $nt-navigation-rail-group-shape-transition: motion.$nt-motion-duration-short_4 m
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     display: -webkit-box;
-    max-block-size: calc(typescale.$tnt-typescale-label-medium-line-height * 2);
+    max-block-size: calc(typescale.$nt-typescale-label-medium-line-height * 2);
     overflow: hidden;
 }
 
@@ -257,7 +257,7 @@ $nt-navigation-rail-group-shape-transition: motion.$nt-motion-duration-short_4 m
     z-index: 2;
 
     ::deep {
-        .tnt-icon {
+        .nt-icon {
             color: inherit;
             font-size: 20px;
         }

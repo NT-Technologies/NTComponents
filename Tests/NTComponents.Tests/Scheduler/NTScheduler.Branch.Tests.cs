@@ -9,7 +9,7 @@ public sealed class NTSchedulerBranch_Tests : BunitContext {
     private readonly BunitJSModuleInterop _module;
 
     public NTSchedulerBranch_Tests() {
-        _module = JSInterop.SetupModule(NTScheduler<TnTEvent>.JsModulePathValue);
+        _module = JSInterop.SetupModule(NTScheduler<NTEvent>.JsModulePathValue);
         _module.SetupVoid("onLoad", _ => true).SetVoidResult();
         _module.SetupVoid("onUpdate", _ => true).SetVoidResult();
         _module.SetupVoid("onDispose", _ => true).SetVoidResult();
@@ -38,7 +38,7 @@ public sealed class NTSchedulerBranch_Tests : BunitContext {
     [Fact]
     public async Task NotifyEventDroppedAsync_Reports_Clamped_Target_Without_AutoUpdating_Event() {
         var @event = CreateEvent("Preview", 8, 10);
-        NTSchedulerEventDropArgs<TnTEvent>? dropped = null;
+        NTSchedulerEventDropArgs<NTEvent>? dropped = null;
         var cut = RenderScheduler([@event], parameters => parameters
             .Add(p => p.AutoUpdateEventsOnDrop, false)
             .Add(p => p.EventDropped, args => dropped = args));
@@ -84,12 +84,12 @@ public sealed class NTSchedulerBranch_Tests : BunitContext {
 
     [Fact]
     public async Task NotifyEventResizedAsync_Clamps_CrossMidnight_End_Without_AutoUpdating_Event() {
-        var @event = new TnTEvent {
+        var @event = new NTEvent {
             Title = "Overnight",
             EventStart = new DateTimeOffset(2024, 6, 12, 23, 30, 0, TimeSpan.Zero),
             EventEnd = new DateTimeOffset(2024, 6, 13, 1, 0, 0, TimeSpan.Zero)
         };
-        NTSchedulerEventDropArgs<TnTEvent>? resized = null;
+        NTSchedulerEventDropArgs<NTEvent>? resized = null;
         var cut = RenderScheduler([@event], parameters => parameters
             .Add(p => p.AutoUpdateEventsOnDrop, false)
             .Add(p => p.DragSnapMinutes, 0)
@@ -157,7 +157,7 @@ public sealed class NTSchedulerBranch_Tests : BunitContext {
 
     [Fact]
     public void Event_Rendering_Honors_Template_Description_Dragging_And_Continuation_Contracts() {
-        var spanning = new TnTEvent {
+        var spanning = new NTEvent {
             Title = "Spanning",
             Description = "Visible description",
             IsAllDay = true,
@@ -184,7 +184,7 @@ public sealed class NTSchedulerBranch_Tests : BunitContext {
 
     [Fact]
     public void Event_Ending_At_Midnight_Renders_Only_On_The_Preceding_Day() {
-        var midnightEnd = new TnTEvent {
+        var midnightEnd = new NTEvent {
             Title = "Late shift",
             EventStart = new DateTimeOffset(2024, 6, 12, 22, 0, 0, TimeSpan.Zero),
             EventEnd = new DateTimeOffset(2024, 6, 13, 0, 0, 0, TimeSpan.Zero)
@@ -224,8 +224,8 @@ public sealed class NTSchedulerBranch_Tests : BunitContext {
         render.Should().NotThrow();
     }
 
-    private IRenderedComponent<NTScheduler<TnTEvent>> RenderScheduler(ICollection<TnTEvent> events, Action<ComponentParameterCollectionBuilder<NTScheduler<TnTEvent>>>? configure = null) {
-        return Render<NTScheduler<TnTEvent>>(parameters => {
+    private IRenderedComponent<NTScheduler<NTEvent>> RenderScheduler(ICollection<NTEvent> events, Action<ComponentParameterCollectionBuilder<NTScheduler<NTEvent>>>? configure = null) {
+        return Render<NTScheduler<NTEvent>>(parameters => {
             parameters
                 .Add(p => p.Events, events)
                 .Add(p => p.Date, new DateTimeOffset(2024, 6, 12, 12, 0, 0, TimeSpan.Zero))
@@ -234,9 +234,9 @@ public sealed class NTSchedulerBranch_Tests : BunitContext {
         });
     }
 
-    private static TnTEvent CreateEvent(string title, int startHour, int endHour, DateOnly? date = null) {
+    private static NTEvent CreateEvent(string title, int startHour, int endHour, DateOnly? date = null) {
         var eventDate = date ?? new DateOnly(2024, 6, 12);
-        return new TnTEvent {
+        return new NTEvent {
             Title = title,
             EventStart = new DateTimeOffset(eventDate, new TimeOnly(startHour, 0), TimeSpan.Zero),
             EventEnd = new DateTimeOffset(eventDate, new TimeOnly(endHour, 0), TimeSpan.Zero)

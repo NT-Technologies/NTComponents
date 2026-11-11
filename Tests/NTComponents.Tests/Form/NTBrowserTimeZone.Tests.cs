@@ -23,7 +23,7 @@ public class NTBrowserTimeZone_Tests : BunitContext {
         input.GetAttribute("name").Should().Be("BrowserTimeZoneId");
         input.GetAttribute("value").Should().Be("UTC");
         input.GetAttribute("data-nt-browser-time-zone").Should().Be("true");
-        cut.Find("tnt-page-script").GetAttribute("src").Should().Be(JsModulePath);
+        cut.Find("nt-page-script").GetAttribute("src").Should().Be(JsModulePath);
     }
 
     [Fact]

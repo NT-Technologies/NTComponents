@@ -94,11 +94,11 @@ $sizes: (
             inset-block: buttonChrome.touch-inset($height);
         }
 
-        .nt-split-button-leading-icon .tnt-icon {
+        .nt-split-button-leading-icon .nt-icon {
             font-size: $leading-icon-size;
         }
 
-        .nt-split-button-trailing-icon .tnt-icon {
+        .nt-split-button-trailing-icon .nt-icon {
             font-size: $trailing-icon-size;
         }
     }
@@ -268,7 +268,7 @@ $sizes: (
     }
 
     @each $size, $tokens in $sizes {
-        &.tnt-size-#{$size} {
+        &.nt-size-#{$size} {
             @include split-button-size($tokens...);
         }
     }
@@ -278,12 +278,12 @@ $sizes: (
             transition: border-radius buttonMotion.$nt-button-shape-transition;
         }
 
-        .nt-split-button-leading-icon .tnt-icon {
+        .nt-split-button-leading-icon .nt-icon {
             color: inherit;
             pointer-events: none;
         }
 
-        .nt-split-button-trailing-icon .tnt-icon {
+        .nt-split-button-trailing-icon .nt-icon {
             color: inherit;
             pointer-events: none;
         }

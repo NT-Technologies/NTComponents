@@ -615,7 +615,7 @@ function createTrailingCheckElement(): HTMLElement {
     trailing.setAttribute('aria-hidden', 'true');
 
     const check = document.createElement('span');
-    check.className = 'tnt-components tnt-icon material-symbols-outlined mi-medium';
+    check.className = 'nt-components nt-icon material-symbols-outlined mi-medium';
     check.title = 'check';
     check.textContent = 'check';
     trailing.appendChild(check);

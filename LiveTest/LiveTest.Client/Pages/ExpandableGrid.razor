@@ -18,7 +18,7 @@
             <NTDataGrid TItem="Payment" Items="claim.Payments.AsQueryable()" QueryParameterPrefix="@($"payments-{claim.Number}")">
                 <NTPropertyColumn TItem="Payment" TValue="DateOnly" Property="payment => payment.Date" Title="Paid on" />
                 <NTPropertyColumn TItem="Payment" TValue="string" Property="payment => payment.Description" />
-                <NTPropertyColumn TItem="Payment" TValue="decimal" Property="payment => payment.Amount" Format="C" TextAlign="TextAlign.Right" />
+                <NTPropertyColumn TItem="Payment" TValue="decimal" Property="payment => payment.Amount" Format="C" TextAlign="NTTextAlign.Right" />
             </NTDataGrid>
         </RowDetailTemplate>
     </NTDataGrid>

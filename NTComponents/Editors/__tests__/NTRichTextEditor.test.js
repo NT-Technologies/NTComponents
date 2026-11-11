@@ -101,21 +101,21 @@ function createEditorFixture({
   const encodedValueAttribute = escapeFixtureAttribute(value);
   const encodedValueText = escapeFixtureText(value);
   document.body.innerHTML = `
-    <div class="tnt-input-container">
+    <div class="nt-input-container">
       <nt-rich-text-editor data-bind-on-input="${bindOnInput}" data-editable="${editable}">
-        <div class="tnt-rich-text-editor-shell">
-          <input type="hidden" class="tnt-rich-text-editor-hidden-input" value="${encodedValueAttribute}" />
-          <div class="tnt-rich-text-editor-value" hidden>${encodedValueText}</div>
-          <div class="tnt-rich-text-editor-toolbar" role="toolbar">
-            <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="bold" aria-keyshortcuts="Control+B" aria-pressed="false"></button>
-            <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="unorderedList" aria-keyshortcuts="Control+Alt+7" aria-pressed="false"></button>
-            <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="image" aria-keyshortcuts="Control+Alt+M" aria-pressed="false"></button>
-            <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="table" aria-keyshortcuts="Control+Alt+T" aria-pressed="false"></button>
-            <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="textColor" aria-keyshortcuts="Control+Alt+X" aria-pressed="false"></button>
-            <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="link" aria-keyshortcuts="Control+K" aria-pressed="false"></button>
-            <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="ariaLabel" aria-pressed="false"></button>
-            <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="iframe" aria-keyshortcuts="Control+Alt+F" aria-pressed="false"></button>
-            <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="editHtml" aria-pressed="false"></button>
+        <div class="nt-rich-text-editor-shell">
+          <input type="hidden" class="nt-rich-text-editor-hidden-input" value="${encodedValueAttribute}" />
+          <div class="nt-rich-text-editor-value" hidden>${encodedValueText}</div>
+          <div class="nt-rich-text-editor-toolbar" role="toolbar">
+            <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="bold" aria-keyshortcuts="Control+B" aria-pressed="false"></button>
+            <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="unorderedList" aria-keyshortcuts="Control+Alt+7" aria-pressed="false"></button>
+            <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="image" aria-keyshortcuts="Control+Alt+M" aria-pressed="false"></button>
+            <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="table" aria-keyshortcuts="Control+Alt+T" aria-pressed="false"></button>
+            <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="textColor" aria-keyshortcuts="Control+Alt+X" aria-pressed="false"></button>
+            <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="link" aria-keyshortcuts="Control+K" aria-pressed="false"></button>
+            <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="ariaLabel" aria-pressed="false"></button>
+            <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="iframe" aria-keyshortcuts="Control+Alt+F" aria-pressed="false"></button>
+            <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="editHtml" aria-pressed="false"></button>
           </div>
 
           <div data-tool-command="image" data-role="image-editor" hidden aria-hidden="true">
@@ -172,26 +172,26 @@ function createEditorFixture({
             <button type="button" data-role="aria-label-cancel"></button>
           </div>
 
-          <div class="tnt-rich-text-editor-surface" contenteditable="true" data-placeholder="Write" data-maxlength="${maxLength}" tabindex="0"></div>
-          <span class="tnt-rich-text-editor-source-container">
-            <pre class="tnt-rich-text-editor-source-highlight" aria-hidden="true"><code></code></pre>
+          <div class="nt-rich-text-editor-surface" contenteditable="true" data-placeholder="Write" data-maxlength="${maxLength}" tabindex="0"></div>
+          <span class="nt-rich-text-editor-source-container">
+            <pre class="nt-rich-text-editor-source-highlight" aria-hidden="true"><code></code></pre>
             <textarea data-role="html-source" hidden></textarea>
           </span>
         </div>
       </nt-rich-text-editor>
-      <span class="tnt-input-length">0/${maxLength}</span>
+      <span class="nt-input-length">0/${maxLength}</span>
     </div>
   `;
 
   return {
-    container: document.querySelector('.tnt-input-container'),
+    container: document.querySelector('.nt-input-container'),
     element: document.querySelector('nt-rich-text-editor'),
-    hiddenInput: document.querySelector('.tnt-rich-text-editor-hidden-input'),
-    sourceValue: document.querySelector('.tnt-rich-text-editor-value'),
-    surface: document.querySelector('.tnt-rich-text-editor-surface'),
+    hiddenInput: document.querySelector('.nt-rich-text-editor-hidden-input'),
+    sourceValue: document.querySelector('.nt-rich-text-editor-value'),
+    surface: document.querySelector('.nt-rich-text-editor-surface'),
     htmlSource: document.querySelector('[data-role="html-source"]'),
-    htmlSourceHighlight: document.querySelector('.tnt-rich-text-editor-source-highlight code'),
-    length: document.querySelector('.tnt-input-length')
+    htmlSourceHighlight: document.querySelector('.nt-rich-text-editor-source-highlight code'),
+    length: document.querySelector('.nt-input-length')
   };
 }
 
@@ -576,7 +576,7 @@ describe('NTRichTextEditor runtime behavior', () => {
     const fixture = createEditorFixture({ value: '<p>Bound</p>' });
     fixture.element.dataset.interactive = 'true';
     fixture.surface.setAttribute('contenteditable', 'false');
-    const pageScript = document.createElement('tnt-page-script');
+    const pageScript = document.createElement('nt-page-script');
     document.body.appendChild(pageScript);
 
     editorModule.onLoad(pageScript);
@@ -596,7 +596,7 @@ describe('NTRichTextEditor runtime behavior', () => {
     fixture.element.dataset.interactive = 'false';
     fixture.surface.setAttribute('contenteditable', 'false');
 
-    editorModule.onLoad(document.createElement('tnt-page-script'));
+    editorModule.onLoad(document.createElement('nt-page-script'));
 
     expect(fixture.surface.getAttribute('contenteditable')).toBe('true');
   });
@@ -922,7 +922,7 @@ describe('NTRichTextEditor runtime behavior', () => {
     fixture.surface.setAttribute('contenteditable', 'false');
     fixture.surface.setAttribute('aria-readonly', 'true');
 
-    editorModule.onLoad(document.createElement('tnt-page-script'));
+    editorModule.onLoad(document.createElement('nt-page-script'));
     expect(fixture.surface.getAttribute('aria-readonly')).toBe('true');
 
     editorModule.onLoad(fixture.element, createDotNetRef());
@@ -1010,7 +1010,7 @@ describe('NTRichTextEditor runtime behavior', () => {
 
   test('focus taken while prerendered moves to the surface that replaces it', () => {
     const prerendered = createPrerenderedEditor();
-    editorModule.onLoad(document.createElement('tnt-page-script'));
+    editorModule.onLoad(document.createElement('nt-page-script'));
     prerendered.surface.focus();
 
     const interactive = createPrerenderedEditor();
@@ -1022,7 +1022,7 @@ describe('NTRichTextEditor runtime behavior', () => {
   test('focus taken before the script loaded moves to the surface that replaces it', () => {
     const prerendered = createPrerenderedEditor();
     prerendered.surface.focus();
-    editorModule.onLoad(document.createElement('tnt-page-script'));
+    editorModule.onLoad(document.createElement('nt-page-script'));
 
     const interactive = createPrerenderedEditor();
     editorModule.onLoad(interactive.element, createDotNetRef());
@@ -1032,7 +1032,7 @@ describe('NTRichTextEditor runtime behavior', () => {
 
   test('prerender focus is not taken back from a control the user moved to', () => {
     const prerendered = createPrerenderedEditor();
-    editorModule.onLoad(document.createElement('tnt-page-script'));
+    editorModule.onLoad(document.createElement('nt-page-script'));
     prerendered.surface.focus();
 
     const interactive = createPrerenderedEditor();
@@ -1214,7 +1214,7 @@ describe('NTRichTextEditor runtime behavior', () => {
     fixture.surface.querySelector('td').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
     click(items[2]);
     expect(fixture.surface.querySelector('table')).toBeNull();
-    expect(fixture.element.querySelector('.tnt-rich-text-editor-hidden-input').value).not.toContain('<table');
+    expect(fixture.element.querySelector('.nt-rich-text-editor-hidden-input').value).not.toContain('<table');
   });
 
   describe('table row and column actions', () => {
@@ -1370,8 +1370,8 @@ describe('NTRichTextEditor runtime behavior', () => {
 
     editorModule.onLoad(fixture.element, createDotNetRef());
 
-    fixture.element.querySelector('.tnt-rich-text-editor-toolbar').appendChild(imageButton);
-    fixture.element.querySelector('.tnt-rich-text-editor-shell').insertBefore(imagePanel, fixture.surface);
+    fixture.element.querySelector('.nt-rich-text-editor-toolbar').appendChild(imageButton);
+    fixture.element.querySelector('.nt-rich-text-editor-shell').insertBefore(imagePanel, fixture.surface);
     editorModule.onUpdate(fixture.element, createDotNetRef());
 
     const range = document.createRange();
@@ -1579,21 +1579,21 @@ describe('NTRichTextEditor runtime behavior', () => {
 
     setSurfaceContent(fixture.surface, '<blockquote>Quote</blockquote>');
     selectText(fixture.surface.querySelector('blockquote').firstChild, 0, 2);
-    fixture.element.querySelector('.tnt-rich-text-editor-toolbar').innerHTML = `
-      <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="paragraph" data-value="" aria-pressed="false"></button>
-      <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="heading" data-value="1" aria-pressed="false"></button>
-      <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="alignLeft" aria-pressed="false"></button>
-      <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="alignCenter" aria-pressed="false"></button>
-      <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="alignRight" aria-pressed="false"></button>
-      <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="alignJustify" aria-pressed="false"></button>
-      <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="unorderedList" aria-pressed="false"></button>
-      <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="orderedList" aria-pressed="false"></button>
-      <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="blockquote" aria-pressed="false"></button>
-      <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="codeBlock" aria-pressed="false"></button>
-      <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="bold" aria-pressed="false"></button>
-      <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="italic" aria-pressed="false"></button>
-      <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="underline" aria-pressed="false"></button>
-      <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="strikeThrough" aria-pressed="false"></button>
+    fixture.element.querySelector('.nt-rich-text-editor-toolbar').innerHTML = `
+      <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="paragraph" data-value="" aria-pressed="false"></button>
+      <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="heading" data-value="1" aria-pressed="false"></button>
+      <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="alignLeft" aria-pressed="false"></button>
+      <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="alignCenter" aria-pressed="false"></button>
+      <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="alignRight" aria-pressed="false"></button>
+      <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="alignJustify" aria-pressed="false"></button>
+      <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="unorderedList" aria-pressed="false"></button>
+      <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="orderedList" aria-pressed="false"></button>
+      <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="blockquote" aria-pressed="false"></button>
+      <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="codeBlock" aria-pressed="false"></button>
+      <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="bold" aria-pressed="false"></button>
+      <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="italic" aria-pressed="false"></button>
+      <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="underline" aria-pressed="false"></button>
+      <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="strikeThrough" aria-pressed="false"></button>
     `;
     editorModule.onUpdate(fixture.element, dotNetRef);
     hooks.updateToolbarState(fixture.element);
@@ -1828,10 +1828,10 @@ describe('NTRichTextEditor runtime behavior', () => {
     hooks.executeEditorCommand(fixture.element, 'orderedList');
     expect(document.execCommand).toHaveBeenCalledWith('insertOrderedList', false);
 
-    fixture.element.querySelector('.tnt-rich-text-editor-toolbar').innerHTML = `
-      <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="bold" aria-keyshortcuts="Control+B" disabled></button>
-      <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="italic" aria-keyshortcuts="Control+Alt+9 Control+Shift+9"></button>
-      <button type="button" class="tnt-rich-text-editor-toolbar-button" data-command="underline"></button>
+    fixture.element.querySelector('.nt-rich-text-editor-toolbar').innerHTML = `
+      <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="bold" aria-keyshortcuts="Control+B" disabled></button>
+      <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="italic" aria-keyshortcuts="Control+Alt+9 Control+Shift+9"></button>
+      <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="underline"></button>
     `;
     editorModule.onUpdate(fixture.element, dotNetRef);
     fixture.element.querySelector('[data-command="bold"]').disabled = true;

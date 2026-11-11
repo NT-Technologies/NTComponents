@@ -9,13 +9,13 @@
 
     @if (EnableCustomPicker) {
         <button type="button"
-                class="tnt-dtp-trigger"
+                class="nt-dtp-trigger"
                 aria-label="@_metadata.PickerTriggerAriaLabel"
-                data-tnt-dtp-trigger="true"
-                data-tnt-dtp-target="@_pickerId"
+                data-nt-dtp-trigger="true"
+                data-nt-dtp-target="@_pickerId"
                 tabindex="-1"
                 disabled="@IsPickerTriggerDisabled">
-            @(_resolvedPickerTriggerIcon.Render("tnt-dtp-trigger-icon"))
+            @(_resolvedPickerTriggerIcon.Render("nt-dtp-trigger-icon"))
         </button>
 
         <div id="@_pickerId"
@@ -25,20 +25,20 @@
              aria-hidden="true"
              aria-labelledby="@_pickerHeadlineId"
              tabindex="-1"
-             data-tnt-dtp-picker="true"
-             data-tnt-dtp-mode="@_metadata.PickerMode">
-            <div class="tnt-dtp-surface" data-tnt-dtp-surface>
-                <div class="tnt-dtp-header">
-                    <div class="tnt-dtp-subhead" data-tnt-dtp-subhead>@_metadata.PickerSupportingLabel</div>
-                    <div class="tnt-dtp-headline" id="@_pickerHeadlineId" data-tnt-dtp-headline>@_metadata.PickerHeadline</div>
+             data-nt-dtp-picker="true"
+             data-nt-dtp-mode="@_metadata.PickerMode">
+            <div class="nt-dtp-surface" data-nt-dtp-surface>
+                <div class="nt-dtp-header">
+                    <div class="nt-dtp-subhead" data-nt-dtp-subhead>@_metadata.PickerSupportingLabel</div>
+                    <div class="nt-dtp-headline" id="@_pickerHeadlineId" data-nt-dtp-headline>@_metadata.PickerHeadline</div>
                 </div>
 
-                <div class="tnt-dtp-content" data-tnt-dtp-content></div>
+                <div class="nt-dtp-content" data-nt-dtp-content></div>
 
-                <div class="tnt-dtp-actions">
-                    <div class="tnt-dtp-action-group">
-                        <button type="button" class="tnt-dtp-action-button tnt-dtp-text-button" data-tnt-dtp-action="cancel">Cancel</button>
-                        <button type="button" class="tnt-dtp-action-button tnt-dtp-text-button" data-tnt-dtp-action="confirm">OK</button>
+                <div class="nt-dtp-actions">
+                    <div class="nt-dtp-action-group">
+                        <button type="button" class="nt-dtp-action-button nt-dtp-text-button" data-nt-dtp-action="cancel">Cancel</button>
+                        <button type="button" class="nt-dtp-action-button nt-dtp-text-button" data-nt-dtp-action="confirm">OK</button>
                     </div>
                 </div>
             </div>
@@ -46,12 +46,12 @@
     }
     else {
         <button type="button"
-                class="tnt-dtp-trigger tnt-dtp-native-trigger"
+                class="nt-dtp-trigger nt-dtp-native-trigger"
                 aria-label="@_metadata.PickerTriggerAriaLabel"
-                data-tnt-dtp-native-trigger="true"
+                data-nt-dtp-native-trigger="true"
                 tabindex="-1"
                 disabled="@IsPickerTriggerDisabled">
-            @(_resolvedPickerTriggerIcon.Render("tnt-dtp-trigger-icon"))
+            @(_resolvedPickerTriggerIcon.Render("nt-dtp-trigger-icon"))
         </button>
     }
 </div>

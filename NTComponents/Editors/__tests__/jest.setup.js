@@ -1,7 +1,7 @@
-// Jest setup for TnT Editors components
+// Jest setup for NT editor components
 // Mock NTComponents global
 global.NTComponents = {
-  customAttribute: 'tntid'
+  customAttribute: 'ntid'
 };
 
 // Mock CustomElementRegistry if not available in test environment

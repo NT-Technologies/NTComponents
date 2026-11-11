@@ -38,10 +38,10 @@ public class NTBreadcrumb_Tests : BunitContext {
         Services.GetRequiredService<NavigationManager>().NavigateTo("/catalog/product");
         var cut = Render<NTBreadcrumb>(p => p.Add(c => c.Size, size));
 
-        cut.Find("nav").ClassList.Should().Contain($"tnt-size-{suffix}");
+        cut.Find("nav").ClassList.Should().Contain($"nt-size-{suffix}");
         cut.FindAll("a.nt-nav-link").Should().HaveCount(2);
         foreach (var link in cut.FindAll("a")) {
-            link.ClassList.Should().Contain($"tnt-size-{suffix}").And.Contain("nt-nav-link-text");
+            link.ClassList.Should().Contain($"nt-size-{suffix}").And.Contain("nt-nav-link-text");
             link.HasAttribute("aria-current").Should().BeFalse();
         }
         cut.Find("span[aria-current='page']").TextContent.Should().Be("Product");

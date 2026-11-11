@@ -220,12 +220,12 @@ describe('NTRichTextEditor registered tool runtimes', () => {
             <button type="button" data-role="table-cancel"></button>
           </div>
         </div>
-        <div class="tnt-rich-text-editor-surface" contenteditable="true"><p>Host</p></div>
+        <div class="nt-rich-text-editor-surface" contenteditable="true"><p>Host</p></div>
       </nt-rich-text-editor>
     `;
 
     const element = document.querySelector('nt-rich-text-editor');
-    const surface = element.querySelector('.tnt-rich-text-editor-surface');
+    const surface = element.querySelector('.nt-rich-text-editor-surface');
     const imageTool = editorModule.getRichTextEditorTool('image');
     const tableTool = editorModule.getRichTextEditorTool('table');
 
@@ -383,12 +383,12 @@ describe('NTRichTextEditor registered tool runtimes', () => {
           <button type="button" data-role="iframe-apply"></button>
           <button type="button" data-role="iframe-cancel"></button>
         </div>
-        <div class="tnt-rich-text-editor-surface" contenteditable="true"><p>Docs</p></div>
+        <div class="nt-rich-text-editor-surface" contenteditable="true"><p>Docs</p></div>
       </nt-rich-text-editor>
     `;
 
     const element = document.querySelector('nt-rich-text-editor');
-    const surface = element.querySelector('.tnt-rich-text-editor-surface');
+    const surface = element.querySelector('.nt-rich-text-editor-surface');
     const linkTool = editorModule.getRichTextEditorTool('link');
     const iframeTool = editorModule.getRichTextEditorTool('iframe');
 
@@ -513,14 +513,14 @@ describe('NTRichTextEditor registered tool runtimes', () => {
           <button type="button" data-role="text-color-apply"></button>
           <button type="button" data-role="text-color-cancel"></button>
         </div>
-        <div class="tnt-rich-text-editor-surface" contenteditable="true">
+        <div class="nt-rich-text-editor-surface" contenteditable="true">
           <p><span id="outer" style="color: rgb(170, 187, 204);"><span style="color:#aabbcc">Blue</span></span></p>
         </div>
       </nt-rich-text-editor>
     `;
 
     const element = document.querySelector('nt-rich-text-editor');
-    const surface = element.querySelector('.tnt-rich-text-editor-surface');
+    const surface = element.querySelector('.nt-rich-text-editor-surface');
     const outer = element.querySelector('#outer');
     const textColorTool = editorModule.getRichTextEditorTool('textColor');
     const textColorState = createEditorState();

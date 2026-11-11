@@ -7,12 +7,12 @@ namespace NTComponents;
 /// <summary>
 /// MaterialIcon component for displaying Material Design icons.
 /// </summary>
-public sealed partial class MaterialIcon : TnTIcon {
+public sealed partial class MaterialIcon : NTIcon {
 
     /// <inheritdoc />
     public override string? ElementClass => CssClassBuilder.Create()
         .AddFromAdditionalAttributes(AdditionalAttributes)
-        .AddClass("tnt-icon")
+        .AddClass("nt-icon")
         .AddClass("material-symbols-outlined", Appearance is IconAppearance.Default or IconAppearance.Filled or IconAppearance.Outlined)
         .AddClass("material-symbols-sharp", Appearance == IconAppearance.Sharp)
         .AddClass("material-symbols-rounded", Appearance == IconAppearance.Round)

@@ -6,8 +6,8 @@
     gap: 20px;
     max-width: 1200px;
     padding: 16px;
-    color: colors.$tnt-color-on-surface;
-    background: colors.$tnt-color-surface;
+    color: colors.$nt-color-on-surface;
+    background: colors.$nt-color-surface;
 }
 
 .rich-text-editor-page-header {
@@ -25,7 +25,7 @@
 
         max-width: 72ch;
         margin: 0;
-        color: colors.$tnt-color-on-surface-variant;
+        color: colors.$nt-color-on-surface-variant;
     }
 }
 
@@ -41,7 +41,7 @@
     gap: 12px;
     min-width: 0;
     padding-block: 4px 12px;
-    border-block-start: 1px solid colors.$tnt-color-outline-variant;
+    border-block-start: 1px solid colors.$nt-color-outline-variant;
 
     > header {
         display: grid;
@@ -59,6 +59,6 @@
         @include typescale.nt-body-small;
 
         margin: 0;
-        color: colors.$tnt-color-on-surface-variant;
+        color: colors.$nt-color-on-surface-variant;
     }
 }

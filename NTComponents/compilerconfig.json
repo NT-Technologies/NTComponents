@@ -1,71 +1,7 @@
 ﻿[
   {
-    "outputFile": "Form/TnTInputFile.razor.css",
-    "inputFile": "Form/TnTInputFile.razor.scss"
-  },
-  {
-    "outputFile": "Typeahead/TnTTypeahead.razor.css",
-    "inputFile": "Typeahead/TnTTypeahead.razor.scss"
-  },
-  {
-    "outputFile": "Form/TnTInputSelect.razor.css",
-    "inputFile": "Form/TnTInputSelect.razor.scss"
-  },
-  {
     "outputFile": "Buttons/NTButtonGroup.razor.css",
     "inputFile": "Buttons/NTButtonGroup.razor.scss"
-  },
-  {
-    "outputFile": "Buttons/TnTButton.razor.css",
-    "inputFile": "Buttons/TnTButton.razor.scss"
-  },
-  {
-    "outputFile": "TabView/TnTTabView.razor.css",
-    "inputFile": "TabView/TnTTabView.razor.scss"
-  },
-  {
-    "outputFile": "Grid/Infrastructure/TnTDataGridBodyCell.razor.css",
-    "inputFile": "Grid/Infrastructure/TnTDataGridBodyCell.razor.scss"
-  },
-  {
-    "outputFile": "Grid/TnTDataGrid.razor.css",
-    "inputFile": "Grid/TnTDataGrid.razor.scss"
-  },
-  {
-    "outputFile": "Form/TnTInputCheckbox.razor.css",
-    "inputFile": "Form/TnTInputCheckbox.razor.scss"
-  },
-  {
-    "outputFile": "Form/TnTInputSwitch.razor.css",
-    "inputFile": "Form/TnTInputSwitch.razor.scss"
-  },
-  {
-    "outputFile": "Form/TnTInputBase.razor.css",
-    "inputFile": "Form/TnTInputBase.razor.scss"
-  },
-  {
-    "outputFile": "Form/TnTInputDateTime.razor.css",
-    "inputFile": "Form/TnTInputDateTime.razor.scss"
-  },
-  {
-    "outputFile": "Form/NTInputFile.razor.css",
-    "inputFile": "Form/NTInputFile.razor.scss"
-  },
-  {
-    "outputFile": "Layout/NTNavigationRail.razor.css",
-    "inputFile": "Layout/NTNavigationRail.razor.scss"
-  },
-  {
-    "outputFile": "Layout/NTNavigationRailItem.razor.css",
-    "inputFile": "Layout/NTNavigationRailItem.razor.scss"
-  },
-  {
-    "outputFile": "Anchor/TnTNavLink.razor.css",
-    "inputFile": "Anchor/TnTNavLink.razor.scss"
-  },
-  {
-    "outputFile": "Accordion/TnTAccordion.razor.css",
-    "inputFile": "Accordion/TnTAccordion.razor.scss"
   },
   {
     "outputFile": "Snackbar/NTSnackbar.razor.css",
@@ -80,28 +16,12 @@
     "inputFile": "Form/NTInputDateTime.razor.scss"
   },
   {
-    "outputFile": "Form/TnTInputRadioGroup.razor.css",
-    "inputFile": "Form/TnTInputRadioGroup.razor.scss"
-  },
-  {
-    "outputFile": "Form/TnTInputRadio.razor.css",
-    "inputFile": "Form/TnTInputRadio.razor.scss"
-  },
-  {
     "outputFile": "Layout/NTLayout.razor.css",
     "inputFile": "Layout/NTLayout.razor.scss"
   },
   {
-    "outputFile": "Chips/TnTChip.razor.css",
-    "inputFile": "Chips/TnTChip.razor.scss"
-  },
-  {
     "outputFile": "Chips/NTChip.razor.css",
     "inputFile": "Chips/NTChip.razor.scss"
-  },
-  {
-    "outputFile": "Popover/TnTPopoverWindow.razor.css",
-    "inputFile": "Popover/TnTPopoverWindow.razor.scss"
   },
   {
     "outputFile": "wwwroot/nt-ripple.css",

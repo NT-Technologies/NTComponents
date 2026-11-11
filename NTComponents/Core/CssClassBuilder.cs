@@ -8,7 +8,7 @@ namespace NTComponents.Core;
 /// </summary>
 [ExcludeFromCodeCoverage]
 public sealed class CssClassBuilder {
-    private static readonly string[] _legacyElevationClasses = ["tnt-elevation-0", "tnt-elevation-1", "tnt-elevation-2", "tnt-elevation-3", "tnt-elevation-4", "tnt-elevation-5", "tnt-elevation-6", "tnt-elevation-7", "tnt-elevation-8", "tnt-elevation-9", "tnt-elevation-10"];
+    private static readonly string[] _legacyElevationClasses = ["nt-elevation-0", "nt-elevation-1", "nt-elevation-2", "nt-elevation-3", "nt-elevation-4", "nt-elevation-5", "nt-elevation-6", "nt-elevation-7", "nt-elevation-8", "nt-elevation-9", "nt-elevation-10"];
 
     // Class lists are short, so a list with a linear duplicate check is cheaper than a hash set and keeps insertion order.
     private readonly List<string> _classes = [];
@@ -18,14 +18,7 @@ public sealed class CssClassBuilder {
     /// </summary>
     /// <param name="defaultClass">The default CSS class to add.</param>
     /// <returns>A new instance of <see cref="CssClassBuilder" />.</returns>
-    public static CssClassBuilder Create(string defaultClass = "tnt-components") => new CssClassBuilder().AddClass(defaultClass);
-
-    /// <summary>
-    ///     Adds a CSS class for background color.
-    /// </summary>
-    /// <param name="color">The color to use.</param>
-    /// <returns>The current instance of <see cref="CssClassBuilder" />.</returns>
-    public CssClassBuilder AddBackgroundColor(TnTColor? color) => color is null or TnTColor.None ? this : AddClass("tnt-bg-color-" + color.Value.ToCssClassName());
+    public static CssClassBuilder Create(string defaultClass = "nt-components") => new CssClassBuilder().AddClass(defaultClass);
 
     /// <summary>
     ///     Adds a CSS class if the specified condition is met.
@@ -53,7 +46,7 @@ public sealed class CssClassBuilder {
     /// </summary>
     /// <param name="disabled">Whether the component is disabled.</param>
     /// <returns>The current instance of <see cref="CssClassBuilder" />.</returns>
-    public CssClassBuilder AddDisabled(bool disabled) => AddClass("tnt-disabled", disabled);
+    public CssClassBuilder AddDisabled(bool disabled) => AddClass("nt-disabled", disabled);
 
     /// <summary>
     ///     Adds a CSS class for elevation.
@@ -83,14 +76,7 @@ public sealed class CssClassBuilder {
     /// </summary>
     /// <param name="enabled">Whether the filled state is enabled.</param>
     /// <returns>The current instance of <see cref="CssClassBuilder" />.</returns>
-    public CssClassBuilder AddFilled(bool enabled = true) => AddClass("tnt-filled", enabled);
-
-    /// <summary>
-    ///     Adds a CSS class for foreground color.
-    /// </summary>
-    /// <param name="color">The color to use.</param>
-    /// <returns>The current instance of <see cref="CssClassBuilder" />.</returns>
-    public CssClassBuilder AddForegroundColor(TnTColor? color) => color is null or TnTColor.None ? this : AddClass("tnt-fg-color-" + color.Value.ToCssClassName());
+    public CssClassBuilder AddFilled(bool enabled = true) => AddClass("nt-filled", enabled);
 
     /// <summary>
     ///     Adds CSS classes from additional attributes.
@@ -100,54 +86,35 @@ public sealed class CssClassBuilder {
     public CssClassBuilder AddFromAdditionalAttributes(IReadOnlyDictionary<string, object>? additionalAttributes) => additionalAttributes?.TryGetValue("class", out var @class) == true && @class is not null ? AddClass(@class.ToString()) : this;
 
     /// <summary>
-    ///     Adds a CSS class for on-tint color.
-    /// </summary>
-    /// <param name="color">The color to use.</param>
-    /// <returns>The current instance of <see cref="CssClassBuilder" />.</returns>
-    public CssClassBuilder AddOnTintColor(TnTColor? color) => color is null or TnTColor.None ? this : AddClass("tnt-on-tint-color-" + color.Value.ToCssClassName());
-
-    /// <summary>
     ///     Adds a CSS class for ripple effect.
     /// </summary>
     /// <param name="enabled">Whether the ripple effect is enabled.</param>
     /// <returns>The current instance of <see cref="CssClassBuilder" />.</returns>
-    public CssClassBuilder AddRipple(bool enabled = true) => AddClass("tnt-ripple", enabled);
+    public CssClassBuilder AddRipple(bool enabled = true) => AddClass("nt-ripple", enabled);
 
     /// <summary>
     ///     Adds a CSS class for size.
     /// </summary>
     /// <param name="size">The size to use.</param>
     /// <returns>The current instance of <see cref="CssClassBuilder" />.</returns>
-    public CssClassBuilder AddSize(Size? size) {
+    public CssClassBuilder AddSize(NTSize? size) {
         return size switch {
             null => this,
-            Size.Smallest => AddClass("tnt-size-xs"),
-            Size.Small => AddClass("tnt-size-s"),
-            Size.Medium => AddClass("tnt-size-m"),
-            Size.Large => AddClass("tnt-size-l"),
-            Size.Largest => AddClass("tnt-size-xl"),
-            _ => AddClass("tnt-size-")
+            NTSize.Smallest => AddClass("nt-size-xs"),
+            NTSize.Small => AddClass("nt-size-s"),
+            NTSize.Medium => AddClass("nt-size-m"),
+            NTSize.Large => AddClass("nt-size-l"),
+            NTSize.Largest => AddClass("nt-size-xl"),
+            _ => AddClass("nt-size-")
         };
     }
-
-    /// <summary>Adds a CSS class for an NT size.</summary>
-    /// <param name="size">The size to use.</param>
-    /// <returns>The current instance of <see cref="CssClassBuilder" />.</returns>
-    public CssClassBuilder AddSize(NTSize size) => AddSize((Size?)size);
 
     /// <summary>
     ///     Adds a CSS class for text alignment.
     /// </summary>
     /// <param name="textAlign">The text alignment to use.</param>
     /// <returns>The current instance of <see cref="CssClassBuilder" />.</returns>
-    public CssClassBuilder AddTextAlign(TextAlign? textAlign) => textAlign is null ? this : AddClass("tnt-text-align-" + textAlign.ToCssString());
-
-    /// <summary>
-    ///     Adds a CSS class for tint color.
-    /// </summary>
-    /// <param name="color">The color to use.</param>
-    /// <returns>The current instance of <see cref="CssClassBuilder" />.</returns>
-    public CssClassBuilder AddTintColor(TnTColor? color) => color is null or TnTColor.None ? this : AddClass("tnt-tint-color-" + color.Value.ToCssClassName());
+    public CssClassBuilder AddTextAlign(NTTextAlign? textAlign) => textAlign is null ? this : AddClass("nt-text-align-" + textAlign.Value.ToString().ToLowerInvariant());
 
     /// <summary>
     ///     Builds the CSS class string.

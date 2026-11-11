@@ -3,8 +3,8 @@
 
 @rendermode InteractiveAuto
 <select @bind="Size">
-	@foreach (var appearance in Enum.GetValues<Size>().Distinct()) {
-		<option value="@appearance">@appearance</option>
+	@foreach (var size in Enum.GetValues<NTSize>().Distinct()) {
+		<option value="@size">@size</option>
 	}
 </select>
 <label>
@@ -16,104 +16,18 @@
 	Disabled
 </label>
 
-<label>
-	<input type="checkbox" @bind="StartIcon" />
-	Start Icon
-</label>
-
-<label>
-	<input type="checkbox" @bind="EndIcon" />
-	End Icon
-</label>
-
-<label>
-	<input type="checkbox" @bind="Direction" />
-	Vertical?
-</label>
-
-
 <NTDivider style="margin-top:36px;margin-bottom:36px;" />
 
-<TnTFabContainer ExpandMode="FabExpandMode.SmallScreens" Position="Corner.BottomRight" Direction="@(Direction ? LayoutDirection.Vertical : LayoutDirection.Horizontal)">
-	
-	<ChildContent>
-		<TnTFabButton ButtonSize="@Size" Disabled="Disabled">
-			<ChildContent>
-				@if (StartIcon) {
-					<MaterialIcon Icon="@MaterialIcon.CloudySnowing" />
-				}
-				@if (ShowText) {
-					<text>First Button Text</text>
-				}
-				@if (EndIcon) {
-					<MaterialIcon Icon="@MaterialIcon.SunnySnowing" />
-				}
-				<TnTBadge>
-					100
-				</TnTBadge>
-				<TnTProgressIndicator ProgressColor="TnTColor.Error" />
-			</ChildContent>
-
-			<Tooltip>
-				My tooltip content
-			</Tooltip>
-		</TnTFabButton>
-		<TnTFabButton ButtonSize="@Size" Disabled="Disabled">
-			<ChildContent>
-				@if (StartIcon) {
-					<MaterialIcon Icon="@MaterialIcon.Radar" />
-				}
-				@if (ShowText) {
-					<text>Second Button Text</text>
-				}
-				@if (EndIcon) {
-					<MaterialIcon Icon="@MaterialIcon.Radio" />
-				}
-				<TnTBadge>
-					100
-				</TnTBadge>
-				<TnTProgressIndicator ProgressColor="TnTColor.Error" />
-			</ChildContent>
-
-			<Tooltip>
-				My tooltip content
-			</Tooltip>
-		</TnTFabButton>
-		<TnTFabButton ButtonSize="@Size" Disabled="Disabled">
-			<ChildContent>
-				@if (StartIcon) {
-					<MaterialIcon Icon="@MaterialIcon.Blender" />
-				}
-				@if (ShowText) {
-					<text>Third Button Text</text>
-				}
-				@if (EndIcon) {
-					<MaterialIcon Icon="@MaterialIcon.QrCode" />
-				}
-				<TnTBadge>
-					100
-				</TnTBadge>
-				<TnTProgressIndicator ProgressColor="TnTColor.Error" />
-			</ChildContent>
-
-			<Tooltip>
-				My tooltip content
-			</Tooltip>
-		</TnTFabButton>
-	</ChildContent>
-</TnTFabContainer>
+<div style="display:flex;gap:16px;">
+	<NTFabButton ButtonSize="@Size" Disabled="Disabled" Icon="MaterialIcon.CloudySnowing" Label="@(ShowText ? "First Button Text" : null)" ShowBadge="true" BadgeContent="100" />
+	<NTFabButton ButtonSize="@Size" Disabled="Disabled" Icon="MaterialIcon.Radar" Label="@(ShowText ? "Second Button Text" : null)" ShowBadge="true" BadgeContent="100" />
+	<NTFabButton ButtonSize="@Size" Disabled="Disabled" Icon="MaterialIcon.Blender" Label="@(ShowText ? "Third Button Text" : null)" ShowBadge="true" BadgeContent="100" />
+</div>
 
 @code {
-	private Size Size { get; set; } = Size.Small;
+	private NTSize Size { get; set; } = NTSize.Small;
 
-	private bool Direction{ get; set; }
 	private bool Disabled { get; set; }
-
-	private bool StartIcon { get; set; }
-
-	private bool EndIcon { get; set; }
 
 	private bool ShowText { get; set; } = true;
 }
-
-

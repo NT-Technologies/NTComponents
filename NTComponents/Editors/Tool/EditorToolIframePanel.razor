@@ -1,7 +1,7 @@
 @namespace NTComponents
 @using Microsoft.AspNetCore.Components
 
-<div class="tnt-rich-text-editor-inline-tool tnt-rich-text-editor-iframe-editor"
+<div class="nt-rich-text-editor-inline-tool nt-rich-text-editor-iframe-editor"
      popover="manual"
      data-tool-command="iframe"
      data-role="iframe-editor"
@@ -9,7 +9,7 @@
      aria-label="Iframe settings"
      hidden
      aria-hidden="true">
-    <div class="tnt-rich-text-editor-inline-tool-fields">
+    <div class="nt-rich-text-editor-inline-tool-fields">
         <NTInputText Label="Iframe URL"
                      @bind-Value="_iframeUrl"
                      Appearance="NTFormAppearance.Outlined"
@@ -44,7 +44,7 @@
                      SubmitValue="false"
                      data-role="iframe-height" />
     </div>
-    <div class="tnt-rich-text-editor-inline-tool-actions">
+    <div class="nt-rich-text-editor-inline-tool-actions">
         <NTButton Label="Apply iframe"
                   ButtonSize="NTSize.Small"
                   Disabled="@Disabled"

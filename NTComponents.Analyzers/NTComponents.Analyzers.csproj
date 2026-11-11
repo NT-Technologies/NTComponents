@@ -14,8 +14,8 @@
     <Description>Roslyn analyzers that validate NTComponents usage and accessibility at build time.</Description>
     <Authors>NT Technologies</Authors>
     <Company>NT Technologies</Company>
-    <PackageProjectUrl>https://github.com/Notallthatevil/NTComponents</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/Notallthatevil/NTComponents</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/NT-Technologies/NTComponents</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/NT-Technologies/NTComponents</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>Blazor;Components;Analyzers;Roslyn;CodeAnalysis</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

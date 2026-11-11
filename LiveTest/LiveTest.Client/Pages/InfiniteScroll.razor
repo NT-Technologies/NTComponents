@@ -5,16 +5,16 @@
 
 <h3>InfiniteScroll</h3>
 
-<NTComponents.TnTVirtualize TItem="int" ItemsProvider="GetItems">
+<NTVirtualize TItem="int" ItemsProvider="GetItems">
 
-</NTComponents.TnTVirtualize>
+</NTVirtualize>
 
 
 @code {
-    async ValueTask<TnTItemsProviderResult<int>> GetItems(TnTVirtualizeItemsProviderRequest<int> request)
+    async ValueTask<NTVirtualizeItemsProviderResult<int>> GetItems(NTVirtualizeItemsProviderRequest<int> request)
     {
         await Task.Delay(1000); // Simulate async loading
-        return new TnTItemsProviderResult<int>()
+        return new NTVirtualizeItemsProviderResult<int>()
             {
                 Items = Enumerable.Range(request.StartIndex, 50).ToList(),
                 TotalItemCount = 1000

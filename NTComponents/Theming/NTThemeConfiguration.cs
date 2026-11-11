@@ -90,11 +90,5 @@ public sealed class NTThemeConfiguration {
         _ => "DEFAULT"
     };
 
-    internal static NTTheme FromLegacyTheme(Theme theme) => theme switch {
-        Theme.Light => NTTheme.Light,
-        Theme.Dark => NTTheme.Dark,
-        _ => NTTheme.System
-    };
-
     private static string Encode(string? value) => _jsonEncoder.Encode(value ?? string.Empty);
 }

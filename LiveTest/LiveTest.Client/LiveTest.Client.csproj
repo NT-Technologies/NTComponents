@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
-	  <TargetFrameworks>net9.0;net10.0;net11.0</TargetFrameworks>
+	  <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
 	  <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
@@ -20,19 +20,5 @@
     <ProjectReference Include="..\..\NTComponents.Documentation\NTComponents.Documentation.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Remove="Components\CardTesting.razor" />
-    <Content Remove="Components\DialogComponent.razor" />
-    <Content Remove="Components\FormWasmDemo.razor" />
-    <Content Remove="Components\ImageButtons.razor" />
-    <Content Remove="Components\InputFileServerProgressDemo.razor" />
-    <Content Remove="Components\InputFileSseProgressDemo.razor" />
-    <Content Remove="Components\InputFileTemplateProgressDemo.razor" />
-    <Content Remove="Components\InputFileWizardDemo.razor" />
-    <Content Remove="Components\InputTesting.razor" />
-    <Content Remove="Components\SearchableSelectSsrDemo.razor" />
-    <Content Remove="Components\SnackbarComponent.razor" />
-    <Content Remove="Components\TnTConfirmationButton.razor" />
-  </ItemGroup>
 
 </Project>

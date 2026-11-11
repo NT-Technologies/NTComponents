@@ -1,4 +1,3 @@
-#if NET10_0_OR_GREATER
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Hosting;
@@ -251,7 +250,7 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
         ArgumentNullException.ThrowIfNull(_page);
         await _page.GotoAsync($"{_baseUrl}/", new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
         await _page.Locator(".docs-home").WaitForAsync();
-        var originalPrimary = await RootColorAsync("--tnt-color-primary");
+        var originalPrimary = await RootColorAsync("--nt-color-primary");
 
         _activeRoute = "/tools/material-theme";
         await _page.GotoAsync($"{_baseUrl}{_activeRoute}", new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
@@ -263,9 +262,9 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
         await generatedOutput.Locator("summary").First.ClickAsync();
         var lightTheme = await generatedOutput.Locator("details").First.Locator("pre code").InnerTextAsync();
         lightTheme.Should().StartWith(":root {");
-        lightTheme.Should().Contain("--tnt-color-primary: rgb(101 85 143);");
-        lightTheme.Should().Contain("--tnt-color-on-assert-container:");
-        lightTheme.Split("--tnt-color-", StringSplitOptions.None).Should().HaveCount(66, "the file should contain the 49 Material system roles and four 4-role NTComponents colors");
+        lightTheme.Should().Contain("--nt-color-primary: rgb(101 85 143);");
+        lightTheme.Should().Contain("--nt-color-on-assert-container:");
+        lightTheme.Split("--nt-color-", StringSplitOptions.None).Should().HaveCount(66, "the file should contain the 49 Material system roles and four 4-role NTComponents colors");
         var defaultExtendedColors = new[] {
             (Id: "success", Color: "#00c853"),
             (Id: "info", Color: "#0091ea"),
@@ -287,7 +286,7 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
         var previewHeading = preview.GetByRole(AriaRole.Heading, new LocatorGetByRoleOptions { Name = "See the theme in NTComponents", Exact = true });
         await _page.WaitForFunctionAsync("expected => getComputedStyle(document.querySelector('[data-testid=theme-preview] .nt-button-filled'), '::after').backgroundColor === expected", "rgb(101, 85, 143)");
         (await previewHeading.EvaluateAsync<string>("element => getComputedStyle(element).color")).Should().Be("rgb(101, 85, 143)");
-        (await RootColorAsync("--tnt-color-primary")).Should().Be(originalPrimary, "opening the theme creator must not recolor the site");
+        (await RootColorAsync("--nt-color-primary")).Should().Be(originalPrimary, "opening the theme creator must not recolor the site");
         await _page.Locator("#theme-style").SelectOptionAsync("vibrant");
         await _page.WaitForFunctionAsync("expected => getComputedStyle(document.querySelector('[data-testid=theme-preview] .nt-button-filled'), '::after').backgroundColor === expected", "rgb(111, 25, 255)");
         await WaitForRootColorAsync("--nt-color-primary", "rgb(111, 25, 255)");
@@ -298,18 +297,18 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
         await _page.Locator(".theme-advanced summary").ClickAsync();
         (await _page.Locator(".theme-advanced input[type='checkbox']").CountAsync()).Should().Be(0);
         var paletteOverrides = new[] {
-            (Id: "secondary", Color: "#005a80", Token: "--tnt-color-secondary"),
-            (Id: "tertiary", Color: "#805200", Token: "--tnt-color-tertiary"),
-            (Id: "neutral", Color: "#44505a", Token: "--tnt-color-surface"),
-            (Id: "neutral-variant", Color: "#5b5f6a", Token: "--tnt-color-outline"),
-            (Id: "error", Color: "#9f2030", Token: "--tnt-color-error")
+            (Id: "secondary", Color: "#005a80", Token: "--nt-color-secondary"),
+            (Id: "tertiary", Color: "#805200", Token: "--nt-color-tertiary"),
+            (Id: "neutral", Color: "#44505a", Token: "--nt-color-surface"),
+            (Id: "neutral-variant", Color: "#5b5f6a", Token: "--nt-color-outline"),
+            (Id: "error", Color: "#9f2030", Token: "--nt-color-error")
         };
         // Role pickers show the rendered role color. Surface pickers show their palette's key color, because surface tones are near white or black.
         string[] surfacePalettes = ["neutral", "neutral-variant"];
         var paletteDisplays = paletteOverrides
             .Where(palette => !surfacePalettes.Contains(palette.Id))
             .Select(palette => (palette.Id, palette.Token))
-            .Prepend((Id: "primary", Token: "--tnt-color-primary"))
+            .Prepend((Id: "primary", Token: "--nt-color-primary"))
             .ToArray();
         foreach (var palette in paletteDisplays) {
             await WaitForPalettePickerToMatchPreviewAsync(palette.Id, palette.Token);
@@ -358,13 +357,13 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
             }
             """);
         await _page.WaitForFunctionAsync("expected => getComputedStyle(document.querySelector('[data-testid=theme-preview] .nt-button-filled'), '::after').backgroundColor === expected", "rgb(0, 104, 116)");
-        await WaitForPalettePickerToMatchPreviewAsync("primary", "--tnt-color-primary");
+        await WaitForPalettePickerToMatchPreviewAsync("primary", "--nt-color-primary");
         (await previewHeading.EvaluateAsync<string>("element => getComputedStyle(element).color")).Should().Be("rgb(0, 104, 116)", "the preview heading should consume the live primary theme variable");
         await Assertions.Expect(primaryPicker.Locator("xpath=..").Locator("[data-theme-color-output]")).ToHaveTextAsync("#006874");
         (await downloadLink.GetAttributeAsync("download")).Should().Be("ntcomponents-theme-6750a4.zip", "live input should not rebuild the ZIP");
         await WaitForRootColorAsync("--nt-color-primary", "rgb(0, 104, 116)");
         await _page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Restore site theme", Exact = true }).ClickAsync();
-        await WaitForRootColorAsync("--tnt-color-primary", originalPrimary);
+        await WaitForRootColorAsync("--nt-color-primary", originalPrimary);
 
         await primaryPicker.EvaluateAsync("element => element.dispatchEvent(new Event('change', { bubbles: true }))");
         await Assertions.Expect(downloadLink).ToHaveAttributeAsync("download", "ntcomponents-theme-006874.zip");
@@ -372,7 +371,7 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
             (await preview.EvaluateAsync<string>("(element, token) => element.style.getPropertyValue(token)", property.Key)).Should().Be(property.Value, $"the custom {property.Key} palette should survive a source-color change");
         }
 
-        var previousPrimaryOverride = await preview.EvaluateAsync<string>("element => element.style.getPropertyValue('--tnt-color-primary')");
+        var previousPrimaryOverride = await preview.EvaluateAsync<string>("element => element.style.getPropertyValue('--nt-color-primary')");
         var primaryOverridePicker = _page.Locator("#theme-palette-primary");
         await primaryOverridePicker.EvaluateAsync(
             """
@@ -384,10 +383,10 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
             """,
             "#7b2cbf");
         await _page.WaitForFunctionAsync(
-            "previous => document.querySelector('[data-testid=theme-preview]').style.getPropertyValue('--tnt-color-primary') !== previous",
+            "previous => document.querySelector('[data-testid=theme-preview]').style.getPropertyValue('--nt-color-primary') !== previous",
             previousPrimaryOverride);
-        await WaitForPalettePickerToMatchPreviewAsync("primary", "--tnt-color-primary");
-        overriddenProperties["--tnt-color-primary"] = await preview.EvaluateAsync<string>("element => element.style.getPropertyValue('--tnt-color-primary')");
+        await WaitForPalettePickerToMatchPreviewAsync("primary", "--nt-color-primary");
+        overriddenProperties["--nt-color-primary"] = await preview.EvaluateAsync<string>("element => element.style.getPropertyValue('--nt-color-primary')");
 
         await primaryPicker.EvaluateAsync(
             """
@@ -399,7 +398,7 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
             """,
             "#b3261e");
         await Assertions.Expect(downloadLink).ToHaveAttributeAsync("download", "ntcomponents-theme-b3261e.zip");
-        (await preview.EvaluateAsync<string>("element => element.style.getPropertyValue('--tnt-color-primary')")).Should().Be(overriddenProperties["--tnt-color-primary"], "the custom primary palette should survive a source-color change");
+        (await preview.EvaluateAsync<string>("element => element.style.getPropertyValue('--nt-color-primary')")).Should().Be(overriddenProperties["--nt-color-primary"], "the custom primary palette should survive a source-color change");
 
         await _page.Locator("#theme-style").SelectOptionAsync("vibrant");
         await Assertions.Expect(usageGuide.Locator(".theme-style-card.selected h4")).ToHaveTextAsync("Vibrant");
@@ -474,8 +473,8 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
         await output.Locator("summary").First.ClickAsync();
         var preview = await output.Locator("details").First.Locator("pre code").InnerTextAsync();
         preview.Should().StartWith(":root {");
-        preview.Should().Contain("--tnt-color-primary: rgb(1 2 3);");
-        preview.Should().Contain("--tnt-color-on-success-container: rgb(4 5 6);");
+        preview.Should().Contain("--nt-color-primary: rgb(1 2 3);");
+        preview.Should().Contain("--nt-color-on-success-container: rgb(4 5 6);");
         preview.Should().NotContain("--md-");
 
         var downloadLink = _page.GetByRole(AriaRole.Link, new PageGetByRoleOptions { Name = "Download converted themes", Exact = true });
@@ -553,10 +552,10 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
         var activeTheme = _page.Locator("link[data-nt-theme][data-nt-theme-loaded='true']");
         await selector.SelectOptionAsync("LIGHT-DEFAULT");
         await Assertions.Expect(activeTheme).ToHaveAttributeAsync("href", new System.Text.RegularExpressions.Regex("/Themes/light\\.css$"));
-        var lightSurface = await RootColorAsync("--tnt-color-surface");
+        var lightSurface = await RootColorAsync("--nt-color-surface");
         await selector.SelectOptionAsync("DARK-DEFAULT");
         await Assertions.Expect(activeTheme).ToHaveAttributeAsync("href", new System.Text.RegularExpressions.Regex("/Themes/dark\\.css$"));
-        (await RootColorAsync("--tnt-color-surface")).Should().NotBe(lightSurface);
+        (await RootColorAsync("--nt-color-surface")).Should().NotBe(lightSurface);
         (await _page.EvaluateAsync<string>("localStorage.getItem('NTComponentsStoredThemeKey')")).Should().Be("DARK");
         await _page.ScreenshotAsync(new PageScreenshotOptions { Path = Path.Combine(FindRepositoryRoot(), "artifacts", "site-header-theme-desktop.png") });
 
@@ -1067,4 +1066,3 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
 
     private sealed record BrowserDiagnostic(string Route, string Kind, string Message);
 }
-#endif

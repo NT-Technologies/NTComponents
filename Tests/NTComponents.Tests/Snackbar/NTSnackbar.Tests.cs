@@ -28,7 +28,7 @@ public class NTSnackbar_Tests : BunitContext {
         var container = cut.Find(".nt-snackbar-container");
         container.GetAttribute("data-nt-snackbar-host").Should().Be("true");
         container.GetAttribute("popover").Should().Be("manual");
-        cut.Find("tnt-page-script").GetAttribute("src").Should().Be(NTSnackbar.JsModulePathValue);
+        cut.Find("nt-page-script").GetAttribute("src").Should().Be(NTSnackbar.JsModulePathValue);
         cut.FindAll(".nt-snackbar").Should().BeEmpty();
         cut.FindAll("script").Should().BeEmpty();
     }

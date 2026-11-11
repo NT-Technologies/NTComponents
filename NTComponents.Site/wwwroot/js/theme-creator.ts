@@ -81,10 +81,10 @@ const schemeDefinitions = [
 
 // Role palettes show the role color rendered in the preview.
 const palettePreviewRoles: Record<string, string> = {
-  error: "--tnt-color-error",
-  primary: "--tnt-color-primary",
-  secondary: "--tnt-color-secondary",
-  tertiary: "--tnt-color-tertiary",
+  error: "--nt-color-error",
+  primary: "--nt-color-primary",
+  secondary: "--nt-color-secondary",
+  tertiary: "--nt-color-tertiary",
 };
 
 // Surface tones are close to white or black, which hides the chosen tint and makes a poor starting point in the color dialog, so the
@@ -204,7 +204,7 @@ function generateThemeFile(request: ThemeGenerationRequest, definition: typeof s
   const properties: Record<string, string> = {};
 
   for (const role of systemColorRoles) {
-    properties[`--tnt-color-${toKebabCase(role)}`] = toRgb(scheme[role]);
+    properties[`--nt-color-${toKebabCase(role)}`] = toRgb(scheme[role]);
   }
 
   for (const [name, color] of Object.entries(request.extendedColors)) {
@@ -217,10 +217,10 @@ function generateThemeFile(request: ThemeGenerationRequest, definition: typeof s
       isDark: definition.isDark,
       primaryPalette: TonalPalette.fromInt(paletteArgb),
     });
-    properties[`--tnt-color-${name}`] = toRgb(extendedScheme.primary);
-    properties[`--tnt-color-on-${name}`] = toRgb(extendedScheme.onPrimary);
-    properties[`--tnt-color-${name}-container`] = toRgb(extendedScheme.primaryContainer);
-    properties[`--tnt-color-on-${name}-container`] = toRgb(extendedScheme.onPrimaryContainer);
+    properties[`--nt-color-${name}`] = toRgb(extendedScheme.primary);
+    properties[`--nt-color-on-${name}`] = toRgb(extendedScheme.onPrimary);
+    properties[`--nt-color-${name}-container`] = toRgb(extendedScheme.primaryContainer);
+    properties[`--nt-color-on-${name}-container`] = toRgb(extendedScheme.onPrimaryContainer);
   }
 
   return {
@@ -242,7 +242,7 @@ function applyPreview(): void {
   }
 
   const scheme = createScheme(previewState.request, definition);
-  const properties = withNtAliases(generateThemeFile(previewState.request, definition, scheme).properties);
+  const properties = generateThemeFile(previewState.request, definition, scheme).properties;
   const targetStyle = previewState.target.style;
   if (!originalPreviewProperties) {
     originalPreviewProperties = new Map(Object.keys(properties).map((name) => [name, targetStyle.getPropertyValue(name)]));
@@ -255,12 +255,6 @@ function applyPreview(): void {
   if (previewState.applyToSite) {
     setSiteTheme(previewState.request);
   }
-}
-
-// Root compatibility aliases do not resolve again when legacy tokens change, so both names are written.
-function withNtAliases(properties: Record<string, string>): Record<string, string> {
-  return Object.fromEntries(Object.entries(properties)
-    .flatMap(([name, value]) => [[name, value], [name.replace("--tnt-color-", "--nt-color-"), value]]));
 }
 
 function setSiteTheme(request: ThemeGenerationRequest): void {
@@ -286,7 +280,7 @@ function renderSiteTheme(): void {
   const href = document.querySelector('link[data-nt-theme][data-nt-theme-loaded="true"]')?.getAttribute("href") ?? "";
   const activeFile = href.split("?")[0].split("/").pop();
   const definition = schemeDefinitions.find((candidate) => candidate.name === activeFile) ?? schemeDefinitions[0];
-  const properties = withNtAliases(generateThemeFile(siteTheme.request, definition).properties);
+  const properties = generateThemeFile(siteTheme.request, definition).properties;
   // The doubled :root outranks the theme stylesheets regardless of load order.
   const css = `:root:root{${Object.entries(properties).map(([name, value]) => `${name}:${value}`).join(";")}}`;
   // Only write on change: the head observer would otherwise re-trigger on this element's own update.

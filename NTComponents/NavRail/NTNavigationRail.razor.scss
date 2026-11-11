@@ -13,7 +13,7 @@ $nt-navigation-rail-expanded-max-width: 360px;
 $nt-navigation-rail-expanded-width: clamp($nt-navigation-rail-expanded-min-width, 20vw, $nt-navigation-rail-expanded-max-width);
 $nt-navigation-rail-item-gap: 4px;
 $nt-navigation-rail-menu-button-size: 48px;
-$nt-navigation-rail-menu-button-block-inset: calc((#{measurements.$tnt-header-height} - #{$nt-navigation-rail-menu-button-size}) / 2);
+$nt-navigation-rail-menu-button-block-inset: calc((#{measurements.$nt-header-height} - #{$nt-navigation-rail-menu-button-size}) / 2);
 $nt-navigation-rail-fab-collapsed-width: 56px;
 $nt-navigation-rail-fab-max-inline-inset: 24px;
 $nt-navigation-rail-fab-expanded-inline-padding: 20px;
@@ -115,7 +115,7 @@ $nt-navigation-rail-modal-width: min($nt-navigation-rail-expanded-width, 88vw);
                 @include typescale.nt-label-small;
 
                 -webkit-line-clamp: 1;
-                max-block-size: typescale.$tnt-typescale-label-small-line-height;
+                max-block-size: typescale.$nt-typescale-label-small-line-height;
             }
 
             .nt-navigation-rail-item-expanded,
@@ -323,7 +323,7 @@ $nt-navigation-rail-modal-width: min($nt-navigation-rail-expanded-width, 88vw);
             transition: border-radius $nt-navigation-rail-shape-transition;
         }
 
-        .tnt-icon {
+        .nt-icon {
             color: inherit;
             font-size: $nt-navigation-rail-icon-size;
             pointer-events: none;
@@ -382,7 +382,7 @@ $nt-navigation-rail-modal-width: min($nt-navigation-rail-expanded-width, 88vw);
                 box-shadow: none;
             }
 
-            &:not(.tnt-disabled):not(:disabled):hover::after {
+            &:not(.nt-disabled):not(:disabled):hover::after {
                 box-shadow: none;
             }
         }
@@ -593,7 +593,7 @@ $nt-navigation-rail-modal-width: min($nt-navigation-rail-expanded-width, 88vw);
     pointer-events: auto;
 }
 
-tnt-page-script {
+nt-page-script {
     display: none;
 }
 

@@ -9,7 +9,7 @@
     vertical-align: middle;
 
     @each $size, $tokens in buttonChrome.$sizes {
-        &.tnt-size-#{$size} {
+        &.nt-size-#{$size} {
             @include buttonChrome.size("nt-button-shape-square", $tokens...);
         }
     }
@@ -86,7 +86,7 @@
         justify-content: center;
     }
 
-    &.tnt-disabled,
+    &.nt-disabled,
     &:disabled:not(.nt-button-progress-active) {
         box-shadow: none;
         color: color-mix(in srgb, #{colors.$nt-color-on-surface} 38%, transparent);
@@ -112,7 +112,7 @@
     @include buttonChrome.progress-overlay;
 
     ::deep {
-        tnt-page-script {
+        nt-page-script {
             position: absolute;
         }
     }

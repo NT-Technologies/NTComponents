@@ -1,13 +1,10 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using RippleTestingUtility = NTComponents.Tests.TestingUtility.TestingUtility;
 
 namespace NTComponents.Tests.Buttons;
 
 public class NTFabButton_Tests : BunitContext {
     private static NTIcon SampleIcon => MaterialIcon.Add;
-
-    public NTFabButton_Tests() => RippleTestingUtility.SetupRippleEffectModule(this);
 
     [Fact]
     public void Default_Render_Uses_IconOnly_Mode_Small_Size_Elevation_And_Button_Type() {
@@ -21,7 +18,7 @@ public class NTFabButton_Tests : BunitContext {
         classes.Should().Contain("nt-fab-button");
         classes.Should().Contain("nt-fab-button-icon-only");
         classes.Should().Contain("nt-fab-button-placement-inline");
-        classes.Should().Contain("tnt-size-s");
+        classes.Should().Contain("nt-size-s");
         classes.Should().Contain("nt-elevation-medium");
         button.GetAttribute("type")!.Should().Be("button");
         button.GetAttribute("aria-label")!.Should().Be("Create item");
@@ -56,7 +53,7 @@ public class NTFabButton_Tests : BunitContext {
         classes.Should().NotContain("nt-fab-button-icon-only");
         button.HasAttribute("aria-label").Should().BeFalse();
         cut.Find(".nt-fab-button-label").TextContent.Should().Be("Create");
-        cut.Find(".nt-fab-button-icon .tnt-icon").TextContent.Should().Be(MaterialIcon.Add.Icon);
+        cut.Find(".nt-fab-button-icon .nt-icon").TextContent.Should().Be(MaterialIcon.Add.Icon);
     }
 
     [Fact]
@@ -118,11 +115,11 @@ public class NTFabButton_Tests : BunitContext {
     }
 
     [Theory]
-    [InlineData(NTSize.Smallest, "tnt-size-s")]
-    [InlineData(NTSize.Small, "tnt-size-s")]
-    [InlineData(NTSize.Medium, "tnt-size-m")]
-    [InlineData(NTSize.Large, "tnt-size-l")]
-    [InlineData(NTSize.Largest, "tnt-size-l")]
+    [InlineData(NTSize.Smallest, "nt-size-s")]
+    [InlineData(NTSize.Small, "nt-size-s")]
+    [InlineData(NTSize.Medium, "nt-size-m")]
+    [InlineData(NTSize.Large, "nt-size-l")]
+    [InlineData(NTSize.Largest, "nt-size-l")]
     public void ButtonSize_Uses_Supported_Fab_Size(NTSize suppliedSize, string expectedClass) {
         var cut = Render<NTFabButton>(parameters => parameters
             .Add(x => x.Icon, SampleIcon)
@@ -132,8 +129,8 @@ public class NTFabButton_Tests : BunitContext {
         var classes = cut.Find("button").GetAttribute("class")!;
 
         classes.Should().Contain(expectedClass);
-        classes.Should().NotContain("tnt-size-xs");
-        classes.Should().NotContain("tnt-size-xl");
+        classes.Should().NotContain("nt-size-xs");
+        classes.Should().NotContain("nt-size-xl");
     }
 
     [Fact]
@@ -179,7 +176,7 @@ public class NTFabButton_Tests : BunitContext {
             .Add(x => x.AriaLabel, "Create item")
             .Add(x => x.EnableRipple, false));
 
-        cut.Markup.Should().NotContain("tnt-ripple-effect");
+        cut.FindAll(".nt-button-ripple-host").Should().BeEmpty();
         cut.Markup.Should().NotContain("nt-button-ripple-host");
         cut.Markup.Should().NotContain("startButtonInteraction");
         cut.Markup.Should().NotContain("startRippleHost");
@@ -194,7 +191,6 @@ public class NTFabButton_Tests : BunitContext {
         cut.Find(".nt-button-ripple-host").Should().NotBeNull();
         cut.Markup.Should().Contain("startRippleHost");
         cut.Markup.Should().NotContain("startButtonInteraction");
-        cut.Markup.Should().NotContain("tnt-ripple-effect");
     }
 
     [Fact]
@@ -221,7 +217,7 @@ public class NTFabButton_Tests : BunitContext {
 
         button.HasAttribute("disabled").Should().BeTrue();
         button.GetAttribute("class")!.Should().Contain("nt-button-progress-active");
-        button.GetAttribute("class")!.Should().NotContain("tnt-disabled");
+        button.GetAttribute("class")!.Should().NotContain("nt-disabled");
         cut.Find(".nt-button-progress .nt-progress").GetAttribute("class")!.Should().Contain("nt-progress-ring");
     }
 
@@ -239,7 +235,7 @@ public class NTFabButton_Tests : BunitContext {
 
         clicked.Should().Be(0);
         button.HasAttribute("disabled").Should().BeTrue();
-        button.GetAttribute("class")!.Should().Contain("tnt-disabled");
+        button.GetAttribute("class")!.Should().Contain("nt-disabled");
     }
 
     [Fact]

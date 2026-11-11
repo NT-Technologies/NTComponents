@@ -9,7 +9,7 @@ on:
         default: Release
 
 env:
-  COVERAGE_THRESHOLD: 50
+  COVERAGE_THRESHOLD: 90
   TESTINGPLATFORM_EXITCODE_IGNORE: 8
   NuGetAudit: false
 
@@ -27,9 +27,8 @@ jobs:
         with:
           dotnet-version: |
             8.0.x
-            9.0.x
             10.0.x
-            11.0.100-rc.2.26504.105
+            11.0.x
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -53,16 +52,11 @@ jobs:
 
   dotnet-test:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Playwright does not support Ubuntu 26.04 yet
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: ntcomponents-net9
-            project: Tests/NTComponents.Tests/NTComponents.Tests.csproj
-            framework: net9.0
-            install-playwright: false
-            install-wasm-workloads: true
           - name: ntcomponents-net10
             project: Tests/NTComponents.Tests/NTComponents.Tests.csproj
             framework: net10.0
@@ -72,11 +66,6 @@ jobs:
             project: Tests/NTComponents.Tests/NTComponents.Tests.csproj
             framework: net11.0
             install-playwright: false
-            install-wasm-workloads: true
-          - name: ntcomponents-integration-net9
-            project: Tests/NTComponents.IntegrationTests/NTComponents.IntegrationTests.csproj
-            framework: net9.0
-            install-playwright: true
             install-wasm-workloads: true
           - name: ntcomponents-integration-net10
             project: Tests/NTComponents.IntegrationTests/NTComponents.IntegrationTests.csproj
@@ -114,9 +103,8 @@ jobs:
         with:
           dotnet-version: |
             8.0.x
-            9.0.x
             10.0.x
-            11.0.100-rc.2.26504.105
+            11.0.x
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -142,7 +130,7 @@ jobs:
 
       - name: Ensure browsers are installed
         if: matrix.install-playwright
-        run: pwsh Tests/NTComponents.IntegrationTests/bin/${{ inputs.configuration }}/${{ matrix.framework }}/playwright.ps1 install --with-deps chromium
+        run: pwsh Tests/NTComponents.IntegrationTests/bin/${{ inputs.configuration }}/${{ matrix.framework }}/playwright.ps1 install chromium
 
       - name: Install dotnet-coverage
         run: dotnet tool install --global dotnet-coverage
@@ -186,7 +174,7 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 11.0.100-rc.2.26504.105
+          dotnet-version: 11.0.x
 
       - name: Install dotnet-coverage
         run: dotnet tool install --global dotnet-coverage
@@ -231,7 +219,7 @@ jobs:
           show_line: true
           show_branch: true
           show_class_names: true
-          only_changed_files: true
+          only_changed_files: false
 
   build-test-pack:
     needs:

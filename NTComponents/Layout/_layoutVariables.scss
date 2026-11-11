@@ -1,9 +1,9 @@
 @use '../Styles/_Variables/_measurements.scss' as measurements;
 @use '../Styles/_Variables/_corner-radius.scss' as corner-radius;
 
-$nt-layout-header-height: measurements.$tnt-header-height;
+$nt-layout-header-height: measurements.$nt-header-height;
 $nt-layout-body-height: minmax(0, 1fr);
-$nt-layout-footer-height: measurements.$tnt-footer-height;
+$nt-layout-footer-height: measurements.$nt-footer-height;
 $nt-layout-body-corner-radius: corner-radius.$nt-corner-radius-extra-large;
 $nt-layout-navigation-rail-body-gap: 2px;
 $nt-layout-xs-navigation-trigger-reserved-inline-size: 80px;

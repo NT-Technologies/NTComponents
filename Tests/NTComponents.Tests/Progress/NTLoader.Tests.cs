@@ -127,7 +127,7 @@ public class NTLoader_Tests : BunitContext {
         var cut = Render<NTLoader>();
 
         cut.Instance.Should().BeAssignableTo<INTPageScriptComponent<NTLoader>>();
-        cut.FindAll("tnt-page-script")
+        cut.FindAll("nt-page-script")
             .Select(script => script.GetAttribute("src"))
             .Should()
             .ContainSingle("./_content/NTComponents/Progress/NTLoader.razor.js");
@@ -138,7 +138,7 @@ public class NTLoader_Tests : BunitContext {
         SetRendererInfo(new RendererInfo("Static", false));
         var cut = Render<NTLoader>();
 
-        cut.FindAll(".nt-loader > [hidden] > tnt-page-script").Should().ContainSingle();
+        cut.FindAll(".nt-loader > [hidden] > nt-page-script").Should().ContainSingle();
     }
 
     [Fact]
@@ -182,11 +182,11 @@ public class NTLoader_Tests : BunitContext {
     }
 
     [Theory]
-    [InlineData(NTSize.Smallest, "tnt-size-xs")]
-    [InlineData(NTSize.Small, "tnt-size-s")]
-    [InlineData(NTSize.Medium, "tnt-size-m")]
-    [InlineData(NTSize.Large, "tnt-size-l")]
-    [InlineData(NTSize.Largest, "tnt-size-xl")]
+    [InlineData(NTSize.Smallest, "nt-size-xs")]
+    [InlineData(NTSize.Small, "nt-size-s")]
+    [InlineData(NTSize.Medium, "nt-size-m")]
+    [InlineData(NTSize.Large, "nt-size-l")]
+    [InlineData(NTSize.Largest, "nt-size-xl")]
     public void Size_Adds_Correct_Size_Class(NTSize size, string expectedClass) {
         var cut = Render<NTLoader>(p => p.Add(c => c.Size, size));
 

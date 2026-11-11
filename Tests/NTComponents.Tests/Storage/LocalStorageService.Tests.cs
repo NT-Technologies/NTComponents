@@ -14,7 +14,7 @@ public class LocalStorageService_Tests : BunitContext {
         // Register the internal LocalStorageService through DI
         Services.AddSingleton<ILocalStorageService>(provider => {
             var jsRuntime = provider.GetRequiredService<IJSRuntime>();
-            var storageServiceType = typeof(TnTSkeleton).Assembly.GetType("NTComponents.Storage.LocalStorageService")!;
+            var storageServiceType = typeof(NTSkeleton).Assembly.GetType("NTComponents.Storage.LocalStorageService")!;
             return (ILocalStorageService)Activator.CreateInstance(storageServiceType, jsRuntime)!;
         });
 

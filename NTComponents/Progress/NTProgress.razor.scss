@@ -6,7 +6,7 @@
     vertical-align: middle;
     --nt-progress-track-color: var(--nt-color-secondary-container);
 
-    &.tnt-size-xs {
+    &.nt-size-xs {
         --nt-progress-size: 24px;
         --nt-progress-linear-size: 96px;
         --nt-progress-linear-height: 4px;
@@ -17,7 +17,7 @@
         --nt-progress-ring-wave-gap-value: 5.158;
     }
 
-    &.tnt-size-s {
+    &.nt-size-s {
         --nt-progress-size: 40px;
         --nt-progress-linear-size: 160px;
         --nt-progress-linear-height: 4px;
@@ -28,7 +28,7 @@
         --nt-progress-ring-wave-gap-value: 3.537;
     }
 
-    &.tnt-size-m {
+    &.nt-size-m {
         --nt-progress-size: 48px;
         --nt-progress-linear-size: 240px;
         --nt-progress-linear-height: 4px;
@@ -39,7 +39,7 @@
         --nt-progress-ring-wave-gap-value: 3.537;
     }
 
-    &.tnt-size-l {
+    &.nt-size-l {
         --nt-progress-size: 64px;
         --nt-progress-linear-size: 320px;
         --nt-progress-linear-height: 6px;
@@ -50,7 +50,7 @@
         --nt-progress-ring-wave-gap-value: 2.763;
     }
 
-    &.tnt-size-xl {
+    &.nt-size-xl {
         --nt-progress-size: 88px;
         --nt-progress-linear-size: 480px;
         --nt-progress-linear-height: 8px;

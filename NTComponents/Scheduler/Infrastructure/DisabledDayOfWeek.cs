@@ -15,7 +15,7 @@ namespace NTComponents.Scheduler.Infrastructure;
 /// <param name="disabledStartTime">The start time when the day is considered disabled.</param>
 /// <param name="disabledEndTime">  The end time when the day is considered disabled.</param>
 [ExcludeFromCodeCoverage]
-internal class DisabledDayOfWeek(TnTDayOfWeekFlag dayOfWeekFlag, TimeOnly disabledStartTime, TimeOnly disabledEndTime) : TnTDisabledDateTime {
+internal class DisabledDayOfWeek(NTDayOfWeekFlag dayOfWeekFlag, TimeOnly disabledStartTime, TimeOnly disabledEndTime) : NTDisabledDateTime {
 
     /// <summary>
     ///     Determines if a specific date and time is disabled.

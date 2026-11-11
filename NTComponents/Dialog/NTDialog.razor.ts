@@ -46,7 +46,7 @@ function getDialog(dialogOrId: DialogReference): NTDialogElement | null {
 
 function getDialogs(root: Maybe<Element | Document>): NTDialogElement[] {
     const scope = root ?? document;
-    if (scope instanceof HTMLElement && scope.localName === 'tnt-page-script') {
+    if (scope instanceof HTMLElement && scope.localName === 'nt-page-script') {
         const sibling = scope.previousElementSibling;
         return sibling instanceof HTMLDialogElement && sibling.matches('[data-nt-dialog="true"]')
             ? [sibling as NTDialogElement]

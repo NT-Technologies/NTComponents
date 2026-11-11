@@ -57,7 +57,7 @@ internal static partial class MaterialThemeCssConverter {
             properties.Add(new(convertedName, match.Groups["value"].Value.Trim()));
         }
 
-        if (!names.Contains("--tnt-color-primary")) {
+        if (!names.Contains("--nt-color-primary")) {
             throw new MaterialThemeConversionException($"{sourceFile.Name} does not contain Material 3 system color tokens.");
         }
 
@@ -78,7 +78,7 @@ internal static partial class MaterialThemeCssConverter {
 
     private static string? ConvertPropertyName(string name) {
         if (name.StartsWith(SystemColorPrefix, StringComparison.Ordinal)) {
-            return $"--tnt-color-{name[SystemColorPrefix.Length..]}";
+            return $"--nt-color-{name[SystemColorPrefix.Length..]}";
         }
 
         if (!name.StartsWith(ExtendedColorPrefix, StringComparison.Ordinal)) {
@@ -93,7 +93,7 @@ internal static partial class MaterialThemeCssConverter {
     }
 
     private static string? ConvertExtendedPropertyName(string name, string suffix, string prefix, string outputSuffix) => name.EndsWith(suffix, StringComparison.Ordinal) && name.Length > suffix.Length
-        ? $"--tnt-color-{prefix}{name[..^suffix.Length]}{outputSuffix}"
+        ? $"--nt-color-{prefix}{name[..^suffix.Length]}{outputSuffix}"
         : null;
 
     private static Regex SelectorRegex(string selector) => new($"(?:^|}})\\s*{Regex.Escape(selector)}\\s*{{", RegexOptions.CultureInvariant);

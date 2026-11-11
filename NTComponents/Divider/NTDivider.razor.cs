@@ -11,7 +11,7 @@ namespace NTComponents;
 ///     <para>Use dividers to group related content and reinforce hierarchy. Prefer open space when spacing alone can communicate the relationship.</para>
 ///     <para>
 ///         Best practices: keep dividers visible but not bold, use them sparingly, and choose <see cref="NTDividerVariant.Inset" /> or <see cref="NTDividerVariant.MiddleInset" /> only when the
-///         divider is separating related items within a section. Use <see cref="LayoutDirection.Vertical" /> for larger-screen side-by-side layouts.
+///         divider is separating related items within a section. Use <see cref="NTLayoutDirection.Vertical" /> for larger-screen side-by-side layouts.
 ///     </para>
 /// </remarks>
 [NTDocumentation(
@@ -32,14 +32,14 @@ public partial class NTDivider {
     /// </summary>
     /// <remarks>Use horizontal dividers for lists, cards, and stacked content. Use vertical dividers for side-by-side content on larger screens.</remarks>
     [Parameter]
-    public LayoutDirection Direction { get; set; } = LayoutDirection.Horizontal;
+    public NTLayoutDirection Direction { get; set; } = NTLayoutDirection.Horizontal;
 
     /// <inheritdoc />
     public override string? ElementClass => CssClassBuilder.Create()
         .AddFromAdditionalAttributes(AdditionalAttributes)
         .AddClass("nt-divider")
-        .AddClass(Direction == LayoutDirection.Vertical ? "nt-divider-vertical" : "nt-divider-horizontal")
-        .AddClass(Variant.ToCssClass(), Direction == LayoutDirection.Horizontal)
+        .AddClass(Direction == NTLayoutDirection.Vertical ? "nt-divider-vertical" : "nt-divider-horizontal")
+        .AddClass(Variant.ToCssClass(), Direction == NTLayoutDirection.Horizontal)
         .Build();
 
     /// <inheritdoc />
@@ -58,7 +58,7 @@ public partial class NTDivider {
     [Parameter]
     public NTDividerVariant Variant { get; set; } = NTDividerVariant.FullWidth;
 
-    private string AriaOrientation => Direction.ToCssString();
+    private string AriaOrientation => Direction == NTLayoutDirection.Vertical ? "vertical" : "horizontal";
 }
 
 /// <summary>

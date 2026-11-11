@@ -56,14 +56,14 @@ public class NTIcon_Tests : BunitContext {
     }
 
     [Fact]
-    public void HasTnTIdAttribute() {
+    public void HasNtIdAttribute() {
         // Arrange & Act
         var cut = Render<TestIcon>(p => p.Add(c => c.Icon, "dashboard"));
         var root = cut.Find("span.test-icon");
 
         // Assert
-        root.HasAttribute("tntid").Should().BeTrue();
-        root.GetAttribute("tntid").Should().NotBeNullOrEmpty();
+        root.HasAttribute("ntid").Should().BeTrue();
+        root.GetAttribute("ntid").Should().NotBeNullOrEmpty();
     }
 
     [Fact]
@@ -255,7 +255,7 @@ public class NTIcon_Tests : BunitContext {
         // Assert
         root.Should().NotBeNull();
         root.GetAttribute("class")!.Should().Contain("test-icon");
-        root.GetAttribute("class")!.Should().Contain("tnt-components");
+        root.GetAttribute("class")!.Should().Contain("nt-components");
         root.GetAttribute("class")!.Should().Contain("test-medium"); // default size
         root.TextContent.Should().Be("home");
     }

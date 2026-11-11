@@ -1,4 +1,3 @@
-#if NET10_0_OR_GREATER
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using NTComponents.Site.Documentation;
@@ -60,4 +59,3 @@ public class ComponentExamples_Tests : BunitContext {
         publicComponentNames.Should().OnlyContain(name => documentedNames.Contains(name), "add a page to ComponentExamples or a parent to the catalog's dependent-component map");
     }
 }
-#endif

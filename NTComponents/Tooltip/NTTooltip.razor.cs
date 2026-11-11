@@ -96,13 +96,13 @@ public partial class NTTooltip : NTPageScriptComponent<NTTooltip> {
     }
 
     private IReadOnlyDictionary<string, object>? GetAdditionalAttributesWithoutInternalId() {
-        if (AdditionalAttributes is null || !AdditionalAttributes.ContainsKey(NTComponentBase._tnTCustomIdentifierAttribute)) {
+        if (AdditionalAttributes is null || !AdditionalAttributes.ContainsKey(NTComponentBase._ntCustomIdentifierAttribute)) {
             return AdditionalAttributes;
         }
 
         var attributes = new Dictionary<string, object>(AdditionalAttributes.Count - 1);
         foreach (var attribute in AdditionalAttributes) {
-            if (attribute.Key != NTComponentBase._tnTCustomIdentifierAttribute) {
+            if (attribute.Key != NTComponentBase._ntCustomIdentifierAttribute) {
                 attributes[attribute.Key] = attribute.Value;
             }
         }

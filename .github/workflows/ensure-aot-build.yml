@@ -30,7 +30,7 @@ jobs:
         - name: Windows arm64
           os: windows-11-arm
         - name: Linux x64
-          os: ubuntu-latest
+          os: ubuntu-24.04 # Playwright does not support Ubuntu 26.04 yet
         - name: Linux arm64
           os: ubuntu-24.04-arm
         - name: macOS x64
@@ -38,13 +38,15 @@ jobs:
         - name: macOS arm64
           os: macos-15
     runs-on: ${{ matrix.runner.os }}
-    timeout-minutes: 20
+    timeout-minutes: 30
     # determine dotnet SDK version from the TFM (job-level env to avoid schema ambiguity)
     env:
-      DOTNET_VERSION: ${{ matrix.tfm == 'net11.0' && '11.0.100-rc.2.26504.105' || '10.0.x' }}
+      DOTNET_VERSION: ${{ matrix.tfm == 'net11.0' && '11.0.x' || '10.0.x' }}
 
     steps:
     - uses: actions/checkout@v7
+      with:
+        submodules: recursive
 
     - name: Setup dotnet
       uses: actions/setup-dotnet@v6
@@ -52,7 +54,7 @@ jobs:
         dotnet-version: |
           8.0.x
           ${{ env.DOTNET_VERSION }}
-          11.0.100-rc.2.26504.105
+          11.0.x
 
     - name: Cache NuGet packages
       uses: actions/cache@v6
@@ -75,21 +77,33 @@ jobs:
       shell: pwsh
       run: python3 --version
 
-    - name: Setup Node for Playwright browser install
-      if: runner.os == 'Linux'
+    - name: Setup Node
       uses: actions/setup-node@v7
       with:
         node-version: 24.x
 
+    # The components' .razor.js modules are compiled from TypeScript and are not checked in.
+    - name: Install node dependencies
+      run: npm ci
+
+    - name: Build TypeScript modules
+      run: npm run build:ts:release
+
     - name: Install Chromium for AOT browser smoke
       if: runner.os == 'Linux'
       shell: pwsh
-      run: npx --yes playwright@1.60.0 install --with-deps --no-shell chromium
+      run: npx --yes playwright@1.60.0 install --no-shell chromium
 
     - name: Restore WebAssembly workloads
       shell: pwsh
       run: dotnet workload restore Tests/AotCompatibility.TestApp/AotCompatibility.TestApp.csproj --skip-manifest-update
 
+    - name: Enable Safari automation for AOT browser smoke
+      if: runner.os == 'macOS'
+      run: sudo safaridriver --enable
+
     - name: Publish AOT smoke app, assert static analysis warning count, and browser-smoke the app
+      # A step timeout keeps the log; a job timeout discards it.
+      timeout-minutes: 20
       shell: pwsh
       run: ./test-aot-compatibility.ps1 -frameworks "${{ matrix.tfm }}"

@@ -33,7 +33,6 @@ describe('NTTheme runtime', () => {
         await updatePromise;
 
         expect(link.getAttribute('data-nt-theme-loaded')).toBe('true');
-        expect(link.getAttribute('data-tnt-theme-loaded')).toBe('true');
     });
 
     test('applyStylesheet deactivates first-paint default links after active theme loads', async () => {
@@ -75,7 +74,6 @@ describe('NTTheme runtime', () => {
         const critical = document.createElement('style');
         critical.id = 'nt-theme-critical';
         critical.setAttribute('data-nt-theme-critical', 'true');
-        critical.setAttribute('data-tnt-theme-critical', 'true');
         critical.setAttribute('data-permanent', critical.id);
         critical.textContent = 'html, body { background: Canvas; }';
         const lightDefault = document.createElement('link');
@@ -94,7 +92,6 @@ describe('NTTheme runtime', () => {
         expect(critical.isConnected).toBe(true);
         expect(critical.textContent).toBe('');
         expect(critical.hasAttribute('data-nt-theme-critical')).toBe(false);
-        expect(critical.hasAttribute('data-tnt-theme-critical')).toBe(false);
         expect(lightDefault.isConnected).toBe(true);
         expect(lightDefault.href).toContain('/Themes/light.css');
         expect(lightDefault.media).toBe('not all');
@@ -108,7 +105,6 @@ describe('NTTheme runtime', () => {
         current.rel = 'stylesheet';
         current.href = '/Themes/light.css';
         current.setAttribute('data-nt-theme', 'true');
-        current.setAttribute('data-tnt-theme', 'true');
         document.head.appendChild(current);
 
         const updatePromise = runtime.applyStylesheet(new URL('/Themes/dark.css', window.location.href).href, { waitForLoad: true });

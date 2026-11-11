@@ -56,7 +56,7 @@ public class NTInputDateTime_IntegrationTests : IAsyncLifetime {
         html.Should().Contain("id=\"ssr-native-date\"");
         html.Should().Contain("type=\"date\"");
         html.Should().Contain("format=\"MM/dd/yyyy\"");
-        html.Should().Contain("data-tnt-dtp-native-input=\"true\"");
+        html.Should().Contain("data-nt-dtp-native-input=\"true\"");
     }
 
     [Fact]

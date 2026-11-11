@@ -22,7 +22,7 @@ function renderSupportingPaneView() {
            data-nt-supporting-pane-mode="Auto">
         <section class="nt-supporting-pane-view-primary">Primary</section>
         <aside class="nt-supporting-pane-view-supporting">Supporting</aside>
-        <tnt-page-script src="./_content/NTComponents/Layout/Views/NTSupportingPaneView.razor.js"></tnt-page-script>
+        <nt-page-script src="./_content/NTComponents/Layout/Views/NTSupportingPaneView.razor.js"></nt-page-script>
       </div>
     </section>`;
 
@@ -48,7 +48,7 @@ describe('NTSupportingPaneView page script', () => {
   test('onLoad discovers and enhances the owning view from its page-script marker', () => {
     const view = renderSupportingPaneView();
 
-    onLoad(view.querySelector('tnt-page-script'));
+    onLoad(view.querySelector('nt-page-script'));
 
     const activeControl = document.querySelector('[data-nt-supporting-pane-mode-control="Auto"]');
     expect(activeControl.dataset.ntSupportingPaneActive).toBe('true');
@@ -58,7 +58,7 @@ describe('NTSupportingPaneView page script', () => {
 
   test('onUpdate discovers the owning view from its page-script marker and updates mode controls', async () => {
     const view = renderSupportingPaneView();
-    await updatePageScript(view.querySelector('tnt-page-script'));
+    await updatePageScript(view.querySelector('nt-page-script'));
 
     const control = document.querySelector('[data-nt-supporting-pane-mode-control="HideOnSmallScreens"]');
     const event = new MouseEvent('click', { bubbles: true, cancelable: true });

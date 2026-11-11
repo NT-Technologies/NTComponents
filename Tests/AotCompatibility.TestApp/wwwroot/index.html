@@ -8,6 +8,15 @@
     <base href="/" />
     <link rel="stylesheet" href="_content/NTComponents/NTComponents.bundle.scp.css" />
     <link rel="stylesheet" href="css/app.css" />
+    <script>
+        // Collected for test-aot-compatibility.ps1 so a failed browser smoke can report what went wrong.
+        window.aotSmokeErrors = [];
+        const recordAotSmokeError = value => window.aotSmokeErrors.push(String(value?.stack ?? value?.message ?? value));
+        window.addEventListener('error', event => recordAotSmokeError(event.error ?? event.message));
+        window.addEventListener('unhandledrejection', event => recordAotSmokeError(event.reason));
+        const originalConsoleError = console.error.bind(console);
+        console.error = (...args) => { recordAotSmokeError(args.join(' ')); originalConsoleError(...args); };
+    </script>
 </head>
 
 <body>

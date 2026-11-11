@@ -524,7 +524,7 @@ $nt-data-grid-spacer-animation-duration: motion.$nt-motion-duration-extra_long_2
     justify-content: end;
 
     .pagination-btn {
-        @include typescale.tnt-label-large;
+        @include typescale.nt-label-large;
 
         display: inline-flex;
         // Keep icon-font fallback text inside its own hit target while fonts load.
@@ -568,13 +568,13 @@ $nt-data-grid-spacer-animation-duration: motion.$nt-motion-duration-extra_long_2
             pointer-events: none;
         }
 
-        &.tnt-disabled {
+        &.nt-disabled {
             color: color-mix(in srgb, #{colors.$nt-color-on-surface} #{$nt-data-grid-disabled-content-opacity}, transparent);
             background: color-mix(in srgb, #{colors.$nt-color-on-surface} #{$nt-data-grid-disabled-container-opacity}, transparent);
             pointer-events: none;
         }
 
-        .tnt-icon {
+        .nt-icon {
             font-size: $nt-data-grid-sort-indicator-size;
         }
     }

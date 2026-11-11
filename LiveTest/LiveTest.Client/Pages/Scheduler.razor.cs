@@ -21,9 +21,9 @@ public partial class Scheduler {
     private DateTimeOffset _displayDate = DateTimeOffset.Now;
     private NTDialog? _eventDialog;
     private EventEditor? _eventEditor;
-    private TnTEvent? _eventBeingEdited;
+    private NTEvent? _eventBeingEdited;
     private NTSchedulerView _selectedView = NTSchedulerView.Month;
-    private List<TnTEvent> _tasksList = [];
+    private List<NTEvent> _tasksList = [];
     private string? _validationMessage;
 
     private string EventDialogTitle => _eventBeingEdited is null ? "Add event" : "Edit event";
@@ -31,14 +31,14 @@ public partial class Scheduler {
     protected override void OnInitialized() {
         var today = DateTimeOffset.Now.Date;
         _tasksList = [
-            new TnTEvent { EventStart = today.AddHours(9), EventEnd = today.AddHours(10.5), Title = "Design review", Description = "Month, week, and day scheduler review" },
-            new TnTEvent { EventStart = today.AddHours(11), EventEnd = today.AddHours(12), Title = "Customer call" },
-            new TnTEvent { EventStart = today.AddHours(11.5), EventEnd = today.AddHours(13), Title = "Overlap test" },
-            new TnTEvent { EventStart = today.AddDays(1).AddHours(8), EventEnd = today.AddDays(1).AddHours(9), Title = "Standup" },
-            new TnTEvent { EventStart = today.AddDays(2).AddHours(14), EventEnd = today.AddDays(2).AddHours(16), Title = "Implementation block" },
-            new TnTEvent { EventStart = today.AddDays(-2).AddHours(10), EventEnd = today.AddDays(3).AddHours(15), Title = "Multi-day launch", Description = "Spans across the active week" },
-            new TnTEvent { EventStart = today.AddDays(10), EventEnd = today.AddDays(14).AddHours(18), Title = "Conference", IsAllDay = true },
-            new TnTEvent { EventStart = today.AddMonths(1).AddDays(-3).AddHours(9), EventEnd = today.AddMonths(1).AddDays(2).AddHours(17), Title = "Month boundary", IsAllDay = true }
+            new NTEvent { EventStart = today.AddHours(9), EventEnd = today.AddHours(10.5), Title = "Design review", Description = "Month, week, and day scheduler review" },
+            new NTEvent { EventStart = today.AddHours(11), EventEnd = today.AddHours(12), Title = "Customer call" },
+            new NTEvent { EventStart = today.AddHours(11.5), EventEnd = today.AddHours(13), Title = "Overlap test" },
+            new NTEvent { EventStart = today.AddDays(1).AddHours(8), EventEnd = today.AddDays(1).AddHours(9), Title = "Standup" },
+            new NTEvent { EventStart = today.AddDays(2).AddHours(14), EventEnd = today.AddDays(2).AddHours(16), Title = "Implementation block" },
+            new NTEvent { EventStart = today.AddDays(-2).AddHours(10), EventEnd = today.AddDays(3).AddHours(15), Title = "Multi-day launch", Description = "Spans across the active week" },
+            new NTEvent { EventStart = today.AddDays(10), EventEnd = today.AddDays(14).AddHours(18), Title = "Conference", IsAllDay = true },
+            new NTEvent { EventStart = today.AddMonths(1).AddDays(-3).AddHours(9), EventEnd = today.AddMonths(1).AddDays(2).AddHours(17), Title = "Month boundary", IsAllDay = true }
         ];
 
         for (var i = 0; i < _tasksList.Count; i++) {
@@ -48,14 +48,14 @@ public partial class Scheduler {
         }
     }
 
-    private async Task OpenEventEditorAsync(TnTEvent @event) {
+    private async Task OpenEventEditorAsync(NTEvent @event) {
         _eventBeingEdited = @event;
         _eventEditor = EventEditor.From(@event, GetEventColor(@event));
         _validationMessage = null;
         await OpenEventDialogAsync();
     }
 
-    private void OnEventDropped(NTSchedulerEventDropArgs<TnTEvent> args) {
+    private void OnEventDropped(NTSchedulerEventDropArgs<NTEvent> args) {
         Console.WriteLine($"Event dropped: {args.Event.Title} from {args.PreviousStart} to {args.NewStart}");
     }
 
@@ -86,7 +86,7 @@ public partial class Scheduler {
         }
     }
 
-    private static EventColorOption? GetEventColor(TnTEvent @event) => _eventColorOptions.FirstOrDefault(color =>
+    private static EventColorOption? GetEventColor(NTEvent @event) => _eventColorOptions.FirstOrDefault(color =>
         string.Equals(color.Background, @event.BackgroundColorCss, StringComparison.OrdinalIgnoreCase)
         && string.Equals(color.Foreground, @event.ForegroundColorCss, StringComparison.OrdinalIgnoreCase));
 
@@ -116,7 +116,7 @@ public partial class Scheduler {
         var backgroundColorCss = _eventEditor.Color?.Background ?? _eventEditor.BackgroundColorCss;
         var foregroundColorCss = _eventEditor.Color?.Foreground ?? _eventEditor.ForegroundColorCss;
         if (_eventBeingEdited is null) {
-            _tasksList.Add(new TnTEvent {
+            _tasksList.Add(new NTEvent {
                 Title = title,
                 Description = description,
                 EventStart = _eventEditor.EventStart,
@@ -163,7 +163,7 @@ public partial class Scheduler {
 
         public string Title { get; set; } = string.Empty;
 
-        public static EventEditor From(TnTEvent @event, EventColorOption? color) => new() {
+        public static EventEditor From(NTEvent @event, EventColorOption? color) => new() {
             BackgroundColorCss = @event.BackgroundColorCss,
             Color = color,
             Title = @event.Title,

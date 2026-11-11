@@ -28,7 +28,7 @@ public partial class NTInputDateRange : IDisposable {
     private const string JsModulePath = "./_content/NTComponents/Form/NTInputDateRange.razor.js";
     private const string ValueFormat = "yyyy-MM-dd";
 
-    private readonly string _instanceId = TnTComponentIdentifier.NewId();
+    private readonly string _instanceId = NTComponentIdentifier.NewId();
     private EditContext? _subscribedContext;
 
     /// <summary>

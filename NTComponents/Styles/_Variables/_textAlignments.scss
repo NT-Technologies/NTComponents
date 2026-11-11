@@ -1,9 +1,0 @@
-﻿
-
-@mixin tnt-text-alignments {
-    @each $alignment in (left, center, right, justify) {
-        &.tnt-text-align-#{$alignment} {
-            text-align: $alignment;
-        }
-    }
-}

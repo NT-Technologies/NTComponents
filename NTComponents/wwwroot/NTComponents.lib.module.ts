@@ -5,7 +5,6 @@ const richTextEditorToolRegistry = {
     onChange: null
 };
 let rippleHandlersRegistered = false;
-let bodyFillObserverStarted = false;
 const rippleReleaseTimeoutByHost = new WeakMap();
 // Hosts that may still hold ripple nodes, so global releases avoid scanning every host in the document.
 const activeRippleHosts = new Set();
@@ -243,7 +242,7 @@ function createRipple(element, pointerEvent) {
 }
 
 function findRippleElementFromEventTarget(target) {
-    return target?.closest?.('.tnt-ripple') ?? null;
+    return target?.closest?.('.nt-ripple') ?? null;
 }
 
 function isKeyboardRippleEvent(event) {
@@ -410,11 +409,11 @@ function startRippleHost(script) {
 }
 
 function setupPageScriptElement() {
-    if (customElements.get('tnt-page-script')) {
+    if (customElements.get('nt-page-script')) {
         return;
     }
 
-    customElements.define('tnt-page-script', class extends HTMLElement {
+    customElements.define('nt-page-script', class extends HTMLElement {
         static observedAttributes = ['src'];
 
         pendingUnregisterTimeout = null;
@@ -503,45 +502,6 @@ function setupEnhancedNavigation(blazor) {
 
     enhancedLoadBlazorInstances.add(blazor);
     blazor.addEventListener('enhancedload', onEnhancedLoad);
-}
-
-function setupBodyFillRemaining() {
-    if (bodyFillObserverStarted) {
-        return;
-    }
-
-    let body = document.querySelector('.tnt-body');
-    if (body) {
-        bodyFillObserverStarted = true;
-        const bodyPadding = parseInt(getComputedStyle(body).paddingBottom, 10);
-        const resizeObserver = new ResizeObserver(entries => {
-            const hasFooter = document.querySelector('.tnt-footer');
-            const fillRemaining = document.querySelectorAll('.tnt-fill-remaining');
-
-            for (const fills of fillRemaining) {
-                if (entries[0].target.scrollHeight > entries[0].target.clientHeight) {
-                    break;
-                }
-
-                var rect = fills.getBoundingClientRect();
-                const style = getComputedStyle(fills);
-                let height = window.innerHeight - rect.top - bodyPadding;
-
-                const margin = style.marginBottom;
-                if (margin) {
-                    height = height - parseInt(margin, 10);
-                }
-
-                if (hasFooter) {
-                    height = height - hasFooter.getBoundingClientRect().height;
-                }
-
-                fills.style.height = `${height}px`
-            }
-
-        });
-        resizeObserver.observe(body);
-    }
 }
 
 function syncInputCounter(input, counter) {
@@ -1015,7 +975,6 @@ function startBlazorComponents(blazor) {
     setupPageScriptElement();
     setupEnhancedNavigation(blazor);
     window.NTComponents?.setupRipple?.();
-    setupBodyFillRemaining();
     enhanceAutocompleteInputs();
     enhanceAnimationWrappers();
 }
@@ -1064,64 +1023,8 @@ const isModifierKey = (event) => {
         )
 };
 
-const getAccordionChildContent = (accordion, child) => {
-    return accordion?.getChildContent?.(child)
-        ?? child?.querySelector?.(':scope > [data-accordion-content="true"]')
-        ?? child?.querySelector?.(':scope > div:last-child')
-        ?? child?.lastElementChild
-        ?? null;
-};
-
-const getAccordionChildHeader = (accordion, child) => {
-    return accordion?.getChildHeader?.(child)
-        ?? child?.querySelector?.(':scope > h3 > [data-accordion-header="true"]')
-        ?? child?.querySelector?.(':scope > h3')
-        ?? child?.firstElementChild
-        ?? null;
-};
-
-const resetAccordionElement = (accordion) => {
-    if (!accordion) {
-        return;
-    }
-
-    if (typeof accordion.resetChildren === 'function') {
-        accordion.resetChildren();
-        return;
-    }
-
-    accordion.querySelectorAll(':scope > [data-accordion-child="true"], :scope > .tnt-accordion-child')
-        .forEach((child) => {
-            const content = getAccordionChildContent(accordion, child);
-            const header = getAccordionChildHeader(accordion, child);
-            if (!content) {
-                return;
-            }
-
-            content.classList.remove('tnt-expanded');
-            content.classList.remove('tnt-collapsed');
-            content.setAttribute('aria-hidden', 'true');
-            header?.setAttribute('aria-expanded', 'false');
-
-            child.querySelectorAll('tnt-accordion').forEach((nestedAccordion) => {
-                resetAccordionElement(nestedAccordion);
-            });
-        });
-};
-
-
 window.NTComponents = Object.assign(window.NTComponents || {}, {
-    customAttribute: "tntid",
-    addHidden: (element) => {
-        if (element && element.classList && !element.classList.contains('tnt-hidden')) {
-            element.classList.add('tnt-hidden');
-        }
-    },
-    /**
-     * Returns the root theme color value, preferring NT variables and falling back to legacy TnT variables.
-     * @param {string} colorName - The color enum member name (e.g., 'Primary', 'OnPrimaryContainer').
-     * @returns {string|null} The color value as defined in CSS variables (e.g., 'var(--tnt-primary)'), or null if not found.
-     */
+    customAttribute: "ntid",
     getColorValueFromEnumName: function (colorName) {
         if (!colorName || typeof colorName !== 'string') return null;
 
@@ -1129,8 +1032,7 @@ window.NTComponents = Object.assign(window.NTComponents || {}, {
         const kebab = colorName.replace(/(?<=.)([A-Z])/g, '-$1').toLowerCase();
         // Compose the CSS variable name
         const rootStyle = getComputedStyle(document.documentElement);
-        let value = rootStyle.getPropertyValue(`--nt-color-${kebab}`)
-            || rootStyle.getPropertyValue(`--tnt-color-${kebab}`);
+        let value = rootStyle.getPropertyValue(`--nt-color-${kebab}`);
         if (!value) return null;
         value = value.trim();
 
@@ -1264,18 +1166,6 @@ window.NTComponents = Object.assign(window.NTComponents || {}, {
         document.querySelectorAll('.nt-button, .nt-icon-button').forEach((element) => {
             registerButtonInteraction(element);
         });
-
-        const elements = document.querySelectorAll('.tnt-ripple');
-
-        elements.forEach(element => {
-            if (getRippleHost(element)) {
-                return;
-            }
-
-            if (!element.querySelector('tnt-ripple-effect')) {
-                element.appendChild(document.createElement('tnt-ripple-effect'));
-            }
-        });
     },
     registerButtonInteraction,
     registerButtonInteractions,
@@ -1288,127 +1178,6 @@ window.NTComponents = Object.assign(window.NTComponents || {}, {
     prefixCurrencyInput,
     autoGrowTextArea,
     updateInputCounter,
-    toggleAccordionHeader: (e) => {
-        // If the click bubbled up from a nested interactive element inside the header template,
-        // don't toggle the accordion — let that element handle its own click.
-        // currentTarget is only set when called from the native onclick attribute (real browser);
-        // skip the guard when it is absent so synthetic events in tests are unaffected.
-        if (e.currentTarget != null
-            && e.target !== e.currentTarget
-            && e.target?.closest?.('button, a, input, select, textarea') !== e.currentTarget) {
-            return;
-        }
-        const header = e.currentTarget
-            ?? e.target?.closest?.('[data-accordion-header="true"]')
-            ?? e.target?.closest?.('button, h3');
-        const child = header?.closest?.('[data-accordion-child="true"]')
-            ?? header?.closest?.('.tnt-accordion-child')
-            ?? header?.parentElement;
-        const accordion = child?.closest?.('tnt-accordion');
-        const getChildContent = (candidateChild) => getAccordionChildContent(accordion, candidateChild);
-        const syncChildAccessibility = (candidateChild, expanded) => {
-            const candidateContent = getChildContent(candidateChild);
-            const candidateHeader = getAccordionChildHeader(accordion, candidateChild);
-            if (candidateContent) {
-                candidateContent.setAttribute('aria-hidden', expanded ? 'false' : 'true');
-                candidateContent.toggleAttribute('inert', !expanded);
-            }
-            if (candidateHeader) {
-                candidateHeader.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-            }
-        };
-        const setExpandedState = (candidateChild, expanded) => {
-            if (typeof accordion?.setExpandedState === 'function') {
-                accordion.setExpandedState(candidateChild, expanded);
-                return;
-            }
-
-            const candidateContent = getChildContent(candidateChild);
-            if (!candidateContent) {
-                return;
-            }
-
-            candidateContent.classList.toggle('tnt-expanded', expanded);
-            candidateContent.classList.toggle('tnt-collapsed', !expanded);
-            syncChildAccessibility(candidateChild, expanded);
-        };
-        const closeChildren = (excludeChild) => {
-            if (typeof accordion?.closeChildren === 'function') {
-                accordion.closeChildren(excludeChild);
-                return;
-            }
-
-            accordion?.querySelectorAll?.(':scope > [data-accordion-child="true"], :scope > .tnt-accordion-child')
-                ?.forEach((candidateChild) => {
-                    if (candidateChild === excludeChild) {
-                        return;
-                    }
-
-                    const candidateContent = getChildContent(candidateChild);
-                    if (candidateContent?.classList.contains('tnt-expanded')) {
-                        setExpandedState(candidateChild, false);
-                    }
-                });
-        };
-        const updateChild = (candidateContent) => {
-            accordion?.updateChild?.(candidateContent);
-        };
-        const resetNestedAccordions = (candidateContent) => {
-            const nestedAccordions = candidateContent?.querySelectorAll?.('tnt-accordion');
-            nestedAccordions?.forEach((nested) => {
-                resetAccordionElement(nested);
-            });
-        };
-        const limitToOneExpanded = typeof accordion?.limitToOneExpanded === 'function'
-            ? accordion.limitToOneExpanded()
-            : accordion?.classList?.contains('tnt-limit-one-expanded');
-        const content = child ? getChildContent(child) : null;
-
-        if (!header || !child || !accordion || !content || header.disabled) {
-            return;
-        }
-
-        const isExpanded = content.classList.contains('tnt-expanded');
-        if (limitToOneExpanded && !isExpanded) {
-            closeChildren(child);
-        }
-
-        setExpandedState(child, !isExpanded);
-
-        if (isExpanded) {
-            resetNestedAccordions(content);
-        }
-
-        updateChild(content);
-
-        if (accordion.dotNetRef) {
-            const childId = child.getAttribute('data-accordion-child-id') ?? header.getAttribute('data-accordion-child-id');
-            if (childId) {
-                const childIdNumber = parseInt(childId, 10);
-                if (!Number.isNaN(childIdNumber)) {
-                    accordion.dotNetRef.invokeMethodAsync(isExpanded ? "SetAsClosed" : "SetAsOpened", childIdNumber);
-                }
-            }
-        }
-    },
-    toggleSideNav: (event) => {
-        const layout = event.target.closest('.tnt-layout');
-
-        if (layout) {
-            const sideNav = layout.querySelector(':scope > .tnt-side-nav-toggle-indicator');
-
-            if (sideNav) {
-                const toggler = sideNav.querySelector('.tnt-toggle-indicator');
-                if (toggler && toggler.classList) {
-                    toggler.classList.toggle('tnt-toggle');
-                }
-            }
-        }
-    },
-    /**
-     * Inline onchange handler for the NTDataGrid page dropdown in static SSR; interactive grids handle the change in .NET.
-     * @param {HTMLSelectElement} select - The page dropdown, whose data-nt-data-grid-page-href holds a URL with a {page} placeholder.
-     */
     jumpToGridPage: (select) => {
         const href = select?.dataset?.ntDataGridPageHref;
         if (!href) {
@@ -1421,18 +1190,6 @@ window.NTComponents = Object.assign(window.NTComponents || {}, {
         }
         else {
             window.location.assign(target);
-        }
-    },
-    toggleSideNavGroup: (event) => {
-        const toggler = event.target.parentElement.querySelector('.tnt-side-nav-menu-group-toggler');
-
-        if (toggler && toggler.classList) {
-            if (toggler.classList.contains('tnt-toggle')) {
-                toggler.classList.remove('tnt-toggle');
-            }
-            else {
-                toggler.classList.add('tnt-toggle');
-            }
         }
     },
     stopEnter: (event) => {
@@ -1453,20 +1210,6 @@ window.NTComponents = Object.assign(window.NTComponents || {}, {
             event.stopPropagation();
         }
     },
-    formKeyDownSupportingTextHandler: (event) => {
-        const input = event.target;
-        const container = input.closest('.tnt-input-container');
-        if (!container) return;
-
-        const supportingText = container.querySelector('.tnt-input-length');
-        const maxLength = input.getAttribute('maxlength');
-
-        if (supportingText && maxLength) {
-            setTimeout(() => {
-                supportingText.innerText = `${input.value.length}/${maxLength}`;
-            }, 0);
-        }
-    },
     radioGroupKeyDownHandler: (event) => {
         const group = event.currentTarget;
         if (!group) return;
@@ -1474,10 +1217,10 @@ window.NTComponents = Object.assign(window.NTComponents || {}, {
         const radios = Array.from(group.querySelectorAll('input[type="radio"]'));
         if (radios.length === 0) return;
 
-        const isGroupDisabled = group.disabled || group.classList.contains('tnt-disabled') || group.classList.contains('nt-radio-disabled') || !!group.closest?.('.nt-radio-disabled');
-        const isGroupReadOnly = group.classList.contains('tnt-readonly') || group.classList.contains('nt-radio-readonly') || !!group.closest?.('.nt-radio-readonly');
+        const isGroupDisabled = group.disabled || group.classList.contains('nt-disabled') || group.classList.contains('nt-radio-disabled') || !!group.closest?.('.nt-radio-disabled');
+        const isGroupReadOnly = group.classList.contains('nt-readonly') || group.classList.contains('nt-radio-readonly') || !!group.closest?.('.nt-radio-readonly');
         const canUseRadio = (radio) => radio && !radio.disabled && !radio.readOnly && !isGroupDisabled && !isGroupReadOnly;
-        const getOption = (radio) => radio?.closest?.('.nt-radio-option, .tnt-radio-input');
+        const getOption = (radio) => radio?.closest?.('.nt-radio-option, .nt-radio-input');
         const clearHighlightedRadios = () => {
             group.querySelectorAll('.nt-radio-option-highlighted').forEach(option => {
                 option.classList.remove('nt-radio-option-highlighted');
@@ -1549,9 +1292,9 @@ window.NTComponents = Object.assign(window.NTComponents || {}, {
         const callback = () => {
             dotNetHelper.invokeMethodAsync('OnThemeChanged');
         };
-        document.addEventListener('tnt-theme-changed', callback);
+        document.addEventListener('nt-theme-changed', callback);
         return {
-            dispose: () => document.removeEventListener('tnt-theme-changed', callback)
+            dispose: () => document.removeEventListener('nt-theme-changed', callback)
         };
     }
 });

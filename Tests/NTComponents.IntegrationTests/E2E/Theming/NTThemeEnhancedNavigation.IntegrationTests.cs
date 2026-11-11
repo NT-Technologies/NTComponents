@@ -62,7 +62,7 @@ public sealed class NTThemeEnhancedNavigation_IntegrationTests : IAsyncLifetime 
 
         _requests.Should().Contain(url => url.EndsWith("/Themes/light.css", StringComparison.OrdinalIgnoreCase));
         (await _page.Locator("#nt-theme-critical").CountAsync()).Should().Be(1);
-        (await _page.Locator("#nt-theme-critical[data-nt-theme-critical], #nt-theme-critical[data-tnt-theme-critical]").CountAsync()).Should().Be(0);
+        (await _page.Locator("#nt-theme-critical[data-nt-theme-critical]").CountAsync()).Should().Be(0);
 
         ClearRequests();
         await _page.ReloadAsync(new PageReloadOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
@@ -70,7 +70,7 @@ public sealed class NTThemeEnhancedNavigation_IntegrationTests : IAsyncLifetime 
 
         _requests.Should().Contain(url => url.EndsWith("/Themes/light.css", StringComparison.OrdinalIgnoreCase));
         (await _page.EvaluateAsync<string>("performance.getEntriesByType('navigation')[0].type")).Should().Be("reload");
-        (await _page.Locator("link[data-nt-theme],link[data-tnt-theme]").CountAsync()).Should().Be(1);
+        (await _page.Locator("link[data-nt-theme]").CountAsync()).Should().Be(1);
     }
 
     private async Task AssertEnhancedNavigationAsync(string linkName, string expectedUrl, string expectedThemeFile, string realm, int navigationEntryCount) {
@@ -173,7 +173,7 @@ public sealed class NTThemeEnhancedNavigation_IntegrationTests : IAsyncLifetime 
                     insertedFallbackElements: [],
                     insertedHeadDependencies: [],
                     themeMutations: [],
-                    activeTheme: document.head.querySelector('link[data-nt-theme],link[data-tnt-theme]')
+                    activeTheme: document.head.querySelector('link[data-nt-theme]')
                 };
                 const permanentHeadDependencyIds = new Set([
                     'nt-theme-script',
@@ -198,10 +198,10 @@ public sealed class NTThemeEnhancedNavigation_IntegrationTests : IAsyncLifetime 
 
                     const candidates = [element, ...element.querySelectorAll('*')];
                     for (const candidate of candidates) {
-                        if (candidate.matches('link[data-nt-theme-default],link[data-tnt-theme-default]')) {
+                        if (candidate.matches('link[data-nt-theme-default]')) {
                             probe.insertedFallbackElements.push('default');
                         }
-                        if (candidate.matches('style[data-nt-theme-critical],style[data-tnt-theme-critical]')) {
+                        if (candidate.matches('style[data-nt-theme-critical]')) {
                             probe.insertedFallbackElements.push('critical');
                         }
                         if (permanentHeadDependencyIds.has(candidate.id)) {
@@ -247,13 +247,13 @@ public sealed class NTThemeEnhancedNavigation_IntegrationTests : IAsyncLifetime 
                 probe.observer.disconnect();
                 cancelAnimationFrame(probe.frame);
 
-                const activeThemes = [...document.head.querySelectorAll('link[data-nt-theme],link[data-tnt-theme]')];
+                const activeThemes = [...document.head.querySelectorAll('link[data-nt-theme]')];
                 return {
                     activeThemeCount: activeThemes.length,
                     activeThemeHref: activeThemes[0]?.href ?? '',
                     activeThemeRetained: activeThemes[0] === probe.activeTheme,
-                    defaultThemeCount: document.head.querySelectorAll('link[data-nt-theme-default],link[data-tnt-theme-default]').length,
-                    criticalThemeCount: document.head.querySelectorAll('style[data-nt-theme-critical],style[data-tnt-theme-critical]').length,
+                    defaultThemeCount: document.head.querySelectorAll('link[data-nt-theme-default]').length,
+                    criticalThemeCount: document.head.querySelectorAll('style[data-nt-theme-critical]').length,
                     insertedFallbackElements: probe.insertedFallbackElements,
                     insertedHeadDependencies: probe.insertedHeadDependencies,
                     backgrounds: probe.backgrounds,
@@ -280,13 +280,13 @@ public sealed class NTThemeEnhancedNavigation_IntegrationTests : IAsyncLifetime 
         await _page.WaitForFunctionAsync(
             """
             expectedThemeFile => {
-                const activeThemes = [...document.head.querySelectorAll('link[data-nt-theme],link[data-tnt-theme]')];
+                const activeThemes = [...document.head.querySelectorAll('link[data-nt-theme]')];
                 return activeThemes.length === 1
                     && new URL(activeThemes[0].href).pathname.endsWith(`/Themes/${expectedThemeFile}`)
                     && activeThemes[0].getAttribute('data-nt-theme-loaded') === 'true'
                     && activeThemes[0].sheet
-                    && document.head.querySelectorAll('link[data-nt-theme-default],link[data-tnt-theme-default]').length === 0
-                    && document.head.querySelectorAll('style[data-nt-theme-critical],style[data-tnt-theme-critical]').length === 0;
+                    && document.head.querySelectorAll('link[data-nt-theme-default]').length === 0
+                    && document.head.querySelectorAll('style[data-nt-theme-critical]').length === 0;
             }
             """,
             expectedThemeFile,

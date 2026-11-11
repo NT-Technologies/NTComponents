@@ -189,7 +189,12 @@ public class NTWizardFormStep : NTWizardStepBase, INTWizardFormStep {
 
     /// <inheritdoc />
     public async Task<bool> FormValidAsync() {
-        if (_form?.EditContext?.Validate() == true) {
+#if NET11_0_OR_GREATER
+        var isValid = _form?.EditContext is { } editContext && await editContext.ValidateAsync();
+#else
+        var isValid = _form?.EditContext?.Validate() == true;
+#endif
+        if (isValid) {
             await OnValidSubmitCallback.InvokeAsync(Model);
             return true;
         }

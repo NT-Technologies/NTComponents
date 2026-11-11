@@ -21,7 +21,6 @@ describe('NTTheme head bundle', () => {
         localStorage.clear();
         window.NTComponents = {};
         window.__ntThemeBootstrapped = false;
-        window.__tntThemeBootstrapped = false;
         window.Blazor = { addEventListener: jest.fn() };
         jest.resetModules();
     });

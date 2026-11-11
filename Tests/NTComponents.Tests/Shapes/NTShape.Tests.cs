@@ -35,7 +35,7 @@ public class NTShape_Tests : BunitContext {
     public void PageScript_RenderFragment_Is_Included() {
         var cut = RenderShape();
 
-        var pageScripts = cut.FindAll("tnt-page-script");
+        var pageScripts = cut.FindAll("nt-page-script");
         pageScripts.Should().ContainSingle();
         pageScripts[0].GetAttribute("src").Should().Be("./_content/NTComponents/Shapes/NTShape.razor.js");
     }

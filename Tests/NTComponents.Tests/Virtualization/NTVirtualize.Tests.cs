@@ -25,7 +25,7 @@ public class NTVirtualize_Tests : BunitContext {
     [Fact]
     public void DisablingMeasurement_NotifiesBrowserEvenWhenItemCountsAreUnchanged() {
         var cut = Render<NTVirtualize<string>>(parameters => parameters
-            .Add(component => component.ItemsProvider, _ => ValueTask.FromResult(new TnTItemsProviderResult<string>([], 0)))
+            .Add(component => component.ItemsProvider, _ => ValueTask.FromResult(new NTVirtualizeItemsProviderResult<string>([], 0)))
             .Add(component => component.MeasureItemSize, true));
         cut.Render(parameters => parameters.Add(component => component.MeasureItemSize, false));
 
@@ -38,7 +38,7 @@ public class NTVirtualize_Tests : BunitContext {
         // Arrange
         var items = new List<string> { "Item 1" };
         NTVirtualizeItemsProvider<string> provider = request =>
-            new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(items, items.Count));
+            new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(items, items.Count));
 
         // Act & Assert
         Assert.Throws<InvalidOperationException>(() => Render<NTVirtualize<string>>(p => p
@@ -62,7 +62,7 @@ public class NTVirtualize_Tests : BunitContext {
         // Arrange
         var items = new List<string>();
         NTVirtualizeItemsProvider<string> provider = request =>
-            new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(items, items.Count));
+            new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(items, items.Count));
 
         // Act
         var cut = Render<NTVirtualize<string>>(p => p
@@ -85,7 +85,7 @@ public class NTVirtualize_Tests : BunitContext {
 
     [Fact]
     public async Task Disposal_While_First_Render_Initialization_Is_Awaiting_Does_Not_Invoke_Virtualizer_Interop() {
-        NTVirtualizeItemsProvider<string> provider = _ => ValueTask.FromResult(new TnTItemsProviderResult<string>([], 0));
+        NTVirtualizeItemsProvider<string> provider = _ => ValueTask.FromResult(new NTVirtualizeItemsProviderResult<string>([], 0));
         var cut = Render<TestVirtualize<string>>(parameters => parameters.Add(component => component.ItemsProvider, provider));
         var initialInitCount = JSInterop.Invocations.Count(invocation => invocation.Identifier == "init");
         var initialUpdateCount = JSInterop.Invocations.Count(invocation => invocation.Identifier == "updateRenderState");
@@ -108,7 +108,7 @@ public class NTVirtualize_Tests : BunitContext {
     [Fact]
     public void JavaScript_Disconnection_During_Init_Does_Not_Fail_Rendering() {
         _module.SetupVoid("init", _ => true).SetException(new JSDisconnectedException("Disconnected"));
-        NTVirtualizeItemsProvider<string> provider = _ => ValueTask.FromResult(new TnTItemsProviderResult<string>([], 0));
+        NTVirtualizeItemsProvider<string> provider = _ => ValueTask.FromResult(new NTVirtualizeItemsProviderResult<string>([], 0));
 
         var act = () => Render<NTVirtualize<string>>(parameters => parameters.Add(component => component.ItemsProvider, provider));
 
@@ -123,7 +123,7 @@ public class NTVirtualize_Tests : BunitContext {
         NTVirtualizeItemsProvider<string> provider = request => {
             callCount++;
             var resultItems = items.Skip(request.StartIndex).Take(request.Count ?? items.Count).ToList();
-            return new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(resultItems, items.Count));
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(resultItems, items.Count));
         };
 
         var cut = Render<NTVirtualize<string>>(p => p
@@ -135,7 +135,7 @@ public class NTVirtualize_Tests : BunitContext {
 
         // Assert
         callCount.Should().BeGreaterThan(0);
-        cut.FindAll("div[aria-hidden='true']").Should().HaveCount(2);
+        cut.FindAll("div.nt-virtualize-spacer").Should().HaveCount(2);
     }
 
     [Fact]
@@ -144,7 +144,7 @@ public class NTVirtualize_Tests : BunitContext {
         var items = Enumerable.Range(1, 10).Select(i => $"Item {i}").ToList();
         NTVirtualizeItemsProvider<string> provider = request => {
             var resultItems = items.Skip(request.StartIndex).Take(request.Count ?? items.Count).ToList();
-            return new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(resultItems, items.Count));
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(resultItems, items.Count));
         };
 
         // Act
@@ -167,7 +167,7 @@ public class NTVirtualize_Tests : BunitContext {
         var items = Enumerable.Range(1, 20).Select(i => $"Item {i}").ToList();
         NTVirtualizeItemsProvider<string> provider = request => {
             var resultItems = items.Skip(request.StartIndex).Take(request.Count ?? items.Count).ToList();
-            return new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(resultItems, items.Count));
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(resultItems, items.Count));
         };
 
         var cut = Render<NTVirtualize<string>>(p => p
@@ -195,16 +195,16 @@ public class NTVirtualize_Tests : BunitContext {
     [Fact]
     public async Task LoadItems_Renders_Cached_Items_And_Placeholders_For_Missing_Differences() {
         var items = Enumerable.Range(1, 20).Select(i => $"Item {i}").ToList();
-        var pending = new TaskCompletionSource<TnTItemsProviderResult<string>>();
+        var pending = new TaskCompletionSource<NTVirtualizeItemsProviderResult<string>>();
         var captured = new List<NTVirtualizeItemsProviderRequest<string>>();
         NTVirtualizeItemsProvider<string> provider = request => {
             captured.Add(request);
             if (request.StartIndex == 5) {
-                return new ValueTask<TnTItemsProviderResult<string>>(pending.Task);
+                return new ValueTask<NTVirtualizeItemsProviderResult<string>>(pending.Task);
             }
 
             var resultItems = items.Skip(request.StartIndex).Take(request.Count ?? items.Count).ToList();
-            return new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(resultItems, items.Count));
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(resultItems, items.Count));
         };
 
         var cut = Render<NTVirtualize<string>>(p => p
@@ -230,7 +230,7 @@ public class NTVirtualize_Tests : BunitContext {
             cut.FindAll(".missing-placeholder").Should().HaveCount(3);
         });
 
-        pending.SetResult(new TnTItemsProviderResult<string>(items.Skip(5).Take(3).ToList(), items.Count));
+        pending.SetResult(new NTVirtualizeItemsProviderResult<string>(items.Skip(5).Take(3).ToList(), items.Count));
         cut.WaitForAssertion(() => {
             cut.Markup.Should().Contain("-Item 8-");
             cut.FindAll(".missing-placeholder").Should().BeEmpty();
@@ -244,7 +244,7 @@ public class NTVirtualize_Tests : BunitContext {
         NTVirtualizeItemsProvider<string> provider = request => {
             callCount++;
             var resultItems = items.Skip(request.StartIndex).Take(request.Count ?? items.Count).ToList();
-            return new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(resultItems, items.Count));
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(resultItems, items.Count));
         };
 
         var cut = Render<NTVirtualize<string>>(p => p
@@ -272,7 +272,7 @@ public class NTVirtualize_Tests : BunitContext {
         NTVirtualizeItemsProvider<string> provider = request => {
             captured.Add(request);
             var resultItems = items.Skip(request.StartIndex).Take(request.Count ?? items.Count).ToList();
-            return new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(resultItems, items.Count));
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(resultItems, items.Count));
         };
 
         var cut = Render<NTVirtualize<string>>(p => p
@@ -310,7 +310,7 @@ public class NTVirtualize_Tests : BunitContext {
         NTVirtualizeItemsProvider<string> provider = request => {
             captured.Add(request);
             var resultItems = items.Skip(request.StartIndex).Take(request.Count ?? items.Count).ToList();
-            return new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(resultItems, items.Count));
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(resultItems, items.Count));
         };
 
         var cut = Render<NTVirtualize<string>>(p => p
@@ -339,7 +339,7 @@ public class NTVirtualize_Tests : BunitContext {
         var items = Enumerable.Range(1, 5).Select(i => $"Item {i}").ToList();
         NTVirtualizeItemsProvider<string> provider = request => {
             var resultItems = items.Skip(request.StartIndex).Take(request.Count ?? items.Count).ToList();
-            return new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(resultItems, items.Count));
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(resultItems, items.Count));
         };
 
         var cut = Render<NTVirtualize<string>>(p => p
@@ -360,7 +360,7 @@ public class NTVirtualize_Tests : BunitContext {
         var items = Enumerable.Range(1, 5).Select(i => $"Item {i}").ToList();
         NTVirtualizeItemsProvider<string> provider = request => {
             var resultItems = items.Skip(request.StartIndex).Take(request.Count ?? items.Count).ToList();
-            return new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(resultItems, items.Count));
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(resultItems, items.Count));
         };
 
         var cut = Render<NTVirtualize<string>>(p => p
@@ -378,16 +378,16 @@ public class NTVirtualize_Tests : BunitContext {
     [Fact]
     public async Task LoadItems_Revalidates_Cached_Range_In_Background_When_Enabled() {
         var captured = new List<NTVirtualizeItemsProviderRequest<string>>();
-        var revalidation = new TaskCompletionSource<TnTItemsProviderResult<string>>();
+        var revalidation = new TaskCompletionSource<NTVirtualizeItemsProviderResult<string>>();
         NTVirtualizeItemsProvider<string> provider = request => {
             captured.Add(request);
             if (request.StartIndex == 0 && captured.Count > 2) {
-                return new ValueTask<TnTItemsProviderResult<string>>(revalidation.Task);
+                return new ValueTask<NTVirtualizeItemsProviderResult<string>>(revalidation.Task);
             }
 
             var prefix = "Old";
             var resultItems = Enumerable.Range(request.StartIndex, request.Count ?? 0).Select(index => $"{prefix} {index}").ToList();
-            return new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(resultItems, 20));
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(resultItems, 20));
         };
 
         var cut = Render<NTVirtualize<string>>(p => p
@@ -412,7 +412,7 @@ public class NTVirtualize_Tests : BunitContext {
             cut.Markup.Should().Contain("-Old 4-");
         });
 
-        revalidation.SetResult(new TnTItemsProviderResult<string>(Enumerable.Range(0, 5).Select(index => $"New {index}").ToList(), 20));
+        revalidation.SetResult(new NTVirtualizeItemsProviderResult<string>(Enumerable.Range(0, 5).Select(index => $"New {index}").ToList(), 20));
         cut.WaitForAssertion(() => {
             cut.Markup.Should().Contain("-New 4-");
             cut.Markup.Should().NotContain("-Old 4-");
@@ -426,7 +426,7 @@ public class NTVirtualize_Tests : BunitContext {
         NTVirtualizeItemsProvider<string> provider = request => {
             callCount++;
             var resultItems = items.Skip(request.StartIndex).Take(request.Count ?? items.Count).ToList();
-            return new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(resultItems, items.Count));
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(resultItems, items.Count));
         };
 
         var cut = Render<NTVirtualize<string>>(p => p
@@ -450,16 +450,16 @@ public class NTVirtualize_Tests : BunitContext {
     [Fact]
     public async Task BackgroundPreload_Replaces_Preloaded_Placeholders_With_Cached_Items() {
         var items = Enumerable.Range(1, 20).Select(i => $"Item {i}").ToList();
-        var prefetch = new TaskCompletionSource<TnTItemsProviderResult<string>>();
+        var prefetch = new TaskCompletionSource<NTVirtualizeItemsProviderResult<string>>();
         var captured = new List<NTVirtualizeItemsProviderRequest<string>>();
         NTVirtualizeItemsProvider<string> provider = request => {
             captured.Add(request);
             if (request.StartIndex == 5) {
-                return new ValueTask<TnTItemsProviderResult<string>>(prefetch.Task);
+                return new ValueTask<NTVirtualizeItemsProviderResult<string>>(prefetch.Task);
             }
 
             var resultItems = items.Skip(request.StartIndex).Take(request.Count ?? items.Count).ToList();
-            return new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(resultItems, items.Count));
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(resultItems, items.Count));
         };
 
         var cut = Render<NTVirtualize<string>>(p => p
@@ -480,7 +480,7 @@ public class NTVirtualize_Tests : BunitContext {
             cut.FindAll(".preload-placeholder").Should().HaveCount(5);
         });
 
-        prefetch.SetResult(new TnTItemsProviderResult<string>(items.Skip(5).Take(5).ToList(), items.Count));
+        prefetch.SetResult(new NTVirtualizeItemsProviderResult<string>(items.Skip(5).Take(5).ToList(), items.Count));
         cut.WaitForAssertion(() => {
             cut.Markup.Should().Contain("-Item 10-");
             cut.FindAll(".preload-placeholder").Should().BeEmpty();
@@ -491,7 +491,7 @@ public class NTVirtualize_Tests : BunitContext {
     public void EmptyTemplate_Shows_When_No_Items() {
         // Arrange
         NTVirtualizeItemsProvider<string> provider = request =>
-            new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(new List<string>(), 0));
+            new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(new List<string>(), 0));
 
         // Act
         var cut = Render<NTVirtualize<string>>(p => p
@@ -513,7 +513,7 @@ public class NTVirtualize_Tests : BunitContext {
         var providerCount = 0;
         NTVirtualizeItemsProvider<string> provider = request => {
             providerCount++;
-            return new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(items, items.Count));
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(items, items.Count));
         };
 
         var cut = Render<NTVirtualize<string>>(p => p
@@ -553,14 +553,14 @@ public class NTVirtualize_Tests : BunitContext {
     [Fact]
     public async Task LoadingTemplate_Is_Used_While_Loading() {
         // Arrange
-        var tcs = new TaskCompletionSource<TnTItemsProviderResult<string>>();
+        var tcs = new TaskCompletionSource<NTVirtualizeItemsProviderResult<string>>();
         var firstCall = true;
         NTVirtualizeItemsProvider<string> provider = request => {
             if (firstCall) {
                 firstCall = false;
-                return new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(new List<string>(), 100));
+                return new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(new List<string>(), 100));
             }
-            return new ValueTask<TnTItemsProviderResult<string>>(tcs.Task);
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(tcs.Task);
         };
 
         var cut = Render<NTVirtualize<string>>(p => p
@@ -580,15 +580,15 @@ public class NTVirtualize_Tests : BunitContext {
         cut.WaitForState(() => cut.Markup.Contains("Loading..."));
 
         // Finish loading - provide enough items to fill the requested range (10-15)
-        tcs.SetResult(new TnTItemsProviderResult<string>(Enumerable.Range(10, 5).Select(i => $"Item {i}").ToList(), 100));
+        tcs.SetResult(new NTVirtualizeItemsProviderResult<string>(Enumerable.Range(10, 5).Select(i => $"Item {i}").ToList(), 100));
         cut.WaitForState(() => cut.Markup.Contains("Item 14"));
         cut.Markup.Should().NotContain("Loading...");
     }
 
     [Fact]
     public async Task LoadingTemplate_Is_Used_During_Initial_Load_Before_Total_Count_Is_Known() {
-        var tcs = new TaskCompletionSource<TnTItemsProviderResult<string>>();
-        NTVirtualizeItemsProvider<string> provider = _ => new ValueTask<TnTItemsProviderResult<string>>(tcs.Task);
+        var tcs = new TaskCompletionSource<NTVirtualizeItemsProviderResult<string>>();
+        NTVirtualizeItemsProvider<string> provider = _ => new ValueTask<NTVirtualizeItemsProviderResult<string>>(tcs.Task);
 
         var cut = Render<NTVirtualize<string>>(p => p
             .Add(c => c.ItemsProvider, provider)
@@ -611,7 +611,7 @@ public class NTVirtualize_Tests : BunitContext {
             placeholders[0].GetAttribute("style").Should().Contain("height: 64px");
         });
 
-        tcs.SetResult(new TnTItemsProviderResult<string>(["Item 1", "Item 2", "Item 3"], 3));
+        tcs.SetResult(new NTVirtualizeItemsProviderResult<string>(["Item 1", "Item 2", "Item 3"], 3));
         cut.WaitForState(() => cut.Markup.Contains("Item 3"));
         cut.FindAll(".initial-loading-placeholder").Should().BeEmpty();
     }
@@ -622,7 +622,7 @@ public class NTVirtualize_Tests : BunitContext {
         var callCount = 0;
         NTVirtualizeItemsProvider<string> provider = request => {
             callCount++;
-            return new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(new List<string> { $"Item {request.StartIndex}" }, 100));
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(new List<string> { $"Item {request.StartIndex}" }, 100));
         };
 
         var cut = Render<NTVirtualize<string>>(p => p
@@ -646,7 +646,7 @@ public class NTVirtualize_Tests : BunitContext {
         // Arrange
         var items = new List<string>() { "item1" };
         NTVirtualizeItemsProvider<string> provider = request =>
-            new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(items, items.Count));
+            new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(items, items.Count));
         const float itemSize = 123f;
         // Act
         var cut = Render<NTVirtualize<string>>(p => p
@@ -670,7 +670,7 @@ public class NTVirtualize_Tests : BunitContext {
         // Arrange
         var items = Enumerable.Range(0, 5).Select(i => $"Item {i}").ToList();
         NTVirtualizeItemsProvider<string> provider = request =>
-            new ValueTask<TnTItemsProviderResult<string>>(new TnTItemsProviderResult<string>(items.Skip(request.StartIndex).Take(request.Count ?? 0).ToList(), items.Count));
+            new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(items.Skip(request.StartIndex).Take(request.Count ?? 0).ToList(), items.Count));
 
         var cut = Render<NTVirtualize<string>>(p => p
             .Add(c => c.ItemsProvider, provider)
@@ -691,7 +691,7 @@ public class NTVirtualize_Tests : BunitContext {
                 .Add(component => component.MeasureItemSize, true)
                 .Add(component => component.ItemsProvider, request => {
                     calls++;
-                    return ValueTask.FromResult(new TnTItemsProviderResult<int>(Enumerable.Range(0, total).ToArray(), total));
+                    return ValueTask.FromResult(new NTVirtualizeItemsProviderResult<int>(Enumerable.Range(0, total).ToArray(), total));
                 })
                 .Add(component => component.ItemTemplate, item => builder => builder.AddContent(0, item)));
 
@@ -705,7 +705,7 @@ public class NTVirtualize_Tests : BunitContext {
     [Fact]
     public void ChangedRuntimeOptions_UpdateBrowserWithoutReinitializing() {
         var cut = Render<NTVirtualize<string>>(parameters => parameters
-            .Add(component => component.ItemsProvider, _ => ValueTask.FromResult(new TnTItemsProviderResult<string>([], 0))));
+            .Add(component => component.ItemsProvider, _ => ValueTask.FromResult(new NTVirtualizeItemsProviderResult<string>([], 0))));
 
         cut.Render(parameters => parameters
             .Add(component => component.ItemSize, 72)
@@ -721,7 +721,7 @@ public class NTVirtualize_Tests : BunitContext {
     [Fact]
     public void InitialItemIndex_IsPassedToBrowserInitialization() {
         Render<NTVirtualize<string>>(parameters => parameters
-            .Add(component => component.ItemsProvider, _ => ValueTask.FromResult(new TnTItemsProviderResult<string>([], 0)))
+            .Add(component => component.ItemsProvider, _ => ValueTask.FromResult(new NTVirtualizeItemsProviderResult<string>([], 0)))
             .Add(component => component.InitialItemIndex, 42));
 
         var init = _module.Invocations.Single(invocation => invocation.Identifier == "init");
@@ -738,7 +738,7 @@ public class NTVirtualize_Tests : BunitContext {
     [Fact]
     public async Task CanceledScroll_DoesNotSendBrowserNavigation() {
         var cut = Render<NTVirtualize<string>>(parameters => parameters
-            .Add(component => component.ItemsProvider, _ => ValueTask.FromResult(new TnTItemsProviderResult<string>([], 0))));
+            .Add(component => component.ItemsProvider, _ => ValueTask.FromResult(new NTVirtualizeItemsProviderResult<string>([], 0))));
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
 
@@ -749,15 +749,15 @@ public class NTVirtualize_Tests : BunitContext {
 
     [Fact]
     public async Task RefreshDataAsync_WaitsForProviderAndRendersReplacementItems() {
-        var replacement = new TaskCompletionSource<TnTItemsProviderResult<string>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var replacement = new TaskCompletionSource<NTVirtualizeItemsProviderResult<string>>(TaskCreationOptions.RunContinuationsAsynchronously);
         var providerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var refreshing = false;
         NTVirtualizeItemsProvider<string> provider = _ => {
             if (!refreshing) {
-                return ValueTask.FromResult(new TnTItemsProviderResult<string>(["old record"], 1));
+                return ValueTask.FromResult(new NTVirtualizeItemsProviderResult<string>(["old record"], 1));
             }
             providerStarted.TrySetResult();
-            return new ValueTask<TnTItemsProviderResult<string>>(replacement.Task);
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(replacement.Task);
         };
         var cut = Render<NTVirtualize<string>>(parameters => parameters
             .Add(component => component.ItemsProvider, provider)
@@ -769,7 +769,7 @@ public class NTVirtualize_Tests : BunitContext {
         var refresh = cut.InvokeAsync(() => cut.Instance.RefreshDataAsync(CancellationToken.None));
         await providerStarted.Task.WaitAsync(TimeSpan.FromSeconds(5), Xunit.TestContext.Current.CancellationToken);
         refresh.IsCompleted.Should().BeFalse();
-        replacement.SetResult(new TnTItemsProviderResult<string>(["replacement record"], 1));
+        replacement.SetResult(new NTVirtualizeItemsProviderResult<string>(["replacement record"], 1));
         await refresh;
 
         cut.Markup.Should().Contain("replacement record").And.NotContain("old record");
@@ -780,7 +780,7 @@ public class NTVirtualize_Tests : BunitContext {
         var requests = 0;
         NTVirtualizeItemsProvider<string> provider = _ => {
             requests++;
-            return ValueTask.FromResult(new TnTItemsProviderResult<string>(["current record"], 1));
+            return ValueTask.FromResult(new NTVirtualizeItemsProviderResult<string>(["current record"], 1));
         };
         var cut = Render<NTVirtualize<string>>(parameters => parameters
             .Add(component => component.ItemsProvider, provider)
@@ -797,16 +797,16 @@ public class NTVirtualize_Tests : BunitContext {
 
     [Fact]
     public async Task SupersededRefresh_CannotOverwriteNewerProviderResults() {
-        var stale = new TaskCompletionSource<TnTItemsProviderResult<string>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stale = new TaskCompletionSource<NTVirtualizeItemsProviderResult<string>>(TaskCreationOptions.RunContinuationsAsynchronously);
         var staleStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var calls = 0;
         NTVirtualizeItemsProvider<string> provider = _ => {
             calls++;
             if (calls == 2) {
                 staleStarted.SetResult();
-                return new ValueTask<TnTItemsProviderResult<string>>(stale.Task);
+                return new ValueTask<NTVirtualizeItemsProviderResult<string>>(stale.Task);
             }
-            return ValueTask.FromResult(new TnTItemsProviderResult<string>([calls == 1 ? "initial record" : "current record"], 1));
+            return ValueTask.FromResult(new NTVirtualizeItemsProviderResult<string>([calls == 1 ? "initial record" : "current record"], 1));
         };
         var cut = Render<NTVirtualize<string>>(parameters => parameters
             .Add(component => component.ItemsProvider, provider)
@@ -816,7 +816,7 @@ public class NTVirtualize_Tests : BunitContext {
         await staleStarted.Task.WaitAsync(TimeSpan.FromSeconds(5), Xunit.TestContext.Current.CancellationToken);
 
         await cut.InvokeAsync(() => cut.Instance.RefreshDataAsync());
-        stale.SetResult(new TnTItemsProviderResult<string>(["obsolete record"], 1));
+        stale.SetResult(new NTVirtualizeItemsProviderResult<string>(["obsolete record"], 1));
         await olderRefresh;
 
         cut.Markup.Should().Contain("current record").And.NotContain("obsolete record");
@@ -826,16 +826,16 @@ public class NTVirtualize_Tests : BunitContext {
     [InlineData(false)]
     [InlineData(true)]
     public async Task RefreshCanceledDuringUncooperativeProvider_PreservesRowsAndIgnoresLateCompletion(bool failsLate) {
-        var pending = new TaskCompletionSource<TnTItemsProviderResult<string>>();
+        var pending = new TaskCompletionSource<NTVirtualizeItemsProviderResult<string>>();
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var requests = 0;
         NTVirtualizeItemsProvider<string> provider = _ => {
             requests++;
             if (requests == 2) {
                 started.SetResult();
-                return new ValueTask<TnTItemsProviderResult<string>>(pending.Task);
+                return new ValueTask<NTVirtualizeItemsProviderResult<string>>(pending.Task);
             }
-            return ValueTask.FromResult(new TnTItemsProviderResult<string>(["current record"], 1));
+            return ValueTask.FromResult(new NTVirtualizeItemsProviderResult<string>(["current record"], 1));
         };
         var cut = Render<NTVirtualize<string>>(parameters => parameters
             .Add(component => component.ItemsProvider, provider)
@@ -854,7 +854,7 @@ public class NTVirtualize_Tests : BunitContext {
             pending.SetException(new InvalidOperationException("obsolete provider failure"));
         }
         else {
-            pending.SetResult(new TnTItemsProviderResult<string>(["obsolete record"], 1));
+            pending.SetResult(new NTVirtualizeItemsProviderResult<string>(["obsolete record"], 1));
         }
         await cut.InvokeAsync(() => cut.Render());
 
@@ -869,7 +869,7 @@ public class NTVirtualize_Tests : BunitContext {
     public async Task RefreshWithFreshInstances_RestoresAnchorByStableItemKey(bool prepend, int expectedAnchorIndex) {
         var items = new[] { Tuple.Create(1, "first"), Tuple.Create(2, "second"), Tuple.Create(3, "third") };
         NTVirtualizeItemsProvider<Tuple<int, string>> provider = request => ValueTask.FromResult(
-            new TnTItemsProviderResult<Tuple<int, string>>(items.Skip(request.StartIndex).Take(request.Count ?? items.Length).ToList(), items.Length));
+            new NTVirtualizeItemsProviderResult<Tuple<int, string>>(items.Skip(request.StartIndex).Take(request.Count ?? items.Length).ToList(), items.Length));
         var snapshot = new NTVirtualizeAnchorSnapshot { Index = 1, Offset = 12, AtStart = false, AtEnd = false, Version = 7 };
         _module.Setup<NTVirtualizeAnchorSnapshot>("captureAnchor", _ => true).SetResult(snapshot);
         _module.SetupVoid("restoreAnchor", _ => true).SetVoidResult();
@@ -896,7 +896,7 @@ public class NTVirtualize_Tests : BunitContext {
     [Fact]
     public async Task RefreshWithSameItemCount_InvalidatesBrowserMeasurementsWithoutAnchoring() {
         var item = "original short record";
-        NTVirtualizeItemsProvider<string> provider = _ => ValueTask.FromResult(new TnTItemsProviderResult<string>([item], 1));
+        NTVirtualizeItemsProvider<string> provider = _ => ValueTask.FromResult(new NTVirtualizeItemsProviderResult<string>([item], 1));
         var cut = Render<NTVirtualize<string>>(parameters => parameters
             .Add(component => component.ItemsProvider, provider)
             .Add(component => component.MeasureItemSize, true)
@@ -923,7 +923,7 @@ public class NTVirtualize_Tests : BunitContext {
         var requests = new List<NTVirtualizeItemsProviderRequest<Tuple<int, string>>>();
         NTVirtualizeItemsProvider<Tuple<int, string>> provider = request => {
             requests.Add(request);
-            return ValueTask.FromResult(new TnTItemsProviderResult<Tuple<int, string>>(
+            return ValueTask.FromResult(new NTVirtualizeItemsProviderResult<Tuple<int, string>>(
                 items.Skip(request.StartIndex).Take(request.Count ?? items.Length).ToList(), items.Length));
         };
         _module.Setup<NTVirtualizeAnchorSnapshot>("captureAnchor", _ => true).SetResult(new NTVirtualizeAnchorSnapshot { Index = 11, Offset = 9, Version = 2 });
@@ -962,7 +962,7 @@ public class NTVirtualize_Tests : BunitContext {
             }
 
             var items = filtered ? ["B 0"] : Enumerable.Range(0, 100).Select(index => $"A {index}").ToArray();
-            return new TnTItemsProviderResult<string>(items.Skip(request.StartIndex).Take(request.Count ?? items.Length).ToList(), items.Length);
+            return new NTVirtualizeItemsProviderResult<string>(items.Skip(request.StartIndex).Take(request.Count ?? items.Length).ToList(), items.Length);
         };
         var cut = Render<NTVirtualize<string>>(parameters => parameters
             .Add(component => component.ItemsProvider, provider)
@@ -997,7 +997,7 @@ public class NTVirtualize_Tests : BunitContext {
             }
 
             var items = filtered ? Enumerable.Range(0, 8).Select(index => $"B {index}").ToArray() : Enumerable.Range(0, 100).Select(index => $"A {index}").ToArray();
-            return new TnTItemsProviderResult<string>(items.Skip(request.StartIndex).Take(request.Count ?? items.Length).ToList(), items.Length);
+            return new NTVirtualizeItemsProviderResult<string>(items.Skip(request.StartIndex).Take(request.Count ?? items.Length).ToList(), items.Length);
         };
         var cut = Render<NTVirtualize<string>>(parameters => parameters
             .Add(component => component.ItemsProvider, provider)
@@ -1036,7 +1036,7 @@ public class NTVirtualize_Tests : BunitContext {
                 await preloadGate.Task;
             }
 
-            return new TnTItemsProviderResult<string>(items.Skip(request.StartIndex).Take(request.Count ?? items.Count).ToList(), items.Count);
+            return new NTVirtualizeItemsProviderResult<string>(items.Skip(request.StartIndex).Take(request.Count ?? items.Count).ToList(), items.Count);
         };
         var cut = Render<NTVirtualize<string>>(parameters => parameters
             .Add(component => component.ItemsProvider, provider)
@@ -1069,7 +1069,7 @@ public class NTVirtualize_Tests : BunitContext {
             var total = 100 + Interlocked.Increment(ref requests);
             await Task.Yield();
             var items = Enumerable.Range(request.StartIndex, Math.Min(request.Count ?? total, total - request.StartIndex)).Select(index => $"Item {index}").ToList();
-            return new TnTItemsProviderResult<string>(items, total);
+            return new NTVirtualizeItemsProviderResult<string>(items, total);
         };
         var cut = Render<NTVirtualize<string>>(parameters => parameters
             .Add(component => component.ItemsProvider, provider)
@@ -1105,7 +1105,7 @@ public class NTVirtualize_Tests : BunitContext {
             }
 
             var total = changed ? 50 : 100;
-            return new TnTItemsProviderResult<string>(Enumerable.Range(request.StartIndex, request.Count ?? total).Select(index => $"Item {index}").ToList(), total);
+            return new NTVirtualizeItemsProviderResult<string>(Enumerable.Range(request.StartIndex, request.Count ?? total).Select(index => $"Item {index}").ToList(), total);
         };
         var cut = Render<NTVirtualize<string>>(parameters => parameters
             .Add(component => component.ItemsProvider, provider)

@@ -77,7 +77,7 @@ public partial class NTResponsive {
 
     private string CustomMediaQuery => $"(min-width: {CustomBreakpoint}px)";
 
-    private string CustomMediaRule => $".nt-responsive.nt-responsive-custom.nt-responsive-visible-{VisibleDirection}[tntid=\"{ComponentIdentifier}\"]{{display:{CustomDisplay}}}";
+    private string CustomMediaRule => $".nt-responsive.nt-responsive-custom.nt-responsive-visible-{VisibleDirection}[ntid=\"{ComponentIdentifier}\"]{{display:{CustomDisplay}}}";
 
     private string CustomDisplay => VisibleDirection == "above" ? "contents" : "none";
 

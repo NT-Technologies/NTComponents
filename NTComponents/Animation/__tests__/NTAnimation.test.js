@@ -105,7 +105,7 @@ describe('NTAnimation runtime', () => {
 
     describe('page-script lifecycle', () => {
         test('onDispose with a page-script element releases only wrappers that left the DOM', () => {
-            const pageScript = document.createElement('tnt-page-script');
+            const pageScript = document.createElement('nt-page-script');
             document.body.appendChild(pageScript);
             const first = createWrapper();
             const second = createWrapper();
@@ -133,7 +133,7 @@ describe('NTAnimation runtime', () => {
         });
 
         test('repeated onUpdate with a page-script element does not rebuild observers', () => {
-            const pageScript = document.createElement('tnt-page-script');
+            const pageScript = document.createElement('nt-page-script');
             document.body.appendChild(pageScript);
             for (let i = 0; i < 20; i++) {
                 createWrapper();

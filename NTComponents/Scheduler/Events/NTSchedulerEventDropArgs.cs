@@ -4,7 +4,7 @@ namespace NTComponents.Scheduler.Events;
 ///     Provides data for an event drop in <see cref="NTScheduler{TEventType}" />.
 /// </summary>
 /// <typeparam name="TEventType">The event type.</typeparam>
-public sealed class NTSchedulerEventDropArgs<TEventType> where TEventType : TnTEvent {
+public sealed class NTSchedulerEventDropArgs<TEventType> where TEventType : NTEvent {
     /// <summary>
     ///     Initializes a new instance of the <see cref="NTSchedulerEventDropArgs{TEventType}" /> class.
     /// </summary>

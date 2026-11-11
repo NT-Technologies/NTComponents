@@ -38,7 +38,7 @@ public class NTDivider_Tests : BunitContext {
     [Fact]
     public void Direction_Vertical_Adds_Vertical_Class_And_Aria_Orientation() {
         // Act
-        var cut = Render<NTDivider>(p => p.Add(c => c.Direction, LayoutDirection.Vertical));
+        var cut = Render<NTDivider>(p => p.Add(c => c.Direction, NTLayoutDirection.Vertical));
         var divider = cut.Find("div.nt-divider");
 
         // Assert
@@ -101,6 +101,6 @@ public class NTDivider_Tests : BunitContext {
         divider.GetAttribute("id").Should().Be("divider-id");
         divider.GetAttribute("title").Should().Be("Section separator");
         divider.GetAttribute("lang").Should().Be("en");
-        divider.HasAttribute("tntid").Should().BeTrue();
+        divider.HasAttribute("ntid").Should().BeTrue();
     }
 }

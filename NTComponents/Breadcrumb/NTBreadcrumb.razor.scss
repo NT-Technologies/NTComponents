@@ -50,12 +50,12 @@
     }
 
     @each $size, $tokens in buttonChrome.$sizes {
-        &.tnt-size-#{$size} {
+        &.nt-size-#{$size} {
             .label {
                 min-block-size: max(48px, list.nth($tokens, 1));
                 padding-inline: list.nth($tokens, 2);
                 border-radius: list.nth($tokens, 5);
-                @include typescale.tnt-typescale(list.nth($tokens, 8), list.nth($tokens, 9), list.nth($tokens, 10), list.nth($tokens, 11));
+                @include typescale.nt-typescale(list.nth($tokens, 8), list.nth($tokens, 9), list.nth($tokens, 10), list.nth($tokens, 11));
 
                 &::before {
                     inset-block: buttonChrome.touch-inset(list.nth($tokens, 1));

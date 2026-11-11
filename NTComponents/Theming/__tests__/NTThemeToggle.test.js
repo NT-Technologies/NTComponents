@@ -136,7 +136,7 @@ describe('NTThemeToggle JavaScript Module', () => {
             </select>
         `;
         document.body.appendChild(element);
-        const pageScript = document.createElement('tnt-page-script');
+        const pageScript = document.createElement('nt-page-script');
         element.after(pageScript);
 
         onLoad(pageScript, null);
@@ -180,7 +180,7 @@ describe('NTThemeToggle JavaScript Module', () => {
 
     test('onUpdate resolves adjacent page script marker to nt theme toggle', async () => {
         const { applySpy, element, onUpdate } = await createThemeToggleElementWithRuntimeApply({ theme: 'LIGHT' });
-        const pageScript = document.createElement('tnt-page-script');
+        const pageScript = document.createElement('nt-page-script');
         element.after(pageScript);
 
         onUpdate(pageScript, null);
@@ -205,7 +205,7 @@ describe('NTThemeToggle JavaScript Module', () => {
             </select>
         `;
         document.body.appendChild(element);
-        const pageScript = document.createElement('tnt-page-script');
+        const pageScript = document.createElement('nt-page-script');
         element.after(pageScript);
         const runtime = window.NTComponents.NTThemeRuntime;
 
@@ -216,7 +216,7 @@ describe('NTThemeToggle JavaScript Module', () => {
         expect(runtime.controls.has(element)).toBe(true);
 
         runtime.controls.delete(element);
-        const replacementPageScript = document.createElement('tnt-page-script');
+        const replacementPageScript = document.createElement('nt-page-script');
         element.after(replacementPageScript);
 
         onLoad(replacementPageScript, null);

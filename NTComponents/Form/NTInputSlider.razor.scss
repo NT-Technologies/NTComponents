@@ -99,7 +99,7 @@ $nt-slider-motion-easing: motion.$nt-motion-easing-standard;
     min-width: 0;
     color: var(--nt-slider-label-color);
 
-    tnt-page-script {
+    nt-page-script {
         display: none;
     }
 
@@ -121,7 +121,7 @@ $nt-slider-motion-easing: motion.$nt-motion-easing-standard;
     }
 
     .nt-slider-label-text {
-        @include typescale.tnt-label-large;
+        @include typescale.nt-label-large;
     }
 
     .nt-slider-control {
@@ -308,7 +308,7 @@ $nt-slider-motion-easing: motion.$nt-motion-easing-standard;
             opacity $nt-slider-motion-duration linear,
             transform $nt-slider-motion-duration $nt-slider-motion-easing;
 
-        @include typescale.tnt-label-large;
+        @include typescale.nt-label-large;
     }
 
     .nt-slider-supporting-row {
@@ -318,7 +318,7 @@ $nt-slider-motion-easing: motion.$nt-motion-easing-standard;
     .nt-slider-supporting {
         color: var(--nt-slider-supporting-text-color);
 
-        @include typescale.tnt-body-small;
+        @include typescale.nt-body-small;
     }
 
     .nt-slider-error-text {

@@ -22,14 +22,14 @@ public class GeneratedCodeDocumentation_Tests {
         var model = GeneratedCodeDocumentation.Model;
 
         // Act
-        var buttonType = model.Types.FirstOrDefault(x => x.FullName == "NTComponents.TnTButton");
-        var buttonSizeProperty = buttonType?.Properties.FirstOrDefault(x => x.Name == "ButtonSize");
+        var buttonType = model.Types.FirstOrDefault(x => x.FullName == "NTComponents.NTButton");
+        var elevationProperty = buttonType?.Properties.FirstOrDefault(x => x.Name == "Elevation");
 
         // Assert
         buttonType.Should().NotBeNull();
-        buttonType!.Summary.Should().Contain("Represents a customizable button component.");
-        buttonSizeProperty.Should().NotBeNull();
-        buttonSizeProperty!.Summary.Should().Contain("The size of the button.");
+        buttonType!.Summary.Should().Contain("Material 3 button component with explicit variant, size, shape, and toggle semantics.");
+        elevationProperty.Should().NotBeNull();
+        elevationProperty!.Summary.Should().Contain("an optional override for the button elevation.");
     }
 
     [Fact]
@@ -38,7 +38,7 @@ public class GeneratedCodeDocumentation_Tests {
         var model = GeneratedCodeDocumentation.Model;
 
         // Act
-        var sizeEnumType = model.Types.FirstOrDefault(x => x.FullName == "NTComponents.Size");
+        var sizeEnumType = model.Types.FirstOrDefault(x => x.FullName == "NTComponents.NTSize");
         var smallestField = sizeEnumType?.Fields.FirstOrDefault(x => x.Name == "Smallest");
 
         // Assert
@@ -52,7 +52,7 @@ public class GeneratedCodeDocumentation_Tests {
         var model = GeneratedCodeDocumentation.Model;
 
         // Act
-        var buttonType = model.Types.FirstOrDefault(x => x.FullName == "NTComponents.TnTButton");
+        var buttonType = model.Types.FirstOrDefault(x => x.FullName == "NTComponents.NTButton");
         var inheritedElementTitleProperty = buttonType?.Properties.FirstOrDefault(
             x => x.Name == "ElementTitle" &&
                  x.IsFromBaseType &&
@@ -69,14 +69,14 @@ public class GeneratedCodeDocumentation_Tests {
         var model = GeneratedCodeDocumentation.Model;
 
         // Act
-        var buttonType = model.Types.FirstOrDefault(x => x.FullName == "NTComponents.TnTButton");
-        var buttonSizeParameter = buttonType?.Parameters.FirstOrDefault(x => x.Name == "ButtonSize");
+        var buttonType = model.Types.FirstOrDefault(x => x.FullName == "NTComponents.NTButton");
+        var elevationParameter = buttonType?.Parameters.FirstOrDefault(x => x.Name == "Elevation");
 
         // Assert
         buttonType.Should().NotBeNull();
         buttonType!.Parameters.Should().OnlyContain(x => x.IsParameter);
-        buttonSizeParameter.Should().NotBeNull();
-        buttonSizeParameter!.Summary.Should().Contain("The size of the button.");
+        elevationParameter.Should().NotBeNull();
+        elevationParameter!.Summary.Should().Contain("an optional override for the button elevation.");
     }
 
     [Fact]
@@ -141,7 +141,7 @@ public class GeneratedCodeDocumentation_Tests {
         var buttonType = model.Types.First(x => x.FullName == "NTComponents.NTButton");
         var requestType = model.Types.First(x => x.FullName == "NTComponents.NTDataGridItemsProviderRequest<TItem>");
         var countProperty = requestType.Properties.First(x => x.Name == "Count");
-        var colorType = model.Types.First(x => x.FullName == "NTComponents.TnTColor");
+        var colorType = model.Types.First(x => x.FullName == "NTComponents.NTColor");
         var richTextEditorType = model.Types.First(x => x.FullName == "NTComponents.NTRichTextEditor");
         var errorMessageProperty = richTextEditorType.Properties.First(x => x.Name == "ErrorMessage");
 
@@ -149,7 +149,7 @@ public class GeneratedCodeDocumentation_Tests {
         buttonType.Remarks.Should().Contain("NTButtonVariant.Filled for the primary action");
         requestType.Summary.Should().Be("Represents a data request issued by NTDataGrid.");
         countProperty.Summary.Should().Contain("or null when the provider may return all items");
-        colorType.Remarks.Should().Contain("areas of the UI. Primary, Secondary");
+        colorType.Remarks.Should().Contain("Secondary, and Tertiary roles");
         errorMessageProperty.Summary.Should().Contain("Prefer NTFormControlBaseCore.ErrorText for new code");
     }
 
@@ -196,7 +196,6 @@ public class GeneratedCodeDocumentation_Tests {
             .Where(type => !type.IsAbstract)
             .Where(type => typeof(IComponent).IsAssignableFrom(type))
             .Where(type => type.Name.StartsWith("NT", StringComparison.Ordinal))
-            .Where(type => !type.Name.StartsWith("TnT", StringComparison.Ordinal))
             .Select(type => new {
                 Type = type,
                 Documentation = documentedTypes[NormalizeRuntimeFullName(type)]

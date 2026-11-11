@@ -41,20 +41,20 @@
     );
 }
 
-$elevation-shadows: _elevation-shadows(colors.$tnt-color-shadow);
+$elevation-shadows: _elevation-shadows(colors.$nt-color-shadow);
 $nt-elevation-shadows: _nt-elevation-shadows(colors.$nt-color-shadow);
 
-@mixin tnt-elevations($shadows: $elevation-shadows) {
+@mixin nt-elevations($shadows: $elevation-shadows) {
     @for $i from 0 through 10 {
-        &.tnt-elevation-#{$i} {
+        &.nt-elevation-#{$i} {
             box-shadow: map.get($shadows, $i);
         }
     }
 }
 
-@mixin tnt-elevation($height, $enable-hover: true, $shadows: $elevation-shadows) {
+@mixin nt-elevation($height, $enable-hover: true, $shadows: $elevation-shadows) {
 
-    &:not(.tnt-disabled) {
+    &:not(.nt-disabled) {
         box-shadow: map.get($shadows, $height);
 
         @if $enable-hover {

@@ -104,7 +104,7 @@ public class NTAnimation_Tests : BunitContext {
         element.GetAttribute("data-nt-animation-root-margin").Should().Be("0px 0px -10% 0px");
         element.HasAttribute("data-nt-animation-notify").Should().BeFalse();
         element.HasAttribute("data-nt-animation-state").Should().BeFalse();
-        cut.Find("tnt-page-script").GetAttribute("src").Should().Be("./_content/NTComponents/Animation/NTAnimation.razor.js");
+        cut.Find("nt-page-script").GetAttribute("src").Should().Be("./_content/NTComponents/Animation/NTAnimation.razor.js");
     }
 
     [Fact]
@@ -149,7 +149,7 @@ public class NTAnimation_Tests : BunitContext {
         var element = cut.Find(".nt-animation");
         element.GetAttribute("data-nt-animation-trigger").Should().Be("render");
         element.Attributes.Select(a => a.Name).Where(n => n.StartsWith("data-nt-animation")).Should().BeEquivalentTo(["data-nt-animation-trigger"]);
-        cut.FindAll("tnt-page-script").Should().BeEmpty();
+        cut.FindAll("nt-page-script").Should().BeEmpty();
     }
 
     [Fact]
@@ -160,7 +160,7 @@ public class NTAnimation_Tests : BunitContext {
         element.GetAttribute("data-nt-animation-trigger").Should().Be("manual");
         element.GetAttribute("data-nt-animation-state").Should().Be("visible");
         element.HasAttribute("inert").Should().BeFalse();
-        cut.FindAll("tnt-page-script").Should().BeEmpty();
+        cut.FindAll("nt-page-script").Should().BeEmpty();
     }
 
     [Fact]
@@ -199,7 +199,7 @@ public class NTAnimation_Tests : BunitContext {
         element.Attributes.Select(a => a.Name).Where(n => n.StartsWith("data-nt-animation")).Should().BeEmpty();
         element.HasAttribute("inert").Should().BeFalse();
         element.QuerySelector("span")!.TextContent.Should().Be("Content");
-        cut.FindAll("tnt-page-script").Should().BeEmpty();
+        cut.FindAll("nt-page-script").Should().BeEmpty();
     }
 
     [Theory]

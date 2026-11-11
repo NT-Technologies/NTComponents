@@ -6,8 +6,8 @@
 <section style="display:grid; gap:1.5rem; max-width:64rem;">
     <div style="display:grid; grid-template-columns:minmax(0, 1.2fr) minmax(18rem, .8fr); gap:1.5rem; align-items:start;">
         <div style="display:grid; gap:1rem;">
-            <div style="display:grid; gap:1rem; min-height:18rem; padding:1.5rem; border:1px solid var(--tnt-color-outline-variant); border-radius:1.25rem; background:var(--tnt-color-surface-container-lowest);">
-                <p style="margin:0; color:var(--tnt-color-on-surface-variant);">Preview</p>
+            <div style="display:grid; gap:1rem; min-height:18rem; padding:1.5rem; border:1px solid var(--nt-color-outline-variant); border-radius:1.25rem; background:var(--nt-color-surface-container-lowest);">
+                <p style="margin:0; color:var(--nt-color-on-surface-variant);">Preview</p>
 
                 <NTSkeleton Show="@show"
                             Shape="@shape"
@@ -17,13 +17,13 @@
                             HighlightColor="@EffectiveHighlightColor"
                             Width="@EffectiveWidth"
                             Height="@EffectiveHeight">
-                    <article style="display:grid; gap:.75rem; padding:1rem; border:1px solid var(--tnt-color-outline-variant); border-radius:1rem; background:var(--tnt-color-surface); max-width:32rem;">
+                    <article style="display:grid; gap:.75rem; padding:1rem; border:1px solid var(--nt-color-outline-variant); border-radius:1rem; background:var(--nt-color-surface); max-width:32rem;">
                         @if (showAvatar) {
                             <div style="display:flex; gap:.75rem; align-items:center;">
-                                <div style="width:2.5rem; height:2.5rem; border-radius:50%; background:var(--tnt-color-primary-container);"></div>
+                                <div style="width:2.5rem; height:2.5rem; border-radius:50%; background:var(--nt-color-primary-container);"></div>
                                 <div>
                                     <h4 style="margin:0;">Loaded content</h4>
-                                    <p style="margin:.125rem 0 0; color:var(--tnt-color-on-surface-variant);">Single markup branch</p>
+                                    <p style="margin:.125rem 0 0; color:var(--nt-color-on-surface-variant);">Single markup branch</p>
                                 </div>
                             </div>
                         }
@@ -35,8 +35,8 @@
 
                         @if (showActions) {
                             <div style="display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.25rem;">
-                                <button type="button" style="border:0; border-radius:999px; padding:.625rem 1rem; background:var(--tnt-color-primary); color:var(--tnt-color-on-primary);">Primary</button>
-                                <button type="button" style="border:1px solid var(--tnt-color-outline); border-radius:999px; padding:.625rem 1rem; background:transparent; color:var(--tnt-color-primary);">Secondary</button>
+                                <button type="button" style="border:0; border-radius:999px; padding:.625rem 1rem; background:var(--nt-color-primary); color:var(--nt-color-on-primary);">Primary</button>
+                                <button type="button" style="border:1px solid var(--nt-color-outline); border-radius:999px; padding:.625rem 1rem; background:transparent; color:var(--nt-color-primary);">Secondary</button>
                             </div>
                         }
                     </article>
@@ -44,7 +44,7 @@
             </div>
 
             <div style="display:grid; gap:1rem;">
-                <p style="margin:0; color:var(--tnt-color-on-surface-variant);">Common compositions</p>
+                <p style="margin:0; color:var(--nt-color-on-surface-variant);">Common compositions</p>
                 <NTSkeleton Width="65%" />
                 <NTSkeleton Shape="NTSkeletonShape.Rectangle" Height="8rem" CornerRadius="NTCornerRadius.Large" />
                 <div style="display:flex; gap:1rem; align-items:center;">
@@ -57,7 +57,7 @@
             </div>
         </div>
 
-        <div style="display:grid; gap:1rem; padding:1.25rem; border:1px solid var(--tnt-color-outline-variant); border-radius:1.25rem; background:var(--tnt-color-surface);">
+        <div style="display:grid; gap:1rem; padding:1.25rem; border:1px solid var(--nt-color-outline-variant); border-radius:1.25rem; background:var(--nt-color-surface);">
             <label style="display:flex; gap:.5rem; align-items:center;">
                 <input type="checkbox" @bind="show" />
                 Show skeleton

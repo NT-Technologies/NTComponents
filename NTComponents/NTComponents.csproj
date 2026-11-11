@@ -1,19 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 	<Import Project="..\PackageMetadata.props" />
 	<PropertyGroup>
-		<TargetFrameworks>net9.0;net10.0;net11.0</TargetFrameworks>
+		<TargetFrameworks>net10.0;net11.0</TargetFrameworks>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Title>NTComponents</Title>
-		<PackageTags>Blazor;Web;UI;Components;Material;MaterialDesign;WebAssembly;BlazorComponents;.NET9;.NET10;.NET11</PackageTags>
+		<PackageTags>Blazor;Web;UI;Components;Material;MaterialDesign;WebAssembly;BlazorComponents;.NET10;.NET11</PackageTags>
 		<EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
 		<WarningLevel>8</WarningLevel>
 		<TreatWarningsAsErrors>True</TreatWarningsAsErrors>
 		<!-- Keep new .NET 11 RC Blazor diagnostics visible while existing call sites are reviewed. -->
 		<WarningsNotAsErrors Condition="'$(TargetFramework)' == 'net11.0'">$(WarningsNotAsErrors);BL0012;BL0016</WarningsNotAsErrors>
-		<NoWarn>$(NoWarn);CS0618;NTC1077;NTC1078;NTC1079</NoWarn>
 		<PackageId>NTComponents</PackageId>
-		<Description>Collection of Material-design inspired Blazor UI components for Web and WebAssembly projects. Designed for .NET 9, .NET 10, and .NET 11.</Description>
+		<Description>Collection of Material-design inspired Blazor UI components for Web and WebAssembly projects. Designed for .NET 10 and .NET 11.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<RepositoryType>git</RepositoryType>
 		<IsAotCompatible>true</IsAotCompatible>
@@ -52,19 +51,14 @@
 		<PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" VersionOverride="2.3.0" />
 	</ItemGroup>
 
-	<ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
-		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" VersionOverride="9.0.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Components.Authorization" VersionOverride="9.0.0" />
-	</ItemGroup>
-
 	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" VersionOverride="10.0.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Components.Authorization" VersionOverride="10.0.0" />
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net11.0'">
-		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" VersionOverride="11.0.0-rc.2.26504.105" PrivateAssets="all" />
-		<PackageReference Include="Microsoft.AspNetCore.Components.Authorization" VersionOverride="11.0.0-rc.2.26504.105" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" VersionOverride="11.0.0" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.Authorization" VersionOverride="11.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>

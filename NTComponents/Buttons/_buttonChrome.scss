@@ -7,11 +7,11 @@
 @use './buttonFocusRing' as focus;
 
 $sizes: (
-    xs: (32px, 12px, 4px, 20px, measurements.$tnt-pill-border-radius-xs, corners.$nt-corner-radius-small, corners.$nt-corner-radius-medium, 500, 14px, 20px, 0.1px),
-    s: (40px, 16px, 8px, 20px, measurements.$tnt-pill-border-radius-small, corners.$nt-corner-radius-small, corners.$nt-corner-radius-medium, 500, 14px, 20px, 0.1px),
-    m: (56px, 24px, 8px, 24px, measurements.$tnt-pill-border-radius-medium, corners.$nt-corner-radius-medium, corners.$nt-corner-radius-large, 500, 16px, 24px, 0.15px),
-    l: (96px, 48px, 12px, 32px, measurements.$tnt-pill-border-radius-large, corners.$nt-corner-radius-large, corners.$nt-corner-radius-extra-large, 400, 24px, 32px, 0),
-    xl: (136px, 64px, 16px, 40px, measurements.$tnt-pill-border-radius-xl, corners.$nt-corner-radius-large, corners.$nt-corner-radius-extra-large, 400, 32px, 40px, 0)
+    xs: (32px, 12px, 4px, 20px, measurements.$nt-pill-border-radius-xs, corners.$nt-corner-radius-small, corners.$nt-corner-radius-medium, 500, 14px, 20px, 0.1px),
+    s: (40px, 16px, 8px, 20px, measurements.$nt-pill-border-radius-small, corners.$nt-corner-radius-small, corners.$nt-corner-radius-medium, 500, 14px, 20px, 0.1px),
+    m: (56px, 24px, 8px, 24px, measurements.$nt-pill-border-radius-medium, corners.$nt-corner-radius-medium, corners.$nt-corner-radius-large, 500, 16px, 24px, 0.15px),
+    l: (96px, 48px, 12px, 32px, measurements.$nt-pill-border-radius-large, corners.$nt-corner-radius-large, corners.$nt-corner-radius-extra-large, 400, 24px, 32px, 0),
+    xl: (136px, 64px, 16px, 40px, measurements.$nt-pill-border-radius-xl, corners.$nt-corner-radius-large, corners.$nt-corner-radius-extra-large, 400, 32px, 40px, 0)
 );
 
 @function touch-inset($height) {
@@ -27,7 +27,7 @@ $sizes: (
     appearance: none;
     background: transparent;
     border: 0;
-    border-radius: measurements.$tnt-pill-border-radius-small;
+    border-radius: measurements.$nt-pill-border-radius-small;
     box-sizing: border-box;
     color: var(--#{$foreground-token}, #{$default-foreground});
     cursor: pointer;
@@ -67,7 +67,7 @@ $sizes: (
         z-index: 1;
     }
 
-    &:not(.tnt-disabled):not(:disabled) {
+    &:not(.nt-disabled):not(:disabled) {
         &:hover::before {
             opacity: 0.08;
         }
@@ -105,7 +105,7 @@ $sizes: (
     height: $height;
     padding-inline: $padding;
 
-    @include typescale.tnt-typescale($weight, $font-size, $line-height, $tracking);
+    @include typescale.nt-typescale($weight, $font-size, $line-height, $tracking);
 
     &::after,
     &::before {
@@ -117,7 +117,7 @@ $sizes: (
         border-radius: $square-radius;
     }
 
-    &:not(.tnt-disabled):not(:disabled) {
+    &:not(.nt-disabled):not(:disabled) {
         &:active,
         &.nt-button--pressed-shape {
             border-radius: $pressed-radius;
@@ -129,7 +129,7 @@ $sizes: (
             inset-block: touch-inset($height);
         }
 
-        .tnt-icon {
+        .nt-icon {
             font-size: $icon-size;
         }
     }
@@ -142,7 +142,7 @@ $sizes: (
             transition: border-radius buttonMotion.$nt-button-shape-transition;
         }
 
-        .tnt-icon {
+        .nt-icon {
             color: inherit;
             font-size: 20px;
             pointer-events: none;

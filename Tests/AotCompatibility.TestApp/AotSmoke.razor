@@ -17,18 +17,18 @@
             <NTInputText @bind-Value="_model.Phone" Label="Phone" SupportingText="Second bound text input" />
             <NTTextArea @bind-Value="_model.Notes" Label="Notes" />
             <NTRichTextEditor @bind-Value="_model.Body" Label="Body" />
-            <NTInputSelect TInputType="string" @bind-Value="_model.Status" Label="Status"><option value="open">Open</option></NTInputSelect>
+            <NTSelect TValue="string" @bind-Value="_model.Status" Label="Status"><option value="open">Open</option></NTSelect>
+            <NTFileUpload @bind-Value="_model.Files" Label="Attachment" />
         </NTForm>
         <NTLoader />
-        <TnTInputFile />
     </section>
 
     <section>
         <h2>Grid</h2>
         <NTDataGrid TItem="SmokeRow" Items="_rows" Appearance="NTDataGridAppearance.Striped" Density="NTDataGridDensity.Compact">
-            <NTPropertyColumn TItem="SmokeRow" TValue="int" Title="Id" Property="row => row.Id" Width="72px" TextAlign="TextAlign.Right" HeaderTextAlign="TextAlign.Right" />
+            <NTPropertyColumn TItem="SmokeRow" TValue="int" Title="Id" Property="row => row.Id" Width="72px" TextAlign="NTTextAlign.Right" HeaderTextAlign="NTTextAlign.Right" />
             <NTPropertyColumn TItem="SmokeRow" TValue="string" Title="Name" Property="row => row.Name" MinWidth="180px" />
-            <NTPropertyColumn TItem="SmokeRow" TValue="decimal" Title="Amount" Property="row => row.Amount" Format="C" TextAlign="TextAlign.Right" HeaderTextAlign="TextAlign.Right" />
+            <NTPropertyColumn TItem="SmokeRow" TValue="decimal" Title="Amount" Property="row => row.Amount" Format="C" TextAlign="NTTextAlign.Right" HeaderTextAlign="NTTextAlign.Right" />
             <NTTemplateColumn TItem="SmokeRow" Title="State" SortBy="_statusSort" InitialSortDirection="SortDirection.Ascending">
                 <span data-aot-smoke-row="@context.Id">@context.Status</span>
             </NTTemplateColumn>
@@ -115,6 +115,7 @@
         public string? Notes { get; set; }
         public string? Body { get; set; }
         public string? Status { get; set; }
+        public IReadOnlyList<Microsoft.AspNetCore.Components.Forms.IBrowserFile>? Files { get; set; }
     }
 
     private sealed record SmokeRow(int Id, string Name, decimal Amount, string Status);

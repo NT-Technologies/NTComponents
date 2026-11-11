@@ -75,7 +75,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
             (await field.GetAttributeAsync("class")).Should().Contain("nt-input");
             (await field.GetAttributeAsync("class")).Should().Contain("nt-rich-text-editor");
             (await field.GetAttributeAsync("class")).Should().Contain("nt-input-outlined");
-            (await root.Locator(".tnt-rich-text-editor-toolbar-button").CountAsync()).Should().BeGreaterThanOrEqualTo(ExpectedDefaultToolbarButtonCount);
+            (await root.Locator(".nt-rich-text-editor-toolbar-button").CountAsync()).Should().BeGreaterThanOrEqualTo(ExpectedDefaultToolbarButtonCount);
             (await root.Locator(".nt-input-outline").First.IsVisibleAsync()).Should().BeTrue();
 
             await SetEditorHtmlAndSelectTextAsync(testId, "<p>mode sync</p>", "mode sync");
@@ -165,7 +165,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
         await ClickToolbarButtonAsync(new(command));
 
         await WaitForHiddenValueAsync(ServerEditorTestId, expectedValue);
-        (await EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-hidden-input").InputValueAsync()).Should().Be(expectedValue);
+        (await EditorRoot(ServerEditorTestId).Locator(".nt-rich-text-editor-hidden-input").InputValueAsync()).Should().Be(expectedValue);
     }
 
     [Fact]
@@ -182,7 +182,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
         await ClickToolbarButtonAsync(new("codeBlock"));
 
         await WaitForHiddenValueAsync(ServerEditorTestId, "<p>code</p><p>line2</p>");
-        (await EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-hidden-input").InputValueAsync()).Should().Be("<p>code</p><p>line2</p>");
+        (await EditorRoot(ServerEditorTestId).Locator(".nt-rich-text-editor-hidden-input").InputValueAsync()).Should().Be("<p>code</p><p>line2</p>");
     }
 
     [Fact]
@@ -212,7 +212,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
         await _page.Keyboard.TypeAsync("X");
 
         await WaitForHiddenValueAsync(ServerEditorTestId, "<p>abXcd</p>");
-        (await EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-hidden-input").InputValueAsync()).Should().Be("<p>abXcd</p>");
+        (await EditorRoot(ServerEditorTestId).Locator(".nt-rich-text-editor-hidden-input").InputValueAsync()).Should().Be("<p>abXcd</p>");
     }
 
     [Fact]
@@ -229,8 +229,8 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
             """
             testId => {
                 const section = document.querySelector(`[data-testid="${testId}"]`);
-                const surface = section?.querySelector('.tnt-rich-text-editor-surface');
-                return section?.querySelector('.tnt-rich-text-editor-hidden-input')?.value === ''
+                const surface = section?.querySelector('.nt-rich-text-editor-surface');
+                return section?.querySelector('.nt-rich-text-editor-hidden-input')?.value === ''
                     && surface?.dataset.empty === 'true'
                     && getComputedStyle(surface, '::before').content === `"${surface.dataset.placeholder}"`;
             }
@@ -299,7 +299,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
         await EditorRoot(ServerEditorTestId).Locator("[data-role='link-apply']").ClickAsync();
 
         await WaitForHiddenValueAsync(ServerEditorTestId, "<p>link</p>");
-        (await EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-hidden-input").InputValueAsync()).Should().Be("<p>link</p>");
+        (await EditorRoot(ServerEditorTestId).Locator(".nt-rich-text-editor-hidden-input").InputValueAsync()).Should().Be("<p>link</p>");
     }
 
     [Fact]
@@ -365,7 +365,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
         await WaitForEditorReadyAsync(ServerEditorTestId);
         await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, testCase.Html);
         var root = EditorRoot(ServerEditorTestId);
-        var target = root.Locator($".tnt-rich-text-editor-surface {testCase.TargetSelector}").First;
+        var target = root.Locator($".nt-rich-text-editor-surface {testCase.TargetSelector}").First;
 
         // Click by coordinates: an editable iframe ignores pointer events, which Playwright's element click refuses.
         var box = await target.BoundingBoxAsync();
@@ -374,13 +374,13 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
         var input = root.Locator($"[data-role='{testCase.InputRole}']");
         await Assertions.Expect(input).ToBeVisibleAsync();
         await Assertions.Expect(input).ToHaveValueAsync(testCase.PrefilledValue);
-        (await _page.EvaluateAsync<bool>("() => document.activeElement?.classList.contains('tnt-rich-text-editor-surface') === true")).Should().BeTrue();
+        (await _page.EvaluateAsync<bool>("() => document.activeElement?.classList.contains('nt-rich-text-editor-surface') === true")).Should().BeTrue();
 
         await input.FillAsync(testCase.NewValue);
         await input.PressAsync("Enter");
 
         await WaitForHiddenValueAsync(ServerEditorTestId, testCase.ExpectedValue);
-        (await root.Locator($".tnt-rich-text-editor-surface {testCase.TargetSelector}").CountAsync()).Should().Be(1);
+        (await root.Locator($".nt-rich-text-editor-surface {testCase.TargetSelector}").CountAsync()).Should().Be(1);
         await Assertions.Expect(input).ToBeHiddenAsync();
     }
 
@@ -394,9 +394,9 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
         var root = EditorRoot(ServerEditorTestId);
         var linkUrl = root.Locator("[data-role='link-url']");
 
-        await root.Locator(".tnt-rich-text-editor-surface a").ClickAsync();
+        await root.Locator(".nt-rich-text-editor-surface a").ClickAsync();
         await Assertions.Expect(linkUrl).ToBeVisibleAsync();
-        await root.Locator(".tnt-rich-text-editor-surface p").Nth(1).ClickAsync();
+        await root.Locator(".nt-rich-text-editor-surface p").Nth(1).ClickAsync();
 
         await Assertions.Expect(linkUrl).ToBeHiddenAsync();
     }
@@ -416,7 +416,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
 
         await Assertions.Expect(root.Locator("[data-role='image-alt']")).ToHaveValueAsync("dot");
         await Assertions.Expect(root.Locator("[data-role='image-url']")).ToHaveValueAsync(string.Empty);
-        (await root.Locator(".tnt-rich-text-editor-surface img").CountAsync()).Should().Be(0);
+        (await root.Locator(".nt-rich-text-editor-surface img").CountAsync()).Should().Be(0);
 
         await root.Locator("[data-role='image-apply']").ClickAsync();
 
@@ -432,7 +432,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
         await WaitForEditorReadyAsync(ssrEditorTestId);
         await SetEditorHtmlWithSelectionAsync(ssrEditorTestId, "<p>picture here|</p>");
         var root = EditorRoot(ssrEditorTestId);
-        var imageButton = root.Locator(".tnt-rich-text-editor-toolbar-button[data-command='image']");
+        var imageButton = root.Locator(".nt-rich-text-editor-toolbar-button[data-command='image']");
         var chosenFile = root.Locator("[data-tool-command='image'] .nt-file-upload-value");
 
         await imageButton.ClickAsync();
@@ -530,7 +530,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
     private ILocator TableMenuItem(string action) => EditorRoot(ServerEditorTestId).Locator($"[data-table-action='{action}']");
 
     private async Task RightClickTableCellAndChooseAsync(string cellText, string action) {
-        var cell = EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-surface td", new LocatorLocatorOptions { HasTextString = cellText });
+        var cell = EditorRoot(ServerEditorTestId).Locator(".nt-rich-text-editor-surface td", new LocatorLocatorOptions { HasTextString = cellText });
         await cell.ClickAsync(new LocatorClickOptions { Button = MouseButton.Right });
         var item = TableMenuItem(action);
         await item.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Visible, Timeout = 5000 });
@@ -553,7 +553,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
         await cell.ClickAsync();
 
         await WaitForHiddenValueAsync(ServerEditorTestId, "<table data-border-color=\"#94a3b8\"");
-        var surface = EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-surface");
+        var surface = EditorRoot(ServerEditorTestId).Locator(".nt-rich-text-editor-surface");
         await Assertions.Expect(surface.Locator("thead th")).ToHaveCountAsync(3);
         await Assertions.Expect(surface.Locator("tbody tr")).ToHaveCountAsync(1);
         await Assertions.Expect(surface.Locator("tbody td")).ToHaveCountAsync(3);
@@ -567,7 +567,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
 
         await RightClickTableCellAndChooseAsync("A1", "row-below");
 
-        var surface = EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-surface");
+        var surface = EditorRoot(ServerEditorTestId).Locator(".nt-rich-text-editor-surface");
         await Assertions.Expect(surface.Locator("tr")).ToHaveCountAsync(3);
         await Assertions.Expect(surface.Locator("tbody tr")).ToHaveCountAsync(2);
         await WaitForHiddenValueAsync(ServerEditorTestId, "<td><br></td>");
@@ -581,7 +581,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
 
         await RightClickTableCellAndChooseAsync("A1", "column-right");
 
-        var surface = EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-surface");
+        var surface = EditorRoot(ServerEditorTestId).Locator(".nt-rich-text-editor-surface");
         await Assertions.Expect(surface.Locator("thead th")).ToHaveCountAsync(3);
         await Assertions.Expect(surface.Locator("tbody td")).ToHaveCountAsync(3);
     }
@@ -594,7 +594,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
 
         await RightClickTableCellAndChooseAsync("A2", "delete-table");
 
-        await Assertions.Expect(EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-surface table")).ToHaveCountAsync(0);
+        await Assertions.Expect(EditorRoot(ServerEditorTestId).Locator(".nt-rich-text-editor-surface table")).ToHaveCountAsync(0);
     }
 
     [Fact]
@@ -608,7 +608,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
         var prevented = await _page.EvaluateAsync<bool>(
             """
             (testId) => {
-                const paragraph = document.querySelector(`[data-testid="${testId}"] .tnt-rich-text-editor-surface p`);
+                const paragraph = document.querySelector(`[data-testid="${testId}"] .nt-rich-text-editor-surface p`);
                 const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
                 paragraph.dispatchEvent(event);
                 return event.defaultPrevented;
@@ -617,7 +617,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
             ServerEditorTestId);
 
         prevented.Should().BeFalse();
-        await EditorRoot(ServerEditorTestId).Locator(".tnt-rich-text-editor-surface p").ClickAsync(new LocatorClickOptions { Button = MouseButton.Right });
+        await EditorRoot(ServerEditorTestId).Locator(".nt-rich-text-editor-surface p").ClickAsync(new LocatorClickOptions { Button = MouseButton.Right });
         (await TableMenuItem("row-below").IsVisibleAsync()).Should().BeFalse();
     }
 
@@ -632,18 +632,18 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
         await root.Locator("[data-role='aria-label-value']").FillAsync("Important phrase");
         await root.Locator("[data-role='aria-label-apply']").ClickAsync();
         await WaitForHiddenValueAsync(ServerEditorTestId, "aria-label=\"Important phrase\"");
-        (await root.Locator(".tnt-rich-text-editor-surface span[aria-label]").GetAttributeAsync("role")).Should().Be("group");
+        (await root.Locator(".nt-rich-text-editor-surface span[aria-label]").GetAttributeAsync("role")).Should().Be("group");
 
         await ClickToolbarButtonAsync(new("editHtml"));
-        (await root.Locator(".tnt-rich-text-editor-surface").IsVisibleAsync()).Should().BeFalse();
+        (await root.Locator(".nt-rich-text-editor-surface").IsVisibleAsync()).Should().BeFalse();
         (await root.Locator("[data-role='html-source']").IsVisibleAsync()).Should().BeTrue();
         (await root.Locator("[data-command='bold']").IsEnabledAsync()).Should().BeFalse();
         await root.Locator("[data-role='html-source']").FillAsync("<div>\n  <p>Edited <strong>HTML</strong></p>\n  <p>Second line</p>\n</div><script>bad()</script>");
         await ClickToolbarButtonAsync(new("editHtml"));
         const string savedHtml = "<div><p>Edited <strong>HTML</strong></p><p>Second line</p></div>";
         await WaitForHiddenValueAsync(ServerEditorTestId, savedHtml);
-        (await root.Locator(".tnt-rich-text-editor-surface").IsVisibleAsync()).Should().BeTrue();
-        (await root.Locator(".tnt-rich-text-editor-hidden-input").InputValueAsync()).Should().Be(savedHtml);
+        (await root.Locator(".nt-rich-text-editor-surface").IsVisibleAsync()).Should().BeTrue();
+        (await root.Locator(".nt-rich-text-editor-hidden-input").InputValueAsync()).Should().Be(savedHtml);
         await ClickToolbarButtonAsync(new("editHtml"));
         (await root.Locator("[data-role='html-source']").InputValueAsync()).Should().Contain("\n  <p>Edited <strong>HTML</strong></p>\n");
     }
@@ -661,7 +661,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
         var highlightingIsAligned = await source.EvaluateAsync<bool>(
             """
             source => {
-                const highlight = source.parentElement.querySelector('.tnt-rich-text-editor-source-highlight');
+                const highlight = source.parentElement.querySelector('.nt-rich-text-editor-source-highlight');
                 const code = highlight.querySelector('code');
                 const sourceStyle = getComputedStyle(source);
                 const highlightStyle = getComputedStyle(highlight);
@@ -692,7 +692,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
         var highlightScrollsWithSource = await source.EvaluateAsync<bool>(
             """
             source => {
-                const highlight = source.parentElement.querySelector('.tnt-rich-text-editor-source-highlight');
+                const highlight = source.parentElement.querySelector('.nt-rich-text-editor-source-highlight');
                 const code = highlight.querySelector('code');
                 return Math.abs(code.getBoundingClientRect().top - highlight.getBoundingClientRect().top + source.scrollTop) < 1;
             }
@@ -764,8 +764,8 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
                 ([testId, expectedToolbarButtonCount]) => {
                     const section = document.querySelector(`[data-testid="${testId}"]`);
                     const editor = section?.querySelector('nt-rich-text-editor');
-                    const surface = editor?.querySelector('.tnt-rich-text-editor-surface');
-                    return editor?.querySelectorAll('.tnt-rich-text-editor-toolbar-button').length >= expectedToolbarButtonCount
+                    const surface = editor?.querySelector('.nt-rich-text-editor-surface');
+                    return editor?.querySelectorAll('.nt-rich-text-editor-toolbar-button').length >= expectedToolbarButtonCount
                         && surface?.textContent?.includes('Meeting Notes');
                 }
                 """,
@@ -778,17 +778,17 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
                 (testId) => {
                     const section = document.querySelector(`[data-testid="${testId}"]`);
                     const editor = section?.querySelector('nt-rich-text-editor');
-                    const surface = editor?.querySelector('.tnt-rich-text-editor-surface');
-                    const pageScripts = Array.from(document.querySelectorAll('tnt-page-script')).map(script => script.getAttribute('src'));
+                    const surface = editor?.querySelector('.nt-rich-text-editor-surface');
+                    const pageScripts = Array.from(document.querySelectorAll('nt-page-script')).map(script => script.getAttribute('src'));
                     return JSON.stringify({
                         testId,
                         hasSection: Boolean(section),
                         hasEditor: Boolean(editor),
-                        toolbarCount: editor?.querySelectorAll('.tnt-rich-text-editor-toolbar-button').length ?? 0,
+                        toolbarCount: editor?.querySelectorAll('.nt-rich-text-editor-toolbar-button').length ?? 0,
                         surfaceText: surface?.textContent?.slice(0, 160) ?? null,
                         surfaceHtml: surface?.innerHTML?.slice(0, 240) ?? null,
-                        hiddenValue: editor?.querySelector('.tnt-rich-text-editor-hidden-input')?.value?.slice(0, 160) ?? null,
-                        pageScriptDefined: Boolean(customElements.get('tnt-page-script')),
+                        hiddenValue: editor?.querySelector('.nt-rich-text-editor-hidden-input')?.value?.slice(0, 160) ?? null,
+                        pageScriptDefined: Boolean(customElements.get('nt-page-script')),
                         pageScripts
                     });
                 }
@@ -806,7 +806,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
             ([testId, html, textToSelect]) => {
                 const section = document.querySelector(`[data-testid="${testId}"]`);
                 const editor = section?.querySelector('nt-rich-text-editor');
-                const surface = editor?.querySelector('.tnt-rich-text-editor-surface');
+                const surface = editor?.querySelector('.nt-rich-text-editor-surface');
                 if (!(surface instanceof HTMLElement)) {
                     throw new Error(`Editor surface not found for ${testId}`);
                 }
@@ -855,7 +855,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
             ([testId, html]) => {
                 const section = document.querySelector(`[data-testid="${testId}"]`);
                 const editor = section?.querySelector('nt-rich-text-editor');
-                const surface = editor?.querySelector('.tnt-rich-text-editor-surface');
+                const surface = editor?.querySelector('.nt-rich-text-editor-surface');
                 if (!(surface instanceof HTMLElement)) {
                     throw new Error(`Editor surface not found for ${testId}`);
                 }
@@ -911,7 +911,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
 
     private async Task ClickToolbarButtonAsync(ToolbarControlCase controlCase) {
         var valueSelector = controlCase.Value is null ? string.Empty : $"[data-value='{controlCase.Value}']";
-        var button = EditorRoot(ServerEditorTestId).Locator($".tnt-rich-text-editor-toolbar-button[data-command='{controlCase.Command}']{valueSelector}").First;
+        var button = EditorRoot(ServerEditorTestId).Locator($".nt-rich-text-editor-toolbar-button[data-command='{controlCase.Command}']{valueSelector}").First;
         await button.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Visible, Timeout = 5000 });
         (await button.IsEnabledAsync()).Should().BeTrue();
         await button.ClickAsync();
@@ -939,7 +939,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
                 """
                 ([testId, expectedValue]) => {
                     const section = document.querySelector(`[data-testid="${testId}"]`);
-                    const value = section?.querySelector('.tnt-rich-text-editor-hidden-input')?.value ?? '';
+                    const value = section?.querySelector('.nt-rich-text-editor-hidden-input')?.value ?? '';
                     return value.includes(expectedValue);
                 }
                 """,
@@ -952,12 +952,12 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
                 ([testId, expectedValue]) => {
                     const section = document.querySelector(`[data-testid="${testId}"]`);
                     const editor = section?.querySelector('nt-rich-text-editor');
-                    const surface = editor?.querySelector('.tnt-rich-text-editor-surface');
+                    const surface = editor?.querySelector('.nt-rich-text-editor-surface');
                     return JSON.stringify({
                         testId,
                         expectedValue,
-                        hiddenValue: editor?.querySelector('.tnt-rich-text-editor-hidden-input')?.value ?? null,
-                        sourceValue: editor?.querySelector('.tnt-rich-text-editor-value')?.textContent ?? null,
+                        hiddenValue: editor?.querySelector('.nt-rich-text-editor-hidden-input')?.value ?? null,
+                        sourceValue: editor?.querySelector('.nt-rich-text-editor-value')?.textContent ?? null,
                         surfaceHtml: surface?.innerHTML ?? null,
                         activeElement: document.activeElement?.outerHTML?.slice(0, 240) ?? null,
                         openPanels: Array.from(editor?.querySelectorAll('[data-tool-command][aria-hidden="false"]') ?? []).map(panel => panel.getAttribute('data-role'))

@@ -28,7 +28,7 @@ describe('NTSnackbar module', () => {
    }
 
    function loadHostFromPageScript(host = createHost()) {
-      const pageScript = document.createElement('tnt-page-script');
+      const pageScript = document.createElement('nt-page-script');
       host.after(pageScript);
       onLoad(pageScript);
       return host;
@@ -59,7 +59,7 @@ describe('NTSnackbar module', () => {
       const host = createHost();
       host.showPopover = jest.fn();
       host.hidePopover = jest.fn();
-      const pageScript = document.createElement('tnt-page-script');
+      const pageScript = document.createElement('nt-page-script');
       host.after(pageScript);
 
       onLoad(pageScript);
@@ -87,7 +87,7 @@ describe('NTSnackbar module', () => {
       dialog.removeAttribute('open');
       await Promise.resolve();
 
-      expect(host.nextElementSibling.localName).toBe('tnt-page-script');
+      expect(host.nextElementSibling.localName).toBe('nt-page-script');
    });
 
    test('queueSnackbar waits for a host when called before setup', () => {
@@ -188,9 +188,9 @@ describe('NTSnackbar module', () => {
          'Undo',
          9,
          true,
-         'var(--tnt-color-primary)',
-         'var(--tnt-color-on-primary)',
-         'var(--tnt-color-secondary)',
+         'var(--nt-color-primary)',
+         'var(--nt-color-on-primary)',
+         'var(--nt-color-secondary)',
          dotNetReference,
          'InvokeActionFromJavaScript',
          'NotifyClosedFromJavaScript');
@@ -200,9 +200,9 @@ describe('NTSnackbar module', () => {
       expect(snackbar.querySelector('.nt-snackbar-message').textContent).toBe('Saved');
       expect(snackbar.querySelector('.nt-snackbar-action').textContent).toBe('Undo');
       expect(snackbar.querySelector('.nt-snackbar-close')).not.toBeNull();
-      expect(snackbar.style.getPropertyValue('--nt-snackbar-background-color')).toBe('var(--tnt-color-primary)');
-      expect(snackbar.style.getPropertyValue('--nt-snackbar-text-color')).toBe('var(--tnt-color-on-primary)');
-      expect(snackbar.style.getPropertyValue('--nt-snackbar-action-color')).toBe('var(--tnt-color-secondary)');
+      expect(snackbar.style.getPropertyValue('--nt-snackbar-background-color')).toBe('var(--nt-color-primary)');
+      expect(snackbar.style.getPropertyValue('--nt-snackbar-text-color')).toBe('var(--nt-color-on-primary)');
+      expect(snackbar.style.getPropertyValue('--nt-snackbar-action-color')).toBe('var(--nt-color-secondary)');
    });
 
    test('addSnackbar renders action and close buttons for action snackbars', async () => {

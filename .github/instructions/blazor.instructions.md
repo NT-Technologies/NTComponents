@@ -28,7 +28,7 @@ Follow this layout for every component:
 
 ## Styling & UI
 - **Format:** Use **SCSS** (`.razor.scss`) exclusively. No `.css` files.
-- **Library:** Prefer [**TnTComponents**](https://github.com/Notallthatevil/TnTComponents.git) for UI elements and consistent styling.
+- **Library:** Prefer [**NTComponents**](https://github.com/NT-Technologies/NTComponents) for UI elements and consistent styling.
 - **Accessibility:** Use semantic HTML and ARIA attributes. Ensure responsiveness.
 
 ## Testing
@@ -40,4 +40,4 @@ Follow this layout for every component:
 1. **Create:** Generate `.razor`, `.razor.cs`, and `.razor.scss` files simultaneously.
 2. **Refactor:** If a component grows too large, suggest splitting it.
 3. **Verify:** Ensure tests pass locally (`dotnet test`) before finalizing.
-4. **Clarify:** If [**TnTComponents**](https://github.com/Notallthatevil/TnTComponents.git) usage or folder structure is unclear, ask before generating code.
+4. **Clarify:** If [**NTComponents**](https://github.com/NT-Technologies/NTComponents) usage or folder structure is unclear, ask before generating code.

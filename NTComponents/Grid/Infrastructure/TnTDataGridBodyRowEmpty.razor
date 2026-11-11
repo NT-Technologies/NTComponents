@@ -1,9 +1,0 @@
-﻿@typeparam TGridItem
-@inherits TnTDataGridRow<TGridItem>
-@attribute [CascadingTypeParameter(nameof(TGridItem))]
-
-<tr style="@($"height: {Context.Grid.ItemSize}px")" aria-rowindex="2">
-    <td class="tnt-empty-content-row" colspan="@ColumnCount">
-        No content to show.
-    </td>
-</tr>

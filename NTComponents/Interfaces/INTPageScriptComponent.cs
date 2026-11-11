@@ -24,9 +24,3 @@ public interface INTPageScriptComponent<[DynamicallyAccessedMembers(DynamicallyA
     /// </summary>
     string? JsModulePath { get; }
 }
-
-/// <summary>
-///     Obsolete compatibility alias for <see cref="INTPageScriptComponent{TComponent}" />.
-/// </summary>
-[Obsolete("ITnTPageScriptComponent is obsolete. Use INTPageScriptComponent instead.")]
-public interface ITnTPageScriptComponent<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] TComponent> : INTPageScriptComponent<TComponent>, ITnTComponentBase where TComponent : ComponentBase;

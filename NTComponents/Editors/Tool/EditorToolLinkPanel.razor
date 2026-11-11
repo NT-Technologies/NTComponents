@@ -1,7 +1,7 @@
 @namespace NTComponents
 @using Microsoft.AspNetCore.Components
 
-<div class="tnt-rich-text-editor-inline-tool tnt-rich-text-editor-link-editor"
+<div class="nt-rich-text-editor-inline-tool nt-rich-text-editor-link-editor"
      popover="manual"
      data-tool-command="link"
      data-role="link-editor"
@@ -9,7 +9,7 @@
      aria-label="Link settings"
      hidden
      aria-hidden="true">
-    <div class="tnt-rich-text-editor-inline-tool-fields">
+    <div class="nt-rich-text-editor-inline-tool-fields">
         <NTInputText Label="Link URL"
                      @bind-Value="_linkUrl"
                      Appearance="NTFormAppearance.Outlined"
@@ -44,7 +44,7 @@
                      SubmitValue="false"
                      data-role="link-title" />
     </div>
-    <div class="tnt-rich-text-editor-inline-tool-actions">
+    <div class="nt-rich-text-editor-inline-tool-actions">
         <NTButton Label="Apply link"
                   ButtonSize="NTSize.Small"
                   Disabled="@Disabled"

@@ -42,11 +42,11 @@ public class IQueryableExt_Tests {
     public void Apply_WithAllParameters_AppliesSortingPagingAndFiltering() {
         // Arrange
         var query = _testItems.AsQueryable();
-        var request = new TnTItemsProviderRequest {
+        var request = new NTItemsProviderRequest {
             StartIndex = 2,
             Count = 3,
-            SortOnProperties = [
-                new KeyValuePair<string, SortDirection>(nameof(TestItem.Age), SortDirection.Ascending)
+            Sorts = [
+                $"{nameof(TestItem.Age)},Ascending"
             ]
         };
 
@@ -64,7 +64,7 @@ public class IQueryableExt_Tests {
     public void Apply_WithCount_LimitsResultsToSpecifiedCount() {
         // Arrange
         var query = _testItems.AsQueryable();
-        var request = new TnTItemsProviderRequest {
+        var request = new NTItemsProviderRequest {
             StartIndex = 0,
             Count = 5
         };
@@ -82,7 +82,7 @@ public class IQueryableExt_Tests {
     public void Apply_WithCountGreaterThanAvailable_ReturnsAllAvailableItems() {
         // Arrange
         var query = _testItems.AsQueryable();
-        var request = new TnTItemsProviderRequest {
+        var request = new NTItemsProviderRequest {
             StartIndex = 8,
             Count = 10
         };
@@ -100,11 +100,11 @@ public class IQueryableExt_Tests {
     public void Apply_WithDescendingSort_SortsCorrectly() {
         // Arrange
         var query = _testItems.AsQueryable();
-        var request = new TnTItemsProviderRequest {
+        var request = new NTItemsProviderRequest {
             StartIndex = 0,
             Count = 5,
-            SortOnProperties = [
-                new KeyValuePair<string, SortDirection>(nameof(TestItem.Score), SortDirection.Descending)
+            Sorts = [
+                $"{nameof(TestItem.Score)},Descending"
             ]
         };
 
@@ -124,11 +124,11 @@ public class IQueryableExt_Tests {
     public void Apply_WithEmptyQuery_ReturnsEmptyResult() {
         // Arrange
         var query = Enumerable.Empty<TestItem>().AsQueryable();
-        var request = new TnTItemsProviderRequest {
+        var request = new NTItemsProviderRequest {
             StartIndex = 0,
             Count = 10,
-            SortOnProperties = [
-                new KeyValuePair<string, SortDirection>(nameof(TestItem.Name), SortDirection.Ascending)
+            Sorts = [
+                $"{nameof(TestItem.Name)},Ascending"
             ]
         };
 
@@ -143,10 +143,10 @@ public class IQueryableExt_Tests {
     public void Apply_WithEmptySortOnProperties_SkipsSorting() {
         // Arrange
         var query = _testItems.AsQueryable();
-        var request = new TnTItemsProviderRequest {
+        var request = new NTItemsProviderRequest {
             StartIndex = 0,
             Count = 3,
-            SortOnProperties = []
+            Sorts = []
         };
 
         // Act
@@ -169,12 +169,12 @@ public class IQueryableExt_Tests {
             new() { Id = 12, Name = "Leo", Age = 25, Score = 85.0m, CreatedDate = new DateTime(2023, 12, 1) }
         };
         var query = items.AsQueryable();
-        var request = new TnTItemsProviderRequest {
+        var request = new NTItemsProviderRequest {
             StartIndex = 0,
             Count = 5,
-            SortOnProperties = [
-                new KeyValuePair<string, SortDirection>(nameof(TestItem.Age), SortDirection.Ascending),
-                new KeyValuePair<string, SortDirection>(nameof(TestItem.Score), SortDirection.Descending)
+            Sorts = [
+                $"{nameof(TestItem.Age)},Ascending",
+                $"{nameof(TestItem.Score)},Descending"
             ]
         };
 
@@ -203,10 +203,10 @@ public class IQueryableExt_Tests {
             new() { Id = 3, Name = "Third", Details = new NestedDetails { Category = "C", Value = 15 } }
         };
         var query = nestedItems.AsQueryable();
-        var request = new TnTItemsProviderRequest {
+        var request = new NTItemsProviderRequest {
             StartIndex = 0,
-            SortOnProperties = [
-                new KeyValuePair<string, SortDirection>("Details.Category", SortDirection.Ascending)
+            Sorts = [
+                $"{"Details.Category"},Ascending"
             ]
         };
 
@@ -224,7 +224,7 @@ public class IQueryableExt_Tests {
     public void Apply_WithNoCount_ReturnsAllItemsFromStartIndex() {
         // Arrange
         var query = _testItems.AsQueryable();
-        var request = new TnTItemsProviderRequest {
+        var request = new NTItemsProviderRequest {
             StartIndex = 7,
             Count = null
         };
@@ -243,10 +243,10 @@ public class IQueryableExt_Tests {
     public void Apply_WithNullSortOnProperties_SkipsSorting() {
         // Arrange
         var query = _testItems.AsQueryable();
-        var request = new TnTItemsProviderRequest {
+        var request = new NTItemsProviderRequest {
             StartIndex = 0,
             Count = 3,
-            SortOnProperties = null!
+            Sorts = null!
         };
 
         // Act
@@ -264,7 +264,7 @@ public class IQueryableExt_Tests {
     public void Apply_WithOnlyCount_ReturnsFirstNItems() {
         // Arrange
         var query = _testItems.AsQueryable();
-        var request = new TnTItemsProviderRequest {
+        var request = new NTItemsProviderRequest {
             StartIndex = 0,
             Count = 3
         };
@@ -283,10 +283,10 @@ public class IQueryableExt_Tests {
     public void Apply_WithOnlySorting_AppliesSortToAllItems() {
         // Arrange
         var query = _testItems.AsQueryable();
-        var request = new TnTItemsProviderRequest {
+        var request = new NTItemsProviderRequest {
             StartIndex = 0,
-            SortOnProperties = [
-                new KeyValuePair<string, SortDirection>(nameof(TestItem.Name), SortDirection.Ascending)
+            Sorts = [
+                $"{nameof(TestItem.Name)},Ascending"
             ]
         };
 
@@ -305,7 +305,7 @@ public class IQueryableExt_Tests {
     public void Apply_WithOnlyStartIndex_SkipsSpecifiedItems() {
         // Arrange
         var query = _testItems.AsQueryable();
-        var request = new TnTItemsProviderRequest {
+        var request = new NTItemsProviderRequest {
             StartIndex = 5,
             Count = null
         };
@@ -323,11 +323,11 @@ public class IQueryableExt_Tests {
     public void Apply_WithSortingAndPaging_AppliesSortingBeforePaging() {
         // Arrange
         var query = _testItems.AsQueryable();
-        var request = new TnTItemsProviderRequest {
+        var request = new NTItemsProviderRequest {
             StartIndex = 1,
             Count = 2,
-            SortOnProperties = [
-                new KeyValuePair<string, SortDirection>(nameof(TestItem.Age), SortDirection.Ascending)
+            Sorts = [
+                $"{nameof(TestItem.Age)},Ascending"
             ]
         };
 
@@ -344,7 +344,7 @@ public class IQueryableExt_Tests {
     public void Apply_WithStartIndexBeyondAvailable_ReturnsEmptyResult() {
         // Arrange
         var query = _testItems.AsQueryable();
-        var request = new TnTItemsProviderRequest {
+        var request = new NTItemsProviderRequest {
             StartIndex = 100,
             Count = 10
         };
@@ -360,7 +360,7 @@ public class IQueryableExt_Tests {
     public void Apply_WithZeroCount_ReturnsEmptyResult() {
         // Arrange
         var query = _testItems.AsQueryable();
-        var request = new TnTItemsProviderRequest {
+        var request = new NTItemsProviderRequest {
             StartIndex = 0,
             Count = 0
         };
@@ -376,10 +376,10 @@ public class IQueryableExt_Tests {
     public void Apply_WithoutAnyParameters_ReturnsOriginalQuery() {
         // Arrange
         var query = _testItems.AsQueryable();
-        var request = new TnTItemsProviderRequest {
+        var request = new NTItemsProviderRequest {
             StartIndex = 0,
             Count = null,
-            SortOnProperties = []
+            Sorts = []
         };
 
         // Act
@@ -394,7 +394,7 @@ public class IQueryableExt_Tests {
     public void Apply_PreservesQueryableType_AllowingFurtherChaining() {
         // Arrange
         var query = _testItems.AsQueryable();
-        var request = new TnTItemsProviderRequest {
+        var request = new NTItemsProviderRequest {
             StartIndex = 0,
             Count = 5
         };

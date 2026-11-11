@@ -18,7 +18,7 @@
     }
 
     .eyebrow {
-        color: var(--tnt-color-primary);
+        color: var(--nt-color-primary);
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
@@ -42,12 +42,12 @@
         padding-inline: 16px;
         border: 0;
         border-radius: 24px;
-        color: var(--tnt-color-on-primary-container);
-        background: var(--tnt-color-primary-container);
+        color: var(--nt-color-on-primary-container);
+        background: var(--nt-color-primary-container);
         cursor: pointer;
 
         &:focus-visible {
-            outline: 3px solid var(--tnt-color-primary);
+            outline: 3px solid var(--nt-color-primary);
             outline-offset: 2px;
         }
     }
@@ -68,7 +68,7 @@
             min-inline-size: 0;
             padding: 8px;
             border-radius: 20px;
-            background: var(--tnt-color-surface-container);
+            background: var(--nt-color-surface-container);
         }
 
         img {
@@ -85,7 +85,7 @@
         }
 
         span {
-            color: var(--tnt-color-on-surface-variant);
+            color: var(--nt-color-on-surface-variant);
         }
     }
 
@@ -104,7 +104,7 @@
 
     .status {
         min-block-size: 24px;
-        color: var(--tnt-color-on-surface-variant);
+        color: var(--nt-color-on-surface-variant);
     }
 }
 

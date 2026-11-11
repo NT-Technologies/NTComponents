@@ -38,7 +38,7 @@
             padding: 8px;
             border-radius: 8px;
             background: colors.$nt-color-surface-container;
-            @include elevation.tnt-elevation(1, false, elevation.$nt-elevation-shadows);
+            @include elevation.nt-elevation(1, false, elevation.$nt-elevation-shadows);
 
             .date-navigation {
                 display: inline-flex;
@@ -88,9 +88,9 @@
             border-inline-end: 1px solid colors.$nt-color-outline-variant;
             background: colors.$nt-color-surface-container-low;
             color: colors.$nt-color-on-surface-variant;
-            font-size: typescale.$tnt-typescale-label-large-font-size;
-            font-weight: typescale.$tnt-typescale-label-large-font-weight;
-            line-height: typescale.$tnt-typescale-label-large-line-height;
+            font-size: typescale.$nt-typescale-label-large-font-size;
+            font-weight: typescale.$nt-typescale-label-large-font-weight;
+            line-height: typescale.$nt-typescale-label-large-line-height;
             letter-spacing: 0;
         }
 
@@ -127,9 +127,9 @@
                 min-inline-size: 32px;
                 min-block-size: 32px;
                 border-radius: 50%;
-                font-size: typescale.$tnt-typescale-label-large-font-size;
-                font-weight: typescale.$tnt-typescale-label-large-font-weight;
-                line-height: typescale.$tnt-typescale-label-large-line-height;
+                font-size: typescale.$nt-typescale-label-large-font-size;
+                font-weight: typescale.$nt-typescale-label-large-font-weight;
+                line-height: typescale.$nt-typescale-label-large-line-height;
                 letter-spacing: 0;
             }
         }
@@ -174,9 +174,9 @@
 
             .day-name {
                 color: colors.$nt-color-on-surface-variant;
-                font-size: typescale.$tnt-typescale-label-medium-font-size;
-                font-weight: typescale.$tnt-typescale-label-medium-font-weight;
-                line-height: typescale.$tnt-typescale-label-medium-line-height;
+                font-size: typescale.$nt-typescale-label-medium-font-size;
+                font-weight: typescale.$nt-typescale-label-medium-font-weight;
+                line-height: typescale.$nt-typescale-label-medium-line-height;
                 letter-spacing: 0;
                 text-transform: uppercase;
             }
@@ -214,9 +214,9 @@
                 align-items: center;
                 justify-content: flex-end;
                 padding-inline-end: 8px;
-                font-size: typescale.$tnt-typescale-label-small-font-size;
-                font-weight: typescale.$tnt-typescale-label-small-font-weight;
-                line-height: typescale.$tnt-typescale-label-small-line-height;
+                font-size: typescale.$nt-typescale-label-small-font-size;
+                font-weight: typescale.$nt-typescale-label-small-font-weight;
+                line-height: typescale.$nt-typescale-label-small-line-height;
                 letter-spacing: 0;
             }
         }
@@ -251,9 +251,9 @@
             box-sizing: border-box;
             border-block-end: 1px solid colors.$nt-color-outline-variant;
             text-align: end;
-            font-size: typescale.$tnt-typescale-label-small-font-size;
-            font-weight: typescale.$tnt-typescale-label-small-font-weight;
-            line-height: typescale.$tnt-typescale-label-small-line-height;
+            font-size: typescale.$nt-typescale-label-small-font-size;
+            font-weight: typescale.$nt-typescale-label-small-font-weight;
+            line-height: typescale.$nt-typescale-label-small-line-height;
             letter-spacing: 0;
         }
 
@@ -290,7 +290,7 @@
             background: var(--event-bg, var(--nt-scheduler-event-bg));
             color: var(--event-fg, var(--nt-scheduler-event-fg));
             cursor: pointer;
-            @include elevation.tnt-elevation(1, false, elevation.$nt-elevation-shadows);
+            @include elevation.nt-elevation(1, false, elevation.$nt-elevation-shadows);
 
             &.event-draggable {
                 cursor: grab;
@@ -314,16 +314,16 @@
 
             .event-title {
                 white-space: nowrap;
-                font-size: typescale.$tnt-typescale-label-medium-font-size;
-                font-weight: typescale.$tnt-typescale-label-medium-font-weight;
-                line-height: typescale.$tnt-typescale-label-medium-line-height;
+                font-size: typescale.$nt-typescale-label-medium-font-size;
+                font-weight: typescale.$nt-typescale-label-medium-font-weight;
+                line-height: typescale.$nt-typescale-label-medium-line-height;
                 letter-spacing: 0;
             }
 
             .event-description {
-                font-size: typescale.$tnt-typescale-body-small-font-size;
-                font-weight: typescale.$tnt-typescale-body-small-font-weight;
-                line-height: typescale.$tnt-typescale-body-small-line-height;
+                font-size: typescale.$nt-typescale-body-small-font-size;
+                font-weight: typescale.$nt-typescale-body-small-font-weight;
+                line-height: typescale.$nt-typescale-body-small-line-height;
                 letter-spacing: 0;
             }
 
@@ -458,7 +458,7 @@
         opacity: .88;
         pointer-events: none;
         transform: translate3d(var(--nt-scheduler-preview-x), var(--nt-scheduler-preview-y), 0);
-        @include elevation.tnt-elevation(3, false, elevation.$nt-elevation-shadows);
+        @include elevation.nt-elevation(3, false, elevation.$nt-elevation-shadows);
     }
 
     &[data-nt-scheduler-range-select-enabled='true'] {

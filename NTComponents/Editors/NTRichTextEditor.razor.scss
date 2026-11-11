@@ -59,7 +59,7 @@ $nt-rich-text-panel-max-width: 36rem;
 }
 
 .nt-input.nt-rich-text-editor {
-    .tnt-rich-text-editor-shell {
+    .nt-rich-text-editor-shell {
         display: grid;
         width: 100%;
         min-width: 0;
@@ -67,12 +67,12 @@ $nt-rich-text-panel-max-width: 36rem;
         padding-block: $nt-rich-text-content-padding-block;
     }
 
-    .tnt-rich-text-editor-hidden-input,
-    .tnt-rich-text-editor-value {
+    .nt-rich-text-editor-hidden-input,
+    .nt-rich-text-editor-value {
         display: none;
     }
 
-    .tnt-rich-text-editor-toolbar {
+    .nt-rich-text-editor-toolbar {
         display: flex;
         align-items: center;
         flex-wrap: wrap;
@@ -81,7 +81,7 @@ $nt-rich-text-panel-max-width: 36rem;
         border-block-end: 1px solid color-mix(in srgb, var(--nt-input-outline-color) 48%, transparent);
     }
 
-    .tnt-rich-text-editor-toolbar-divider {
+    .nt-rich-text-editor-toolbar-divider {
         align-self: stretch;
         width: 1px;
         min-height: 28px;
@@ -90,7 +90,7 @@ $nt-rich-text-panel-max-width: 36rem;
         background-color: color-mix(in srgb, var(--nt-input-outline-color) 72%, transparent);
     }
 
-    .tnt-rich-text-editor-toolbar-button {
+    .nt-rich-text-editor-toolbar-button {
         @include typescale.nt-label-large;
 
         position: relative;
@@ -132,17 +132,17 @@ $nt-rich-text-panel-max-width: 36rem;
         }
     }
 
-    .tnt-rich-text-editor-toolbar-icon {
+    .nt-rich-text-editor-toolbar-icon {
         font-size: $nt-rich-text-toolbar-icon-size;
         line-height: $nt-rich-text-toolbar-icon-size;
     }
 
-    .tnt-rich-text-editor-toolbar-button-text {
+    .nt-rich-text-editor-toolbar-button-text {
         padding-inline: 4px;
     }
 
-    .tnt-rich-text-editor-surface,
-    .tnt-rich-text-editor-source {
+    .nt-rich-text-editor-surface,
+    .nt-rich-text-editor-source {
         @include scrollbar.nt-scrollbar;
 
         display: block;
@@ -156,25 +156,25 @@ $nt-rich-text-panel-max-width: 36rem;
         }
     }
 
-    .tnt-rich-text-editor-source-container {
+    .nt-rich-text-editor-source-container {
         position: relative;
         display: block;
         min-width: 0;
 
-        &:has(> .tnt-rich-text-editor-source[hidden]) {
+        &:has(> .nt-rich-text-editor-source[hidden]) {
             display: none;
         }
     }
 
-    .tnt-rich-text-editor-source,
-    .tnt-rich-text-editor-source-highlight {
+    .nt-rich-text-editor-source,
+    .nt-rich-text-editor-source-highlight {
         font-family: monospace;
         white-space: pre-wrap;
         overflow-wrap: anywhere;
         tab-size: 4;
     }
 
-    .tnt-rich-text-editor-source-highlight {
+    .nt-rich-text-editor-source-highlight {
         @include typescale.nt-body-large;
 
         position: absolute;
@@ -206,7 +206,7 @@ $nt-rich-text-panel-max-width: 36rem;
         }
     }
 
-    .tnt-rich-text-editor-source {
+    .nt-rich-text-editor-source {
         position: relative;
         width: 100%;
         min-height: 0;
@@ -220,7 +220,7 @@ $nt-rich-text-panel-max-width: 36rem;
         }
     }
 
-    .tnt-rich-text-editor-surface {
+    .nt-rich-text-editor-surface {
         min-height: $nt-rich-text-surface-min-height;
         white-space: normal;
         word-break: break-word;
@@ -378,7 +378,7 @@ $nt-rich-text-panel-max-width: 36rem;
     }
 
     ::deep {
-        .tnt-rich-text-editor-inline-tool {
+        .nt-rich-text-editor-inline-tool {
             display: grid;
             gap: 8px;
             padding: 8px;
@@ -406,30 +406,30 @@ $nt-rich-text-panel-max-width: 36rem;
         }
 
         // Fixed-size content: the panel shrinks to it instead of taking the full panel width.
-        .tnt-rich-text-editor-text-color-editor:popover-open,
-        .tnt-rich-text-editor-table-editor:popover-open:has(> [data-role='table-insert']:not([hidden])) {
+        .nt-rich-text-editor-text-color-editor:popover-open,
+        .nt-rich-text-editor-table-editor:popover-open:has(> [data-role='table-insert']:not([hidden])) {
             width: auto;
         }
 
-        .tnt-rich-text-editor-inline-tool-fields {
+        .nt-rich-text-editor-inline-tool-fields {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
             gap: 8px;
             align-items: start;
         }
 
-        .tnt-rich-text-editor-inline-tool-actions {
+        .nt-rich-text-editor-inline-tool-actions {
             display: flex;
             flex-wrap: wrap;
             gap: 6px;
             justify-content: flex-end;
         }
 
-        .tnt-rich-text-editor-table-editor .tnt-rich-text-editor-inline-tool-fields {
+        .nt-rich-text-editor-table-editor .nt-rich-text-editor-inline-tool-fields {
             grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
         }
 
-        .tnt-rich-text-editor-table-insert {
+        .nt-rich-text-editor-table-insert {
             display: grid;
             gap: 4px;
             justify-items: start;
@@ -439,7 +439,7 @@ $nt-rich-text-panel-max-width: 36rem;
             }
         }
 
-        .tnt-rich-text-editor-table-edit {
+        .nt-rich-text-editor-table-edit {
             display: grid;
             gap: 8px;
 
@@ -448,7 +448,7 @@ $nt-rich-text-panel-max-width: 36rem;
             }
         }
 
-        .tnt-rich-text-editor-table-grid {
+        .nt-rich-text-editor-table-grid {
             display: grid;
             grid-template-columns: repeat(8, $nt-rich-text-table-grid-cell-size);
             gap: 2px;
@@ -482,64 +482,64 @@ $nt-rich-text-panel-max-width: 36rem;
             }
         }
 
-        .tnt-rich-text-editor-table-grid-label {
+        .nt-rich-text-editor-table-grid-label {
             @include typescale.nt-label-large;
         }
 
-        .tnt-rich-text-editor-text-color-editor .tnt-rich-text-editor-inline-tool-fields {
+        .nt-rich-text-editor-text-color-editor .nt-rich-text-editor-inline-tool-fields {
             grid-template-columns: minmax(0, 88px);
         }
 
         // The image source (URL or uploaded file) gets full rows; the chooser and file name need the room.
-        .tnt-rich-text-editor-image-editor .nt-input:has([data-role='image-url']),
-        .tnt-rich-text-editor-image-editor .nt-file-upload {
+        .nt-rich-text-editor-image-editor .nt-input:has([data-role='image-url']),
+        .nt-rich-text-editor-image-editor .nt-file-upload {
             grid-column: 1 / -1;
         }
 
-        .tnt-rich-text-editor-link-editor .tnt-rich-text-editor-inline-tool-fields {
+        .nt-rich-text-editor-link-editor .nt-rich-text-editor-inline-tool-fields {
             grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
         }
     }
 
     &.nt-input-comfortable {
-        .tnt-rich-text-editor-surface {
+        .nt-rich-text-editor-surface {
             min-height: $nt-rich-text-surface-min-height-comfortable;
         }
     }
 
     &.nt-input-dense {
-        .tnt-rich-text-editor-source-highlight {
+        .nt-rich-text-editor-source-highlight {
             @include typescale.nt-body-medium;
 
             font-family: monospace;
         }
 
-        .tnt-rich-text-editor-shell {
+        .nt-rich-text-editor-shell {
             padding-block: $nt-rich-text-content-padding-block-dense;
         }
 
-        .tnt-rich-text-editor-toolbar-button {
+        .nt-rich-text-editor-toolbar-button {
             min-width: $nt-rich-text-toolbar-button-size-dense;
             min-height: $nt-rich-text-toolbar-button-size-dense;
             padding: 6px;
         }
 
-        .tnt-rich-text-editor-surface {
+        .nt-rich-text-editor-surface {
             min-height: $nt-rich-text-surface-min-height-dense;
         }
     }
 
     @media (forced-colors: active) {
-        .tnt-rich-text-editor-source-highlight {
+        .nt-rich-text-editor-source-highlight {
             display: none;
         }
 
-        .tnt-rich-text-editor-source {
+        .nt-rich-text-editor-source {
             color: CanvasText;
         }
     }
 
-    &:has(.tnt-rich-text-editor-surface[data-empty='false']) {
+    &:has(.nt-rich-text-editor-surface[data-empty='false']) {
         .nt-input-control,
         .nt-input-prefix,
         .nt-input-suffix {
@@ -547,36 +547,36 @@ $nt-rich-text-panel-max-width: 36rem;
         }
     }
 
-    &:not(.nt-input-no-label):has(.tnt-rich-text-editor-surface[data-empty='false']) {
+    &:not(.nt-input-no-label):has(.nt-rich-text-editor-surface[data-empty='false']) {
         @include nt-rich-text-label-floating;
     }
 
-    &.nt-input-filled.nt-input-comfortable:not(.nt-input-no-label):has(.tnt-rich-text-editor-surface[data-empty='false']) {
+    &.nt-input-filled.nt-input-comfortable:not(.nt-input-no-label):has(.nt-rich-text-editor-surface[data-empty='false']) {
         .nt-input-label {
             inset-block-start: $nt-rich-text-filled-label-top-comfortable;
         }
     }
 
-    &.nt-input-filled.nt-input-standard:not(.nt-input-no-label):has(.tnt-rich-text-editor-surface[data-empty='false']) {
+    &.nt-input-filled.nt-input-standard:not(.nt-input-no-label):has(.nt-rich-text-editor-surface[data-empty='false']) {
         .nt-input-label {
             inset-block-start: $nt-rich-text-filled-label-top-standard;
         }
     }
 
-    &.nt-input-filled.nt-input-dense:not(.nt-input-no-label):has(.tnt-rich-text-editor-surface[data-empty='false']) {
+    &.nt-input-filled.nt-input-dense:not(.nt-input-no-label):has(.nt-rich-text-editor-surface[data-empty='false']) {
         .nt-input-label {
             inset-block-start: $nt-rich-text-filled-label-top-dense;
         }
     }
 
-    &.nt-input-outlined:not(.nt-input-no-label):has(.tnt-rich-text-editor-surface[data-empty='false']) {
+    &.nt-input-outlined:not(.nt-input-no-label):has(.nt-rich-text-editor-surface[data-empty='false']) {
         @include nt-rich-text-outlined-label-floating;
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
     .nt-input.nt-rich-text-editor {
-        .tnt-rich-text-editor-toolbar-button {
+        .nt-rich-text-editor-toolbar-button {
             transition-duration: $nt-rich-text-motion-duration-reduced;
             transition-delay: $nt-rich-text-motion-duration-reduced;
         }

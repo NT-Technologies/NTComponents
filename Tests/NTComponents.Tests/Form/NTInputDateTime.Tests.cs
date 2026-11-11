@@ -61,7 +61,7 @@ public class NTInputDateTime_Tests : BunitContext {
             .Add(p => p.EnableCustomPicker, true)
             .Add(p => p.Format, "yyyy-MM-ddTHH:mm"));
 
-        cut.Find("input[data-tnt-dtp-input='true']").GetAttribute("format").Should().Be("yyyy-MM-ddTHH:mm");
+        cut.Find("input[data-nt-dtp-input='true']").GetAttribute("format").Should().Be("yyyy-MM-ddTHH:mm");
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class NTInputDateTime_Tests : BunitContext {
             .Add(p => p.EnableCustomPicker, true)
             .Add(p => p.Format, "MM/dd/yyyy hh:mm tt"));
 
-        var input = cut.Find("input[data-tnt-dtp-input='true']");
+        var input = cut.Find("input[data-nt-dtp-input='true']");
         input.GetAttribute("type").Should().Be("text");
         input.GetAttribute("value").Should().Be("05/19/2026 02:30 PM");
         input.GetAttribute("placeholder").Should().Be("MM/dd/yyyy hh:mm tt");
@@ -299,12 +299,12 @@ public class NTInputDateTime_Tests : BunitContext {
     [Fact]
     public void Equivalent_Rerender_Preserves_Custom_Picker_Contract() {
         var cut = RenderDateTime(configure: parameters => parameters.Add(p => p.EnableCustomPicker, true));
-        var originalTarget = cut.Find("input").GetAttribute("data-tnt-dtp-target");
+        var originalTarget = cut.Find("input").GetAttribute("data-nt-dtp-target");
 
         cut.Render();
 
-        cut.Find("input").GetAttribute("data-tnt-dtp-target").Should().Be(originalTarget);
-        cut.Find(".tnt-dtp-trigger-icon").GetAttribute("style").Should().Contain("'FILL' 1");
+        cut.Find("input").GetAttribute("data-nt-dtp-target").Should().Be(originalTarget);
+        cut.Find(".nt-dtp-trigger-icon").GetAttribute("style").Should().Contain("'FILL' 1");
     }
 
     // Behavior source: PickerTriggerIcon accepts any NTIcon and is rendered as the custom picker's trigger icon.
@@ -316,7 +316,7 @@ public class NTInputDateTime_Tests : BunitContext {
 
         var icon = cut.Find(".test-picker-icon");
         icon.TextContent.Should().Be("custom-clock");
-        icon.GetAttribute("class").Should().Contain("tnt-dtp-trigger-icon");
+        icon.GetAttribute("class").Should().Contain("nt-dtp-trigger-icon");
     }
 
     // Behavior source: Disabled prevents interaction with both the native field and its custom picker trigger.
@@ -326,7 +326,7 @@ public class NTInputDateTime_Tests : BunitContext {
             .Add(p => p.EnableCustomPicker, true)
             .Add(p => p.Disabled, true));
 
-        cut.Find("button[data-tnt-dtp-trigger='true']").HasAttribute("disabled").Should().BeTrue();
+        cut.Find("button[data-nt-dtp-trigger='true']").HasAttribute("disabled").Should().BeTrue();
     }
 
     [Fact]
@@ -345,8 +345,8 @@ public class NTInputDateTime_Tests : BunitContext {
     public void Custom_Picker_Markup_Is_Not_Rendered_By_Default() {
         var cut = RenderDateTime();
 
-        cut.FindAll("[data-tnt-dtp-picker='true']").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-trigger='true']").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-picker='true']").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-trigger='true']").Should().BeEmpty();
     }
 
     [Fact]
@@ -361,59 +361,59 @@ public class NTInputDateTime_Tests : BunitContext {
     public void Native_Picker_Renders_NonTabbable_OnSurface_Trigger() {
         var cut = RenderDateOnly();
 
-        cut.Find("input").GetAttribute("data-tnt-dtp-native-input").Should().Be("true");
-        var trigger = cut.Find("button[data-tnt-dtp-native-trigger='true']");
+        cut.Find("input").GetAttribute("data-nt-dtp-native-input").Should().Be("true");
+        var trigger = cut.Find("button[data-nt-dtp-native-trigger='true']");
         trigger.GetAttribute("tabindex").Should().Be("-1");
         trigger.GetAttribute("aria-label").Should().Be("Open date picker");
-        trigger.GetAttribute("class").Should().Contain("tnt-dtp-native-trigger");
-        trigger.QuerySelector(".tnt-dtp-trigger-icon").Should().NotBeNull();
+        trigger.GetAttribute("class").Should().Contain("nt-dtp-native-trigger");
+        trigger.QuerySelector(".nt-dtp-trigger-icon").Should().NotBeNull();
     }
 
     [Fact]
     public void DateTime_Custom_Picker_Renders_DateTime_Mode() {
         var cut = RenderDateTime(configure: parameters => parameters.Add(p => p.EnableCustomPicker, true));
 
-        var input = cut.Find("input[data-tnt-dtp-input='true']");
+        var input = cut.Find("input[data-nt-dtp-input='true']");
         input.GetAttribute("type").Should().Be("datetime-local");
-        input.GetAttribute("data-tnt-dtp-mode").Should().Be("datetime");
-        var pickerId = input.GetAttribute("data-tnt-dtp-target");
+        input.GetAttribute("data-nt-dtp-mode").Should().Be("datetime");
+        var pickerId = input.GetAttribute("data-nt-dtp-target");
         pickerId.Should().NotBeNullOrWhiteSpace();
 
-        var trigger = cut.Find($"button[data-tnt-dtp-trigger='true'][data-tnt-dtp-target='{pickerId}']");
+        var trigger = cut.Find($"button[data-nt-dtp-trigger='true'][data-nt-dtp-target='{pickerId}']");
         trigger.GetAttribute("aria-label").Should().Be("Open date and time picker");
         trigger.GetAttribute("tabindex").Should().Be("-1");
-        cut.Find($"div#{pickerId}[data-tnt-dtp-picker='true']").GetAttribute("data-tnt-dtp-mode").Should().Be("datetime");
-        cut.Find("[data-tnt-dtp-headline]").TextContent.Should().Be("Date and time");
-        cut.Find("[data-tnt-dtp-content]").Children.Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-day-index]").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-month-index]").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-month-label]").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-calendar-year-label]").Should().BeEmpty();
-        cut.FindAll(".tnt-dtp-menu-button-icon").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-year-list]").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-hour]").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-second]").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-action='today']").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-action='now']").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-action='clear']").Should().BeEmpty();
-        cut.Find("[data-tnt-dtp-action='cancel']").TextContent.Should().Be("Cancel");
-        cut.Find("[data-tnt-dtp-action='confirm']").TextContent.Should().Be("OK");
+        cut.Find($"div#{pickerId}[data-nt-dtp-picker='true']").GetAttribute("data-nt-dtp-mode").Should().Be("datetime");
+        cut.Find("[data-nt-dtp-headline]").TextContent.Should().Be("Date and time");
+        cut.Find("[data-nt-dtp-content]").Children.Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-day-index]").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-month-index]").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-month-label]").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-calendar-year-label]").Should().BeEmpty();
+        cut.FindAll(".nt-dtp-menu-button-icon").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-year-list]").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-hour]").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-second]").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-action='today']").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-action='now']").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-action='clear']").Should().BeEmpty();
+        cut.Find("[data-nt-dtp-action='cancel']").TextContent.Should().Be("Cancel");
+        cut.Find("[data-nt-dtp-action='confirm']").TextContent.Should().Be("OK");
     }
 
     [Fact]
     public void Date_Custom_Picker_Renders_Date_Mode() {
         var cut = RenderDateOnly(configure: parameters => parameters.Add(p => p.EnableCustomPicker, true));
 
-        var input = cut.Find("input[data-tnt-dtp-input='true']");
+        var input = cut.Find("input[data-nt-dtp-input='true']");
         input.GetAttribute("type").Should().Be("date");
-        input.GetAttribute("data-tnt-dtp-mode").Should().Be("date");
-        cut.Find("[data-tnt-dtp-picker='true']").GetAttribute("class").Should().Contain("tnt-dtp-mode-date");
-        cut.Find("[data-tnt-dtp-headline]").TextContent.Should().Be("Date");
-        cut.Find("[data-tnt-dtp-content]").Children.Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-day-index]").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-month-index]").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-year-list]").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-hour]").Should().BeEmpty();
+        input.GetAttribute("data-nt-dtp-mode").Should().Be("date");
+        cut.Find("[data-nt-dtp-picker='true']").GetAttribute("class").Should().Contain("nt-dtp-mode-date");
+        cut.Find("[data-nt-dtp-headline]").TextContent.Should().Be("Date");
+        cut.Find("[data-nt-dtp-content]").Children.Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-day-index]").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-month-index]").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-year-list]").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-hour]").Should().BeEmpty();
     }
 
     [Fact]
@@ -422,29 +422,29 @@ public class NTInputDateTime_Tests : BunitContext {
             .Add(p => p.MonthOnly, true)
             .Add(p => p.EnableCustomPicker, true));
 
-        cut.Find("input[data-tnt-dtp-input='true']").GetAttribute("data-tnt-dtp-mode").Should().Be("month");
-        cut.Find("[data-tnt-dtp-picker='true']").GetAttribute("class").Should().Contain("tnt-dtp-mode-month");
-        cut.Find("[data-tnt-dtp-headline]").TextContent.Should().Be("Month");
-        cut.Find("[data-tnt-dtp-content]").Children.Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-day-index]").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-month-index]").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-year-list]").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-hour]").Should().BeEmpty();
+        cut.Find("input[data-nt-dtp-input='true']").GetAttribute("data-nt-dtp-mode").Should().Be("month");
+        cut.Find("[data-nt-dtp-picker='true']").GetAttribute("class").Should().Contain("nt-dtp-mode-month");
+        cut.Find("[data-nt-dtp-headline]").TextContent.Should().Be("Month");
+        cut.Find("[data-nt-dtp-content]").Children.Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-day-index]").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-month-index]").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-year-list]").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-hour]").Should().BeEmpty();
     }
 
     [Fact]
     public void Time_Custom_Picker_Renders_Time_Mode_And_Clock_Trigger() {
         var cut = RenderTimeOnly(configure: parameters => parameters.Add(p => p.EnableCustomPicker, true));
 
-        cut.Find("input[data-tnt-dtp-input='true']").GetAttribute("data-tnt-dtp-mode").Should().Be("time");
-        cut.Find("[data-tnt-dtp-picker='true']").GetAttribute("class").Should().Contain("tnt-dtp-mode-time");
-        cut.Find("[data-tnt-dtp-headline]").TextContent.Should().Be("Time");
-        cut.Find("[data-tnt-dtp-content]").Children.Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-day-index]").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-month-index]").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-year-list]").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-hour]").Should().BeEmpty();
-        cut.FindAll("[data-tnt-dtp-second]").Should().BeEmpty();
+        cut.Find("input[data-nt-dtp-input='true']").GetAttribute("data-nt-dtp-mode").Should().Be("time");
+        cut.Find("[data-nt-dtp-picker='true']").GetAttribute("class").Should().Contain("nt-dtp-mode-time");
+        cut.Find("[data-nt-dtp-headline]").TextContent.Should().Be("Time");
+        cut.Find("[data-nt-dtp-content]").Children.Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-day-index]").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-month-index]").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-year-list]").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-hour]").Should().BeEmpty();
+        cut.FindAll("[data-nt-dtp-second]").Should().BeEmpty();
         cut.Markup.Should().Contain("schedule");
     }
 

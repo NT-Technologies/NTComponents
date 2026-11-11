@@ -65,7 +65,7 @@ internal sealed class NTToastService(IJSRuntime _jsRuntime) : INTToastService, I
     public async Task ShowAsync(string title, string? message = null, NTToastVariant variant = NTToastVariant.Default, int? timeout = null, bool showClose = true, string? icon = null, NTColor? backgroundColor = null, NTColor? textColor = null, NTColor? iconColor = null) {
         var defaults = NTToastDefaults.ForVariant(variant);
         var toast = new NTToastImplementation {
-            Id = TnTComponentIdentifier.NewId(),
+            Id = NTComponentIdentifier.NewId(),
             BackgroundColor = backgroundColor ?? defaults.BackgroundColor,
             Icon = string.IsNullOrWhiteSpace(icon) ? defaults.Icon : icon,
             IconColor = iconColor ?? defaults.IconColor,

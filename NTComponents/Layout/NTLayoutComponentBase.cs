@@ -46,7 +46,7 @@ public abstract class NTLayoutComponentBase : NTComponentBase {
     ///     Optional text alignment for the layout region.
     /// </summary>
     [Parameter]
-    public TextAlign? TextAlignment { get; set; }
+    public NTTextAlign? TextAlignment { get; set; }
 
     /// <summary>
     ///     Optional override for the layout region text color.

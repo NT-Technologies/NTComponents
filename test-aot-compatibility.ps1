@@ -16,6 +16,9 @@ if ($frameworks -and $frameworks.Length -gt 0) {
     $targetFrameworks = $frameworks
 }
 
+# True once the smoke app has rendered, sorted its grid, and shown its window, toast, and snackbar.
+$smokeReadyExpression = '(() => { const ready = document.querySelector("[data-aot-smoke-ready=\"true\"]") !== null && document.getElementById("aot-smoke-status") !== null; const gridSorted = document.querySelector("[data-aot-smoke-row]")?.getAttribute("data-aot-smoke-row") === "2"; const smokeWindow = document.querySelector("[data-aot-smoke-window=\"true\"]"); const toast = document.querySelector(".nt-toast"); const snackbar = document.querySelector(".nt-snackbar"); return ready && gridSorted && smokeWindow?.textContent === "AOT window content" && toast?.querySelector(".nt-toast-title")?.textContent === "AOT toast title" && toast?.querySelector(".nt-toast-message")?.textContent === "AOT toast message" && toast?.classList.contains("nt-toast-success") === true && toast?.style.getPropertyValue("--nt-toast-background-color").trim() === "var(--nt-color-primary-container)" && toast?.style.getPropertyValue("--nt-toast-text-color").trim() === "var(--nt-color-on-primary-container)" && snackbar?.querySelector(".nt-snackbar-message")?.textContent === "AOT snackbar message" && snackbar?.querySelector(".nt-snackbar-action")?.textContent === "Undo" && snackbar?.style.getPropertyValue("--nt-snackbar-background-color").trim() === "var(--nt-color-secondary-container)" && snackbar?.style.getPropertyValue("--nt-snackbar-text-color").trim() === "var(--nt-color-on-secondary-container)" && snackbar?.style.getPropertyValue("--nt-snackbar-action-color").trim() === "var(--nt-color-tertiary)"; })()'
+
 if ($runtimes -and $runtimes.Length -gt 0) {
     Write-Host "Runtime identifiers are ignored for Blazor WebAssembly AOT validation: $($runtimes -join ', ')"
 }
@@ -145,6 +148,7 @@ function Start-StaticFileServer {
                 }
 
                 $client = $listener.AcceptTcpClient()
+                $client.ReceiveTimeout = 5000
                 try {
                     $stream = $client.GetStream()
                     $buffer = [byte[]]::new(8192)
@@ -207,6 +211,9 @@ function Start-StaticFileServer {
                         $stream.Write($bytes, 0, $bytes.Length)
                     }
                 }
+                catch {
+                    # Drop a connection that times out or resets so one idle socket cannot stall the server.
+                }
                 finally {
                     $client.Close()
                 }
@@ -237,6 +244,24 @@ function Stop-StaticFileServer {
     Remove-Item -LiteralPath $Server.StopFile -Force -ErrorAction SilentlyContinue
 }
 
+function Wait-DevToolsTask {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Threading.Tasks.Task]$Task,
+
+        [Parameter(Mandatory = $true)]
+        [System.Net.WebSockets.ClientWebSocket]$Socket
+    )
+
+    # Bound each call by wall-clock time so a stalled DevTools socket cannot hang the smoke test.
+    if (-not $Task.Wait(10000)) {
+        $Socket.Abort()
+        throw "Chromium DevTools call did not complete within 10 seconds."
+    }
+
+    return $Task
+}
+
 function Invoke-ChromiumRuntimeExpression {
     param(
         [Parameter(Mandatory = $true)]
@@ -247,10 +272,10 @@ function Invoke-ChromiumRuntimeExpression {
     )
 
     $socket = [System.Net.WebSockets.ClientWebSocket]::new()
-    $cancellation = [System.Threading.CancellationTokenSource]::new([TimeSpan]::FromSeconds(10))
+    $none = [System.Threading.CancellationToken]::None
 
     try {
-        $socket.ConnectAsync([Uri]::new($WebSocketUrl), $cancellation.Token).GetAwaiter().GetResult()
+        $null = Wait-DevToolsTask -Task $socket.ConnectAsync([Uri]::new($WebSocketUrl), $none) -Socket $socket
 
         $message = @{
             id = 1
@@ -263,13 +288,13 @@ function Invoke-ChromiumRuntimeExpression {
         } | ConvertTo-Json -Compress -Depth 5
 
         $messageBytes = [System.Text.Encoding]::UTF8.GetBytes($message)
-        $socket.SendAsync([ArraySegment[byte]]::new($messageBytes), [System.Net.WebSockets.WebSocketMessageType]::Text, $true, $cancellation.Token).GetAwaiter().GetResult()
+        $null = Wait-DevToolsTask -Task $socket.SendAsync([ArraySegment[byte]]::new($messageBytes), [System.Net.WebSockets.WebSocketMessageType]::Text, $true, $none) -Socket $socket
 
         $buffer = [byte[]]::new(65536)
         $builder = [System.Text.StringBuilder]::new()
 
         while ($true) {
-            $result = $socket.ReceiveAsync([ArraySegment[byte]]::new($buffer), $cancellation.Token).GetAwaiter().GetResult()
+            $result = (Wait-DevToolsTask -Task $socket.ReceiveAsync([ArraySegment[byte]]::new($buffer), $none) -Socket $socket).Result
             if ($result.MessageType -eq [System.Net.WebSockets.WebSocketMessageType]::Close) {
                 throw "Chromium DevTools socket closed before returning an evaluation result."
             }
@@ -294,10 +319,11 @@ function Invoke-ChromiumRuntimeExpression {
         }
     }
     finally {
-        $cancellation.Dispose()
         if ($socket.State -eq [System.Net.WebSockets.WebSocketState]::Open) {
             try {
-                $socket.CloseAsync([System.Net.WebSockets.WebSocketCloseStatus]::NormalClosure, 'done', [System.Threading.CancellationToken]::None).GetAwaiter().GetResult()
+                if (-not $socket.CloseAsync([System.Net.WebSockets.WebSocketCloseStatus]::NormalClosure, 'done', $none).Wait(5000)) {
+                    $socket.Abort()
+                }
             }
             catch {
                 $socket.Abort()
@@ -400,15 +426,135 @@ function Test-PublishedOutput {
     }
 }
 
+function Invoke-SafariWebDriver {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Method,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Uri,
+
+        $Body,
+
+        [int]$TimeoutSec = 10
+    )
+
+    $arguments = @{ Method = $Method; Uri = $Uri; TimeoutSec = $TimeoutSec }
+    if ($null -ne $Body) {
+        $arguments.Body = $Body | ConvertTo-Json -Compress -Depth 5
+        $arguments.ContentType = 'application/json'
+    }
+
+    return (Invoke-RestMethod @arguments).value
+}
+
+function Invoke-SafariSmoke {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Url
+    )
+
+    if (-not (Get-Command safaridriver -ErrorAction SilentlyContinue)) {
+        throw "safaridriver was not found. Safari is required for the macOS AOT smoke test."
+    }
+
+    $driverUrl = "http://127.0.0.1:$(Get-FreePort)"
+    Write-Host "Browser smoke: launching Safari against $Url"
+    $driver = Start-Process -FilePath 'safaridriver' -ArgumentList '--port', ([Uri]$driverUrl).Port -PassThru
+    $sessionId = $null
+
+    try {
+        $deadline = [DateTimeOffset]::UtcNow.AddSeconds(30)
+        while (-not $sessionId) {
+            try {
+                $sessionId = (Invoke-SafariWebDriver -Method Post -Uri "$driverUrl/session" -Body @{ capabilities = @{ alwaysMatch = @{ browserName = 'safari' } } } -TimeoutSec 60).sessionId
+            }
+            catch {
+                if ([DateTimeOffset]::UtcNow -ge $deadline) {
+                    throw "Could not start a Safari WebDriver session. Run 'sudo safaridriver --enable' once to allow remote automation. $($_.Exception.Message)"
+                }
+
+                Start-Sleep -Milliseconds 500
+            }
+        }
+
+        $null = Invoke-SafariWebDriver -Method Post -Uri "$driverUrl/session/$sessionId/url" -Body @{ url = $Url } -TimeoutSec 60
+        Write-Host "Browser smoke: Safari loaded the page, waiting for the smoke marker"
+
+        $readyCheck = @{ script = "return $smokeReadyExpression;"; args = @() }
+        $deadline = [DateTimeOffset]::UtcNow.AddSeconds(120)
+        $nextProgress = [DateTimeOffset]::UtcNow.AddSeconds(10)
+        while ([DateTimeOffset]::UtcNow -lt $deadline) {
+            if ([DateTimeOffset]::UtcNow -ge $nextProgress) {
+                Write-Host "Browser smoke: still waiting for the smoke marker ($([int]($deadline - [DateTimeOffset]::UtcNow).TotalSeconds)s left)"
+                $nextProgress = [DateTimeOffset]::UtcNow.AddSeconds(10)
+            }
+
+            if (Invoke-SafariWebDriver -Method Post -Uri "$driverUrl/session/$sessionId/execute/sync" -Body $readyCheck) {
+                return
+            }
+
+            Start-Sleep -Milliseconds 500
+        }
+
+        $lastDom = 'DOM was not captured.'
+        try {
+            $lastDom = Invoke-SafariWebDriver -Method Post -Uri "$driverUrl/session/$sessionId/execute/sync" -Body @{ script = 'return document.documentElement.outerHTML;'; args = @() }
+        }
+        catch {
+            $lastDom = "DOM capture failed: $($_.Exception.Message)"
+        }
+
+        $diagnostics = 'Diagnostics were not captured.'
+        try {
+            $diagnostics = Invoke-SafariWebDriver -Method Post -Uri "$driverUrl/session/$sessionId/execute/async" -TimeoutSec 30 -Body @{ args = @(); script = @'
+const done = arguments[arguments.length - 1];
+const modules = ['./_content/NTComponents/Toast/NTToast.razor.js', './_content/NTComponents/Snackbar/NTSnackbar.razor.js'];
+Promise.allSettled(modules.map(path => import(path))).then(results => done(JSON.stringify({
+    pageScriptDefined: customElements.get('nt-page-script') !== undefined,
+    toastHosts: document.querySelectorAll('[data-nt-toast-host]').length,
+    snackbarHosts: document.querySelectorAll('[data-nt-snackbar-host]').length,
+    moduleImports: results.map((result, index) => `${modules[index]}: ${result.status === 'fulfilled' ? 'ok' : String(result.reason)}`),
+    errors: window.aotSmokeErrors ?? []
+}, null, 2)));
+'@ }
+        }
+        catch {
+            $diagnostics = "Diagnostics capture failed: $($_.Exception.Message)"
+        }
+
+        throw "Browser smoke did not render the NTComponents AOT smoke marker in Safari.`nDiagnostics:`n$diagnostics`nOutput:`n$lastDom"
+    }
+    finally {
+        if ($sessionId) {
+            try {
+                $null = Invoke-SafariWebDriver -Method Delete -Uri "$driverUrl/session/$sessionId"
+            }
+            catch {
+                Write-Host "Could not end the Safari WebDriver session: $($_.Exception.Message)"
+            }
+        }
+
+        if (-not $driver.HasExited) {
+            $driver.Kill($true)
+            [void]$driver.WaitForExit(5000)
+        }
+    }
+}
+
 function Invoke-BrowserSmoke {
     param(
         [Parameter(Mandatory = $true)]
         [string]$PublishWwwRoot
     )
 
-    $browser = Get-BrowserExecutable
-    if (-not $browser) {
-        throw "No Chromium-based browser was found for the AOT smoke test."
+    # macOS uses Safari: headless Chrome hung there. AOT_SMOKE_BROWSER still selects a Chromium browser.
+    $useSafari = $IsMacOS -and -not $env:AOT_SMOKE_BROWSER
+    if (-not $useSafari) {
+        $browser = Get-BrowserExecutable
+        if (-not $browser) {
+            throw "No Chromium-based browser was found for the AOT smoke test."
+        }
     }
 
     $port = Get-FreePort
@@ -429,6 +575,11 @@ function Invoke-BrowserSmoke {
 
         if (-not $ready) {
             throw "Static file server did not become ready at $($server.Url)."
+        }
+
+        if ($useSafari) {
+            Invoke-SafariSmoke -Url $server.Url
+            return
         }
 
         $lastDom = 'DOM was not captured.'
@@ -453,6 +604,8 @@ function Invoke-BrowserSmoke {
                 '--no-first-run',
                 '--disable-background-networking',
                 '--disable-search-engine-choice-screen',
+                '--use-mock-keychain',
+                '--password-store=basic',
                 '--remote-allow-origins=*',
                 "--remote-debugging-port=$debugPort",
                 "--user-data-dir=$browserUserDataDirectory",
@@ -473,6 +626,7 @@ function Invoke-BrowserSmoke {
                 $browserArgs = @('--disable-gpu-sandbox') + $browserArgs
             }
 
+            Write-Host "Browser smoke attempt ${attempt}: launching $browser against $($server.Url)"
             $browserRun = Start-BrowserProcess -Browser $browser -Arguments $browserArgs
             $browserProcess = $browserRun.Process
 
@@ -500,13 +654,20 @@ function Invoke-BrowserSmoke {
                 }
 
                 if ($devToolsPage) {
+                    Write-Host "Browser smoke attempt ${attempt}: DevTools connected, waiting for the smoke marker"
+                    $nextProgress = [DateTimeOffset]::UtcNow.AddSeconds(10)
                     while ([DateTimeOffset]::UtcNow -lt $deadline) {
+                        if ([DateTimeOffset]::UtcNow -ge $nextProgress) {
+                            Write-Host "Browser smoke attempt ${attempt}: still waiting for the smoke marker ($([int]($deadline - [DateTimeOffset]::UtcNow).TotalSeconds)s left)"
+                            $nextProgress = [DateTimeOffset]::UtcNow.AddSeconds(10)
+                        }
+
                         if ($browserProcess.HasExited) {
                             $lastBrowserExitCode = $browserProcess.ExitCode
                             break
                         }
 
-                        $isReady = Invoke-ChromiumRuntimeExpression -WebSocketUrl $devToolsPage.webSocketDebuggerUrl -Expression '(() => { const ready = document.querySelector("[data-aot-smoke-ready=\"true\"]") !== null && document.getElementById("aot-smoke-status") !== null; const gridSorted = document.querySelector("[data-aot-smoke-row]")?.getAttribute("data-aot-smoke-row") === "2"; const smokeWindow = document.querySelector("[data-aot-smoke-window=\"true\"]"); const toast = document.querySelector(".nt-toast"); const snackbar = document.querySelector(".nt-snackbar"); return ready && gridSorted && smokeWindow?.textContent === "AOT window content" && toast?.querySelector(".nt-toast-title")?.textContent === "AOT toast title" && toast?.querySelector(".nt-toast-message")?.textContent === "AOT toast message" && toast?.classList.contains("nt-toast-success") === true && toast?.style.getPropertyValue("--nt-toast-background-color").trim() === "var(--tnt-color-primary-container)" && toast?.style.getPropertyValue("--nt-toast-text-color").trim() === "var(--tnt-color-on-primary-container)" && snackbar?.querySelector(".nt-snackbar-message")?.textContent === "AOT snackbar message" && snackbar?.querySelector(".nt-snackbar-action")?.textContent === "Undo" && snackbar?.style.getPropertyValue("--nt-snackbar-background-color").trim() === "var(--tnt-color-secondary-container)" && snackbar?.style.getPropertyValue("--nt-snackbar-text-color").trim() === "var(--tnt-color-on-secondary-container)" && snackbar?.style.getPropertyValue("--nt-snackbar-action-color").trim() === "var(--tnt-color-tertiary)"; })()'
+                        $isReady = Invoke-ChromiumRuntimeExpression -WebSocketUrl $devToolsPage.webSocketDebuggerUrl -Expression $smokeReadyExpression
                         if ($isReady) {
                             Remove-Item -LiteralPath $browserUserDataDirectory -Recurse -Force -ErrorAction SilentlyContinue
                             return
@@ -521,6 +682,7 @@ function Invoke-BrowserSmoke {
                 $lastBrowserError = $_.Exception.Message
             }
             finally {
+                Write-Host "Browser smoke attempt ${attempt}: stopping Chrome"
                 if ($browserProcess -and -not $browserProcess.HasExited) {
                     $browserProcess.Kill($true)
                     [void]$browserProcess.WaitForExit(5000)
@@ -530,6 +692,7 @@ function Invoke-BrowserSmoke {
                 $browserProcess.Dispose()
             }
 
+            Write-Host "Browser smoke attempt ${attempt}: did not render the smoke marker (exit code: $lastBrowserExitCode, DevTools error: $lastBrowserError)"
             Remove-Item -LiteralPath $browserUserDataDirectory -Recurse -Force -ErrorAction SilentlyContinue
             Start-Sleep -Milliseconds 500
         }

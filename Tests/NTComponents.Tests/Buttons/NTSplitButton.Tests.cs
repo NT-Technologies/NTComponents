@@ -1,15 +1,12 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.AspNetCore.Components.Web;
-using RippleTestingUtility = NTComponents.Tests.TestingUtility.TestingUtility;
 
 namespace NTComponents.Tests.Buttons;
 
 public class NTSplitButton_Tests : BunitContext {
 
     public NTSplitButton_Tests() {
-        RippleTestingUtility.SetupRippleEffectModule(this);
-
         var splitButtonModule = JSInterop.SetupModule("./_content/NTComponents/Buttons/NTSplitButton.razor.js");
         splitButtonModule.SetupVoid("onLoad", _ => true).SetVoidResult();
         splitButtonModule.SetupVoid("onUpdate", _ => true).SetVoidResult();

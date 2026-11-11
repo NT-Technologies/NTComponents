@@ -1,4 +1,3 @@
-#if NET10_0_OR_GREATER
 using NTComponents.Charts.GeneratedDocumentation;
 
 namespace NTComponents.Tests.Documentation;
@@ -38,4 +37,3 @@ public class ChartsCodeDocumentation_Tests {
         GeneratedCodeDocumentation.Model.Types.Should().NotContain(type => type.FullName.StartsWith("NTComponents.NT", StringComparison.Ordinal));
     }
 }
-#endif

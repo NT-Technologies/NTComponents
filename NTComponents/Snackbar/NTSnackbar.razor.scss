@@ -108,7 +108,7 @@ $container-shape: 4px;
             }
 
             .nt-snackbar-message {
-                @include typescale.tnt-body-medium;
+                @include typescale.nt-body-medium;
                 flex: 1 1 auto;
                 min-width: 0;
                 overflow-wrap: anywhere;
@@ -128,7 +128,7 @@ $container-shape: 4px;
 
             .nt-snackbar-action,
             .nt-snackbar-close {
-                @include interactable.tnt-interactable($action-color, null, false);
+                @include interactable.nt-interactable($action-color, null, false);
                 background: transparent;
                 border: none;
                 box-sizing: border-box;
@@ -137,15 +137,15 @@ $container-shape: 4px;
             }
 
             .nt-snackbar-action {
-                @include typescale.tnt-label-large;
+                @include typescale.nt-label-large;
                 color: $action-color;
-                border-radius: measurements.$tnt-pill-border-radius-xs;
+                border-radius: measurements.$nt-pill-border-radius-xs;
                 min-height: 32px;
                 padding: 0 12px;
             }
 
             .nt-snackbar-close {
-                @include interactable.tnt-interactable($text-color, null, false);
+                @include interactable.nt-interactable($text-color, null, false);
                 color: $text-color;
                 border-radius: 20px;
                 display: inline-flex;
@@ -155,12 +155,12 @@ $container-shape: 4px;
                 height: 40px;
                 width: 40px;
 
-                .tnt-icon {
+                .nt-icon {
                     font-size: 20px;
                 }
             }
 
-            .tnt-disabled {
+            .nt-disabled {
                 cursor: not-allowed;
                 opacity: 0.6;
             }

@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.AspNetCore.Components.Web;
-using RippleTestingUtility = NTComponents.Tests.TestingUtility.TestingUtility;
 
 namespace NTComponents.Tests.Buttons;
 
@@ -9,8 +8,6 @@ public class NTFabMenu_Tests : BunitContext {
     private static NTIcon SampleIcon => MaterialIcon.Add;
 
     public NTFabMenu_Tests() {
-        RippleTestingUtility.SetupRippleEffectModule(this);
-
         var fabMenuModule = JSInterop.SetupModule("./_content/NTComponents/Buttons/NTFabMenu.razor.js");
         fabMenuModule.SetupVoid("onLoad", _ => true).SetVoidResult();
         fabMenuModule.SetupVoid("onUpdate", _ => true).SetVoidResult();
@@ -26,7 +23,7 @@ public class NTFabMenu_Tests : BunitContext {
         var panel = cut.Find(".nt-fab-menu-panel");
 
         host.GetAttribute("class")!.Should().Contain("nt-fab-menu-placement-lower-right");
-        host.GetAttribute("class")!.Should().Contain("tnt-size-s");
+        host.GetAttribute("class")!.Should().Contain("nt-size-s");
         host.GetAttribute("class")!.Should().NotContain("nt-fab-menu-color-");
         button.GetAttribute("type")!.Should().Be("button");
         button.GetAttribute("aria-label")!.Should().Be("Create options");
@@ -36,7 +33,7 @@ public class NTFabMenu_Tests : BunitContext {
         button.GetAttribute("popovertargetaction")!.Should().Be("toggle");
         panel.GetAttribute("popover")!.Should().Be("auto");
         panel.GetAttribute("role")!.Should().Be("menu");
-        cut.Find("tnt-page-script").GetAttribute("src")!.Should().Be("./_content/NTComponents/Buttons/NTFabMenu.razor.js");
+        cut.Find("nt-page-script").GetAttribute("src")!.Should().Be("./_content/NTComponents/Buttons/NTFabMenu.razor.js");
     }
 
     [Fact]
@@ -198,11 +195,11 @@ public class NTFabMenu_Tests : BunitContext {
     }
 
     [Theory]
-    [InlineData(NTSize.Smallest, "tnt-size-s")]
-    [InlineData(NTSize.Small, "tnt-size-s")]
-    [InlineData(NTSize.Medium, "tnt-size-m")]
-    [InlineData(NTSize.Large, "tnt-size-l")]
-    [InlineData(NTSize.Largest, "tnt-size-l")]
+    [InlineData(NTSize.Smallest, "nt-size-s")]
+    [InlineData(NTSize.Small, "nt-size-s")]
+    [InlineData(NTSize.Medium, "nt-size-m")]
+    [InlineData(NTSize.Large, "nt-size-l")]
+    [InlineData(NTSize.Largest, "nt-size-l")]
     public void ButtonSize_Uses_Supported_Fab_Size(NTSize suppliedSize, string expectedClass) {
         var cut = Render<NTFabMenu>(parameters => parameters
             .Add(x => x.Icon, SampleIcon)
@@ -214,8 +211,8 @@ public class NTFabMenu_Tests : BunitContext {
         var classes = cut.Find("nt-fab-menu").GetAttribute("class")!;
 
         classes.Should().Contain(expectedClass);
-        classes.Should().NotContain("tnt-size-xs");
-        classes.Should().NotContain("tnt-size-xl");
+        classes.Should().NotContain("nt-size-xs");
+        classes.Should().NotContain("nt-size-xl");
     }
 
     [Fact]
@@ -359,7 +356,7 @@ public class NTFabMenu_Tests : BunitContext {
             .AddChildContent<NTFabMenuButtonItem>(item => item.Add(x => x.Label, "Draft"))
             .AddChildContent<NTFabMenuButtonItem>(item => item.Add(x => x.Label, "Import")));
 
-        cut.Find("nt-fab-menu").ClassList.Should().Contain("tnt-size-s");
+        cut.Find("nt-fab-menu").ClassList.Should().Contain("nt-size-s");
     }
 
     [Fact]

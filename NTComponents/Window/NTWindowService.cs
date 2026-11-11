@@ -54,7 +54,7 @@ internal sealed class NTWindowService : INTWindowService {
         ValidateState(initialState);
         ValidateDockPosition(dockPosition);
 
-        var window = new NTWindowImplementation(TnTComponentIdentifier.NewId(), title, content, initialState, dockPosition);
+        var window = new NTWindowImplementation(NTComponentIdentifier.NewId(), title, content, initialState, dockPosition);
         lock (_windows) {
             _windows.Add(window);
             _snapshot = null;

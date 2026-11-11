@@ -55,32 +55,11 @@
 
         <p class="chips-demo-status" aria-live="polite">@_message</p>
     </section>
-
-    <section class="chips-demo-section">
-        <h2>Legacy TnTChip</h2>
-
-        <div class="chips-demo-group" aria-label="Legacy chips">
-            <TnTChip Label="Chip" @bind-Value="_legacyA" BindAfter="Checked" DisableToggle="true" />
-            <TnTChip StartIcon="@MaterialIcon.GridOn" Label="Chip" BindAfter="Checked" @bind-Value="_legacyB" />
-            <TnTChip Label="Chip" CloseButtonClicked="@Closed" @bind-Value="_legacyC" BindAfter="Checked" Disabled="true" />
-            <TnTChip StartIcon="@MaterialIcon.GridOn" Label="Chip" CloseButtonClicked="@Closed" BindAfter="Checked" @bind-Value="_legacyD" />
-            <TnTChip Label="Chip" SubLabel="Sub label" @bind-Value="_legacyE" BindAfter="Checked" DisableToggle="true" />
-            <TnTChip StartIcon="@MaterialIcon.GridOn" Label="Chip" SubLabel="Sub label" BindAfter="Checked" @bind-Value="_legacyF" />
-            <TnTChip StartIcon="@MaterialIcon.GridOn" Label="Chip" SubLabel="Sub label" CloseButtonClicked="@Closed" BindAfter="Checked" @bind-Value="_legacyG" />
-        </div>
-    </section>
 </main>
 
 @code {
     private bool _accessible;
     private bool _favorites = true;
-    private bool _legacyA;
-    private bool _legacyB;
-    private bool _legacyC;
-    private bool _legacyD;
-    private bool _legacyE;
-    private bool _legacyF;
-    private bool _legacyG;
     private bool _openNow;
     private string _categoryLabel = "Category";
     private string _message = "Ready";
@@ -93,14 +72,6 @@
 
     private void ClearCategory() {
         SetCategory("Category");
-    }
-
-    private void Checked(bool value) {
-        _message = $"Legacy chip selected: {value}";
-    }
-
-    private void Closed() {
-        _message = "Legacy chip closed";
     }
 
     private void RemoveContact(string contact) {
@@ -151,6 +122,6 @@
     }
 
     .chips-demo-status {
-        color: var(--tnt-color-on-surface-variant);
+        color: var(--nt-color-on-surface-variant);
     }
 </style>

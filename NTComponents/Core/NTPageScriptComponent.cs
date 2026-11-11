@@ -120,9 +120,3 @@ public abstract class NTPageScriptComponent<[DynamicallyAccessedMembers(Dynamica
         return !DisposalStarted && module is not null && dotNetRef is not null;
     }
 }
-
-/// <summary>
-///     Obsolete compatibility alias for <see cref="NTPageScriptComponent{TDerived}" />.
-/// </summary>
-[Obsolete("TnTPageScriptComponent is obsolete. Use NTPageScriptComponent instead.")]
-public abstract class TnTPageScriptComponent<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] TDerived> : NTPageScriptComponent<TDerived>, ITnTPageScriptComponent<TDerived> where TDerived : ComponentBase;

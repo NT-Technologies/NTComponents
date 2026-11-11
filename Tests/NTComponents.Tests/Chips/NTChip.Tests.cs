@@ -46,7 +46,7 @@ public class NTChip_Tests : BunitContext {
         input.GetAttribute("type").Should().Be("checkbox");
         input.GetAttribute("name").Should().Be("filters");
         input.HasAttribute("checked").Should().BeTrue();
-        cut.Find(".nt-chip-selected-leading .tnt-icon").TextContent.Should().Be(MaterialIcon.Check.Icon);
+        cut.Find(".nt-chip-selected-leading .nt-icon").TextContent.Should().Be(MaterialIcon.Check.Icon);
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public class NTChip_Tests : BunitContext {
         trigger.GetAttribute("aria-pressed").Should().Be("false");
         target.Should().NotBeNullOrWhiteSpace();
         cut.Find("nt-menu").GetAttribute("id").Should().Be(target);
-        cut.Find(".nt-chip-trailing .tnt-icon").TextContent.Should().Be(MaterialIcon.ArrowDropDown.Icon);
+        cut.Find(".nt-chip-trailing .nt-icon").TextContent.Should().Be(MaterialIcon.ArrowDropDown.Icon);
         cut.FindAll("input.nt-chip-selection-input").Should().BeEmpty();
     }
 
@@ -85,7 +85,7 @@ public class NTChip_Tests : BunitContext {
         selected.Should().BeTrue();
         cut.Instance.Selected.Should().BeFalse();
         cut.Find("span.nt-chip").GetAttribute("class")!.Should().Contain("nt-chip-selected");
-        cut.Find(".nt-chip-selected-leading .tnt-icon").TextContent.Should().Be(MaterialIcon.Check.Icon);
+        cut.Find(".nt-chip-selected-leading .nt-icon").TextContent.Should().Be(MaterialIcon.Check.Icon);
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public class NTChip_Tests : BunitContext {
 
         cut.Instance.Selected.Should().BeFalse();
         cut.Find("span.nt-chip").GetAttribute("class")!.Should().Contain("nt-chip-selected");
-        cut.Find(".nt-chip-selected-leading .tnt-icon").TextContent.Should().Be(MaterialIcon.Check.Icon);
+        cut.Find(".nt-chip-selected-leading .nt-icon").TextContent.Should().Be(MaterialIcon.Check.Icon);
     }
 
     [Fact]

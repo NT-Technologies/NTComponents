@@ -22,7 +22,7 @@ public abstract class NTComponentBase : ComponentBase, INTComponentBase {
     /// <summary>
     ///     Unique identifier for the component.
     /// </summary>
-    public string ComponentIdentifier { get; } = TnTComponentIdentifier.NewId();
+    public string ComponentIdentifier { get; } = NTComponentIdentifier.NewId();
 
     /// <inheritdoc />
     public ElementReference Element { get; protected set; }
@@ -48,25 +48,19 @@ public abstract class NTComponentBase : ComponentBase, INTComponentBase {
     /// <summary>
     ///     Custom identifier attribute for the component.
     /// </summary>
-    internal const string _tnTCustomIdentifierAttribute = "tntid";
+    internal const string _ntCustomIdentifierAttribute = "ntid";
 
     /// <inheritdoc />
     protected override void OnParametersSet() {
         base.OnParametersSet();
 
         // Copy only when the identifier is missing or stale; the incoming dictionary belongs to the parent.
-        if (AdditionalAttributes?.TryGetValue(_tnTCustomIdentifierAttribute, out var identifier) == true && Equals(identifier, ComponentIdentifier)) {
+        if (AdditionalAttributes?.TryGetValue(_ntCustomIdentifierAttribute, out var identifier) == true && Equals(identifier, ComponentIdentifier)) {
             return;
         }
 
         AdditionalAttributes = AdditionalAttributes is null
-            ? new Dictionary<string, object>(1) { [_tnTCustomIdentifierAttribute] = ComponentIdentifier }
-            : new Dictionary<string, object>(AdditionalAttributes) { [_tnTCustomIdentifierAttribute] = ComponentIdentifier };
+            ? new Dictionary<string, object>(1) { [_ntCustomIdentifierAttribute] = ComponentIdentifier }
+            : new Dictionary<string, object>(AdditionalAttributes) { [_ntCustomIdentifierAttribute] = ComponentIdentifier };
     }
 }
-
-/// <summary>
-///     Obsolete compatibility alias for <see cref="NTComponentBase" />.
-/// </summary>
-[Obsolete("TnTComponentBase is obsolete. Use NTComponentBase instead.")]
-public abstract class TnTComponentBase : NTComponentBase, ITnTComponentBase;

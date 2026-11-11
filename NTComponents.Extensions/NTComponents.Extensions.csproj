@@ -2,10 +2,10 @@
 	<Import Project="..\PackageMetadata.props" />
 
     <PropertyGroup>
-		<TargetFrameworks>net9.0;net10.0;net11.0</TargetFrameworks>
+		<TargetFrameworks>net10.0;net11.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <PackageTags>Blazor;Components;.NET9;.NET10;.NET11</PackageTags>
+        <PackageTags>Blazor;Components;.NET10;.NET11</PackageTags>
 
     </PropertyGroup>
 

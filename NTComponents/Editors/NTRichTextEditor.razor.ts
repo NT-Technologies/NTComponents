@@ -229,7 +229,7 @@ function placeCaretAtEnd(surface: HTMLElement): void {
 }
 
 function getSurface(element: Maybe<ParentNode>): HTMLElement | null {
-    return qs<HTMLElement>(element, '.tnt-rich-text-editor-surface');
+    return qs<HTMLElement>(element, '.nt-rich-text-editor-surface');
 }
 
 function getHtmlSource(element: Maybe<ParentNode>): HTMLTextAreaElement | null {
@@ -237,14 +237,14 @@ function getHtmlSource(element: Maybe<ParentNode>): HTMLTextAreaElement | null {
 }
 
 function syncHtmlSourceScroll(source: HTMLTextAreaElement): void {
-    const code = source.parentElement?.querySelector<HTMLElement>('.tnt-rich-text-editor-source-highlight code');
+    const code = source.parentElement?.querySelector<HTMLElement>('.nt-rich-text-editor-source-highlight code');
     if (code) {
         code.style.transform = `translate(${-source.scrollLeft}px, ${-source.scrollTop}px)`;
     }
 }
 
 function updateHtmlSourceView(source: HTMLTextAreaElement): void {
-    const code = source.parentElement?.querySelector<HTMLElement>('.tnt-rich-text-editor-source-highlight code');
+    const code = source.parentElement?.querySelector<HTMLElement>('.nt-rich-text-editor-source-highlight code');
     if (code) {
         const fragment = document.createDocumentFragment();
         const value = source.value;
@@ -394,15 +394,15 @@ function setHtmlSourceMode(element: HTMLElement, state: EditorState, enabled: bo
 }
 
 function getSourceValueElement(element: Maybe<ParentNode>): HTMLDivElement | null {
-    return qs<HTMLDivElement>(element, '.tnt-rich-text-editor-value');
+    return qs<HTMLDivElement>(element, '.nt-rich-text-editor-value');
 }
 
 function getHiddenInput(element: Maybe<ParentNode>): HTMLInputElement | null {
-    return qs<HTMLInputElement>(element, '.tnt-rich-text-editor-hidden-input');
+    return qs<HTMLInputElement>(element, '.nt-rich-text-editor-hidden-input');
 }
 
 function getToolbarButtons(element: Maybe<ParentNode>): HTMLButtonElement[] {
-    return toArray(element?.querySelectorAll?.('.tnt-rich-text-editor-toolbar .tnt-rich-text-editor-toolbar-button')).filter(isHtmlButtonElement);
+    return toArray(element?.querySelectorAll?.('.nt-rich-text-editor-toolbar .nt-rich-text-editor-toolbar-button')).filter(isHtmlButtonElement);
 }
 
 function isAwaitingDotNet(element: Maybe<HTMLElement>): boolean {

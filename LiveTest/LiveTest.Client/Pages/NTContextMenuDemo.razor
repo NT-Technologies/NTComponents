@@ -10,13 +10,13 @@
         <NTContextMenu AriaLabel="Project context actions">
             <TargetContent>
                 <NTCard tabindex="0" style="display: block; min-block-size: 220px; outline: none;">
-                    <div class="tnt-card-header">
+                    <div class="nt-card-header">
                         <h2>Quarterly roadmap</h2>
                     </div>
                     <div style="display: grid; gap: 12px; padding: 24px;">
                         <p style="margin: 0;">Selected action: <strong>@LastAction</strong></p>
                         <p style="margin: 0;">Selection count: <strong>@SelectionCount</strong></p>
-                        <div style="border: 1px solid var(--tnt-color-outline-variant); border-radius: 8px; padding: 16px;">
+                        <div style="border: 1px solid var(--nt-color-outline-variant); border-radius: 8px; padding: 16px;">
                             <strong>Platform launch checklist</strong>
                             <p style="margin-block: 8px 0;">Owner review, dependency audit, deployment readiness, and customer communications.</p>
                         </div>
@@ -44,7 +44,7 @@
                                Elevation="NTElevation.High">
                     <TargetContent>
                         <button type="button"
-                                style="align-items: center; background: var(--tnt-color-surface-container-low); border: 1px solid var(--tnt-color-outline-variant); border-radius: 8px; color: var(--tnt-color-on-surface); cursor: pointer; display: flex; justify-content: space-between; min-block-size: 56px; padding: 12px 16px; text-align: start;">
+                                style="align-items: center; background: var(--nt-color-surface-container-low); border: 1px solid var(--nt-color-outline-variant); border-radius: 8px; color: var(--nt-color-on-surface); cursor: pointer; display: flex; justify-content: space-between; min-block-size: 56px; padding: 12px 16px; text-align: start;">
                             <span>@row</span>
                             <span aria-hidden="true">@MaterialIcon.MoreHoriz.Render()</span>
                         </button>
@@ -86,11 +86,7 @@
 
             <NTContextMenu AriaLabel="Chip component context actions">
                 <TargetContent>
-                    <TnTChip Label="TnTChip target"
-                             SubLabel="Component"
-                             StartIcon="@MaterialIcon.GridOn"
-                             DisableToggle="true"
-                             Value="true" />
+                    <NTChip Label="NTChip target" LeadingIcon="@MaterialIcon.GridOn" />
                 </TargetContent>
                 <MenuContent>
                     <NTMenuLabelItem Label="Chip" />
@@ -118,7 +114,7 @@
             <NTContextMenu AriaLabel="Text input context actions">
                 <TargetContent>
                     <input value="Plain input target"
-                           style="background: var(--tnt-color-surface-container-low); border: 1px solid var(--tnt-color-outline-variant); border-radius: 8px; box-sizing: border-box; color: var(--tnt-color-on-surface); min-block-size: 48px; padding: 8px 12px; width: 100%;" />
+                           style="background: var(--nt-color-surface-container-low); border: 1px solid var(--nt-color-outline-variant); border-radius: 8px; box-sizing: border-box; color: var(--nt-color-on-surface); min-block-size: 48px; padding: 8px 12px; width: 100%;" />
                 </TargetContent>
                 <MenuContent>
                     <NTMenuLabelItem Label="Input" />
@@ -131,7 +127,7 @@
                            Appearance="NTMenuAppearance.Compact">
                 <TargetContent>
                     <a href="/nt-context-menu"
-                       style="align-items: center; background: var(--tnt-color-surface-container-low); border: 1px solid var(--tnt-color-outline-variant); border-radius: 8px; color: var(--tnt-color-primary); display: flex; min-block-size: 48px; padding: 8px 12px; text-decoration: none;">
+                       style="align-items: center; background: var(--nt-color-surface-container-low); border: 1px solid var(--nt-color-outline-variant); border-radius: 8px; color: var(--nt-color-primary); display: flex; min-block-size: 48px; padding: 8px 12px; text-decoration: none;">
                         HTML anchor target
                     </a>
                 </TargetContent>
@@ -145,7 +141,7 @@
             <NTContextMenu AriaLabel="Article text context actions">
                 <TargetContent>
                     <article tabindex="0"
-                             style="background: var(--tnt-color-surface-container-low); border: 1px solid var(--tnt-color-outline-variant); border-radius: 8px; color: var(--tnt-color-on-surface); min-block-size: 112px; outline: none; padding: 16px;">
+                             style="background: var(--nt-color-surface-container-low); border: 1px solid var(--nt-color-outline-variant); border-radius: 8px; color: var(--nt-color-on-surface); min-block-size: 112px; outline: none; padding: 16px;">
                         <h3 style="margin-block: 0 8px;">HTML article target</h3>
                         <p style="margin: 0;">Right-click or use the keyboard context menu key while this text region is focused.</p>
                     </article>
@@ -169,7 +165,7 @@
         <NTContextMenu AriaLabel="Board container actions">
             <TargetContent>
                 <div tabindex="0"
-                     style="background: var(--tnt-color-surface-container); border: 1px solid var(--tnt-color-outline-variant); border-radius: 8px; display: grid; gap: 16px; outline: none; padding: 16px;">
+                     style="background: var(--nt-color-surface-container); border: 1px solid var(--nt-color-outline-variant); border-radius: 8px; display: grid; gap: 16px; outline: none; padding: 16px;">
                     <div>
                         <h3 style="margin-block: 0 4px;">Planning board container</h3>
                         <p style="margin: 0;">The whole container has a context menu. Each item inside also has its own context menu and inherits the container actions.</p>
@@ -182,7 +178,7 @@
                                            Appearance="NTMenuAppearance.Compact">
                                 <TargetContent>
                                     <button type="button"
-                                            style="background: var(--tnt-color-surface-container-low); border: 1px solid var(--tnt-color-outline-variant); border-radius: 8px; color: var(--tnt-color-on-surface); cursor: pointer; display: grid; gap: 8px; min-block-size: 112px; padding: 16px; text-align: start;">
+                                            style="background: var(--nt-color-surface-container-low); border: 1px solid var(--nt-color-outline-variant); border-radius: 8px; color: var(--nt-color-on-surface); cursor: pointer; display: grid; gap: 8px; min-block-size: 112px; padding: 16px; text-align: start;">
                                         <strong>@item</strong>
                                         <span>Own actions render first; inherited board actions render after the divider.</span>
                                     </button>

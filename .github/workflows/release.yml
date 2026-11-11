@@ -14,7 +14,12 @@ env:
 
 jobs:
   publish-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Playwright does not support Ubuntu 26.04 yet
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write # NuGet trusted publishing (OIDC)
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -29,9 +34,8 @@ jobs:
         with:
           dotnet-version: |
             8.0.x
-            9.0.x
             10.0.x
-            11.0.100-rc.2.26504.105
+            11.0.x
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -54,7 +58,7 @@ jobs:
         run: dotnet build NTComponents.slnx --no-restore --configuration Release
 
       - name: Ensure browsers are installed
-        run: pwsh Tests/NTComponents.IntegrationTests/bin/Release/net10.0/playwright.ps1 install --with-deps
+        run: pwsh Tests/NTComponents.IntegrationTests/bin/Release/net10.0/playwright.ps1 install chromium
 
       - name: Run .NET tests
         run: dotnet test NTComponents.slnx --no-restore --configuration Release --results-directory ./TestResults -v minimal
@@ -72,13 +76,13 @@ jobs:
             echo "is_tagged=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Validate NuGet API key
+      - name: Validate NuGet user secret
         if: steps.check-tags.outputs.is_tagged == 'false'
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_USER: ${{ secrets.NUGET_USER }}
         run: |
-          if [ -z "$NUGET_API_KEY" ]; then
-            echo "NUGET_API_KEY secret is missing or unavailable to this workflow."
+          if [ -z "$NUGET_USER" ]; then
+            echo "NUGET_USER secret is missing or unavailable to this workflow."
             exit 1
           fi
 
@@ -121,17 +125,24 @@ jobs:
           pwsh ./test-analyzer-package.ps1 -PackagePath "./artifacts/nuget/NTComponents.Analyzers.${{ steps.release-version.outputs.version }}.nupkg"
           pwsh ./test-analyzer-package.ps1 -PackagePath "./artifacts/nuget/NTComponents.${{ steps.release-version.outputs.version }}.nupkg" -ExpectedPackageId NTComponents
 
+      - name: NuGet login (OIDC)
+        id: nuget-login
+        if: steps.check-tags.outputs.is_tagged == 'false'
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
       - name: Publish NuGet packages
         if: steps.check-tags.outputs.is_tagged == 'false'
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
         run: |
           dotnet nuget push ./artifacts/nuget/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Unlist older prerelease packages
         if: steps.check-tags.outputs.is_tagged == 'false'
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
         run: |
           set -euo pipefail
           git fetch --tags
@@ -210,7 +221,7 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 11.0.100-rc.2.26504.105
+          dotnet-version: 11.0.x
 
       - name: Resolve stable release version
         id: release-version

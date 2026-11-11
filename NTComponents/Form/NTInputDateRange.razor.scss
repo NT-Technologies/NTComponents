@@ -106,7 +106,7 @@ $nt-input-date-range-band-preview: color-mix(in srgb, colors.$nt-color-primary 8
 
         .segment-label {
             color: colors.$nt-color-on-surface-variant;
-            @include typescale.tnt-label-small;
+            @include typescale.nt-label-small;
         }
 
         &.active .segment-label {
@@ -114,7 +114,7 @@ $nt-input-date-range-band-preview: color-mix(in srgb, colors.$nt-color-primary 8
         }
 
         .segment-value {
-            @include typescale.tnt-title-small;
+            @include typescale.nt-title-small;
         }
     }
 
@@ -127,7 +127,7 @@ $nt-input-date-range-band-preview: color-mix(in srgb, colors.$nt-color-primary 8
 
     ::deep .month-label {
         text-align: center;
-        @include typescale.tnt-title-medium;
+        @include typescale.nt-title-medium;
     }
 
     ::deep .nav-button {
@@ -162,7 +162,7 @@ $nt-input-date-range-band-preview: color-mix(in srgb, colors.$nt-color-primary 8
         padding: 1px 0;
         text-align: center;
         color: colors.$nt-color-on-surface-variant;
-        @include typescale.tnt-label-small;
+        @include typescale.nt-label-small;
     }
 
     ::deep .day-cell {
@@ -202,7 +202,7 @@ $nt-input-date-range-band-preview: color-mix(in srgb, colors.$nt-color-primary 8
         color: colors.$nt-color-on-surface;
         cursor: pointer;
         transition: background-color $nt-input-date-range-motion, color $nt-input-date-range-motion;
-        @include typescale.tnt-label-medium;
+        @include typescale.nt-label-medium;
 
         &:hover {
             background-color: $nt-input-date-range-band;

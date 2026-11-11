@@ -17,7 +17,7 @@ applyTo: "**/*.razor.css,**/*.razor.scss"
 - **!important:** Do not use `!important` unless absolutely necessary (requires comment).
 
 ## Libraries & Utilities
-- **TnTComponents:** Prefer existing TnTComponents or utility classes for layout and spacing.
+- **NTComponents:** Prefer existing NTComponents or utility classes for layout and spacing.
 - **Custom UI:** Implement custom patterns locally only if not covered by the library.
 
 ## Accessibility & Responsiveness

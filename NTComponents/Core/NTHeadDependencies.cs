@@ -142,13 +142,13 @@ public class NTHeadDependencies : IComponent {
         : tokenScopeSelector.Trim();
 
     internal static string CreateMeasurementTokens(double headerHeight, double footerHeight, double sideNavWidth, string? tokenScopeSelector) {
-        return string.Create(CultureInfo.InvariantCulture, $"{NormalizeTokenScopeSelector(tokenScopeSelector)}{{--tnt-header-height:{headerHeight}px;--tnt-footer-height:{footerHeight}px;--tnt-side-nav-width:{sideNavWidth}px;}}");
+        return string.Create(CultureInfo.InvariantCulture, $"{NormalizeTokenScopeSelector(tokenScopeSelector)}{{--nt-header-height:{headerHeight}px;--nt-footer-height:{footerHeight}px;--nt-side-nav-width:{sideNavWidth}px;}}");
     }
 
     internal static void RenderMeasurementTokens(RenderTreeBuilder builder, double headerHeight, double footerHeight, double sideNavWidth, string? tokenScopeSelector) {
         builder.OpenElement(0, "style");
         builder.AddAttribute(1, "id", "nt-measurement-tokens");
-        builder.AddAttribute(2, "class", "tnt-measurements");
+        builder.AddAttribute(2, "class", "nt-measurements");
         builder.AddAttribute(3, "data-permanent", "nt-measurement-tokens");
         builder.AddContent(4, CreateMeasurementTokens(headerHeight, footerHeight, sideNavWidth, tokenScopeSelector));
         builder.CloseElement();
@@ -187,23 +187,13 @@ public class NTHeadDependencies : IComponent {
     private void Render(RenderTreeBuilder builder) {
         var measurementStylesheetHref = ResolveAssetPath(_renderHandle.Assets, "_content/NTComponents/nt-measurements.css");
 
-        // <style data-tnt-theme-critical="true">html, body, #app { background-color: Canvas; color: CanvasText; }</style>
+        // <style data-nt-theme-critical="true">html, body, #app { background-color: Canvas; color: CanvasText; }</style>
         builder.OpenElement(0, "style");
-        builder.AddAttribute(1, "data-tnt-theme-critical", "true");
         builder.AddAttribute(2, "data-nt-theme-critical", "true");
         builder.AddAttribute(3, "id", "nt-theme-critical");
         builder.AddAttribute(4, "data-permanent", "nt-theme-critical");
         builder.AddContent(5, "html, body, #app { background-color: Canvas; color: CanvasText; }");
         builder.CloseElement();
-
-        builder.OpenRegion(6);
-        builder.OpenElement(0, "link");
-        builder.AddAttribute(1, "id", "nt-theme-compat-stylesheet");
-        builder.AddAttribute(2, "rel", "stylesheet");
-        builder.AddAttribute(3, "href", ResolveAssetPath(_renderHandle.Assets, "_content/NTComponents/nt-theme-compat.css"));
-        builder.AddAttribute(4, "data-permanent", "nt-theme-compat-stylesheet");
-        builder.CloseElement();
-        builder.CloseRegion();
 
         builder.OpenRegion(7);
         RenderFirstPaintThemeLinks(builder);
@@ -251,7 +241,7 @@ public class NTHeadDependencies : IComponent {
         builder.AddAttribute(40, "data-permanent", "nt-theme-script");
         builder.CloseElement();
 
-        // <style class="tnt-measurements">...</style>
+        // <style class="nt-measurements">...</style>
         builder.OpenRegion(41);
         RenderMeasurementTokens(builder, HeaderHeight, FooterHeight, SideNavWidth, TokenScopeSelector);
         builder.CloseRegion();

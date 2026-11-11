@@ -86,9 +86,9 @@ declare global {
 
 const snackbarHostSelector = '[data-nt-snackbar-host="true"]';
 const closeDelayMilliseconds = 200;
-const defaultActionColor = 'var(--tnt-color-inverse-primary)';
-const defaultBackgroundColor = 'var(--tnt-color-inverse-surface)';
-const defaultTextColor = 'var(--tnt-color-inverse-on-surface)';
+const defaultActionColor = 'var(--nt-color-inverse-primary)';
+const defaultBackgroundColor = 'var(--nt-color-inverse-surface)';
+const defaultTextColor = 'var(--nt-color-inverse-on-surface)';
 const maxPendingSnackbars = 50;
 const maxQueuedSnackbars = 50;
 const pendingSnackbars: SnackbarRecord[] = [];
@@ -101,7 +101,7 @@ let nextSnackbarId = 0;
 
 function getHosts(root: Maybe<Element | Document>): NTSnackbarHostElement[] {
     const scope = root ?? document;
-    if (scope instanceof HTMLElement && scope.localName === 'tnt-page-script') {
+    if (scope instanceof HTMLElement && scope.localName === 'nt-page-script') {
         const pageScript = scope as NTSnackbarPageScriptElement;
         if (pageScript.__ntSnackbarHost) {
             return [pageScript.__ntSnackbarHost];
@@ -236,7 +236,7 @@ function setStyleVariables(element: HTMLElement, snackbar: SnackbarRecord): void
 
 function createCloseIcon(): HTMLElement {
     const icon = document.createElement('span');
-    icon.className = 'tnt-icon material-symbols-outlined mi-medium';
+    icon.className = 'nt-icon material-symbols-outlined mi-medium';
     icon.textContent = 'close';
     return icon;
 }
@@ -394,7 +394,7 @@ function createSnackbarElement(host: NTSnackbarHostElement, state: NTSnackbarHos
 
         for (const snackbarAction of snackbar.actions) {
             const action = document.createElement('button');
-            action.className = 'nt-snackbar-action tnt-interactable';
+            action.className = 'nt-snackbar-action nt-interactable';
             action.type = 'button';
             action.textContent = snackbarAction.label;
             actionButtons.push(action);
@@ -433,7 +433,7 @@ function createSnackbarElement(host: NTSnackbarHostElement, state: NTSnackbarHos
 
         if (snackbar.showClose) {
             const close = document.createElement('button');
-            close.className = 'nt-snackbar-close tnt-interactable';
+            close.className = 'nt-snackbar-close nt-interactable';
             close.type = 'button';
             close.setAttribute('aria-label', 'Dismiss notification');
             close.appendChild(createCloseIcon());
@@ -909,7 +909,7 @@ export function onDispose(element?: Maybe<Element>): void {
         disposeHost(host);
     }
 
-    if (element instanceof HTMLElement && element.localName === 'tnt-page-script') {
+    if (element instanceof HTMLElement && element.localName === 'nt-page-script') {
         delete (element as NTSnackbarPageScriptElement).__ntSnackbarHost;
     }
 }

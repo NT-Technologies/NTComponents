@@ -94,8 +94,8 @@ const MONTH_COUNT = 12;
 const YEAR_LIST_BATCH_SIZE = 100;
 const YEAR_LIST_MAX_OPTION_COUNT = 300;
 const YEAR_LIST_SCROLL_THRESHOLD = 96;
-const PICKER_INPUT_SELECTOR = 'input[data-tnt-dtp-input="true"][data-tnt-dtp-target]';
-const NATIVE_PICKER_INPUT_SELECTOR = 'input[data-tnt-dtp-native-input="true"]';
+const PICKER_INPUT_SELECTOR = 'input[data-nt-dtp-input="true"][data-nt-dtp-target]';
+const NATIVE_PICKER_INPUT_SELECTOR = 'input[data-nt-dtp-native-input="true"]';
 const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const MODE_CONFIG: Record<DateTimePickerMode, { hasDate: boolean; hasTime: boolean; supportsSubSelection: boolean }> = {
     date: { hasDate: true, hasTime: false, supportsSubSelection: true },
@@ -186,7 +186,7 @@ function shiftYearMonth(year: number, month: number, delta: number): { month: nu
 
 function shouldUseModalLayout(state: Maybe<PickerState>): boolean {
     const viewportWidth = Math.max(document.documentElement?.clientWidth ?? 0, window.innerWidth ?? 0);
-    const rawBreakpoint = state?.picker ? getComputedStyle(state.picker).getPropertyValue('--tnt-dtp-modal-breakpoint') : '';
+    const rawBreakpoint = state?.picker ? getComputedStyle(state.picker).getPropertyValue('--nt-dtp-modal-breakpoint') : '';
     const parsedBreakpoint = Number.parseFloat(rawBreakpoint);
     const breakpoint = Number.isFinite(parsedBreakpoint) ? parsedBreakpoint : DEFAULT_MODAL_VIEWPORT_WIDTH_BREAKPOINT;
     return viewportWidth <= breakpoint;
@@ -270,21 +270,21 @@ function parseDisabledSet(rawValue: Maybe<string>, normalizer: Normalizer): Set<
 
 function collectPickerElements(picker: HTMLElement): PickerElements {
     return {
-        amButton: picker.querySelector<HTMLButtonElement>('[data-tnt-dtp-meridiem="am"]'),
-        calendarYearLabel: picker.querySelector<HTMLElement>('[data-tnt-dtp-calendar-year-label]'),
-        cancelButton: picker.querySelector<HTMLButtonElement>('[data-tnt-dtp-action="cancel"]'),
-        confirmButton: picker.querySelector<HTMLButtonElement>('[data-tnt-dtp-action="confirm"]'),
-        dayButtons: Array.from(picker.querySelectorAll<HTMLButtonElement>('[data-tnt-dtp-day-index]')),
-        headline: picker.querySelector<HTMLElement>('[data-tnt-dtp-headline]'),
-        hourInput: picker.querySelector<HTMLInputElement>('[data-tnt-dtp-hour]'),
-        minuteInput: picker.querySelector<HTMLInputElement>('[data-tnt-dtp-minute]'),
-        monthButtons: Array.from(picker.querySelectorAll<HTMLButtonElement>('[data-tnt-dtp-month-index]')),
-        monthLabel: picker.querySelector<HTMLElement>('[data-tnt-dtp-month-label]'),
-        pmButton: picker.querySelector<HTMLButtonElement>('[data-tnt-dtp-meridiem="pm"]'),
-        subhead: picker.querySelector<HTMLElement>('[data-tnt-dtp-subhead]'),
-        surface: picker.querySelector<HTMLElement>('[data-tnt-dtp-surface]'),
-        yearLabel: picker.querySelector<HTMLElement>('[data-tnt-dtp-year-label]'),
-        yearList: picker.querySelector<HTMLElement>('[data-tnt-dtp-year-list]'),
+        amButton: picker.querySelector<HTMLButtonElement>('[data-nt-dtp-meridiem="am"]'),
+        calendarYearLabel: picker.querySelector<HTMLElement>('[data-nt-dtp-calendar-year-label]'),
+        cancelButton: picker.querySelector<HTMLButtonElement>('[data-nt-dtp-action="cancel"]'),
+        confirmButton: picker.querySelector<HTMLButtonElement>('[data-nt-dtp-action="confirm"]'),
+        dayButtons: Array.from(picker.querySelectorAll<HTMLButtonElement>('[data-nt-dtp-day-index]')),
+        headline: picker.querySelector<HTMLElement>('[data-nt-dtp-headline]'),
+        hourInput: picker.querySelector<HTMLInputElement>('[data-nt-dtp-hour]'),
+        minuteInput: picker.querySelector<HTMLInputElement>('[data-nt-dtp-minute]'),
+        monthButtons: Array.from(picker.querySelectorAll<HTMLButtonElement>('[data-nt-dtp-month-index]')),
+        monthLabel: picker.querySelector<HTMLElement>('[data-nt-dtp-month-label]'),
+        pmButton: picker.querySelector<HTMLButtonElement>('[data-nt-dtp-meridiem="pm"]'),
+        subhead: picker.querySelector<HTMLElement>('[data-nt-dtp-subhead]'),
+        surface: picker.querySelector<HTMLElement>('[data-nt-dtp-surface]'),
+        yearLabel: picker.querySelector<HTMLElement>('[data-nt-dtp-year-label]'),
+        yearList: picker.querySelector<HTMLElement>('[data-nt-dtp-year-list]'),
     };
 }
 
@@ -307,7 +307,7 @@ function createScopedElement<K extends keyof HTMLElementTagNameMap>(tagName: K, 
 }
 
 function createIcon(icon: string, scopeAttributeName: string | null, additionalClass?: string): HTMLSpanElement {
-    const span = createScopedElement('span', scopeAttributeName, additionalClass ? `tnt-icon material-symbols-outlined mi-medium ${additionalClass}` : 'tnt-icon material-symbols-outlined mi-medium');
+    const span = createScopedElement('span', scopeAttributeName, additionalClass ? `nt-icon material-symbols-outlined mi-medium ${additionalClass}` : 'nt-icon material-symbols-outlined mi-medium');
     span.textContent = icon;
     return span;
 }
@@ -315,7 +315,7 @@ function createIcon(icon: string, scopeAttributeName: string | null, additionalC
 function createPickerButton(scopeAttributeName: string | null, className: string, action: string, ariaLabel?: string): HTMLButtonElement {
     const button = createScopedElement('button', scopeAttributeName, className);
     button.type = 'button';
-    button.dataset.tntDtpAction = action;
+    button.dataset.ntDtpAction = action;
     if (ariaLabel) {
         button.setAttribute('aria-label', ariaLabel);
     }
@@ -324,44 +324,44 @@ function createPickerButton(scopeAttributeName: string | null, className: string
 }
 
 function getPickerContentElement(picker: HTMLElement, scopeAttributeName: string | null): HTMLElement {
-    const existingContent = picker.querySelector<HTMLElement>('[data-tnt-dtp-content]');
+    const existingContent = picker.querySelector<HTMLElement>('[data-nt-dtp-content]');
     if (existingContent) {
         return existingContent;
     }
 
-    const content = createScopedElement('div', scopeAttributeName, 'tnt-dtp-content');
-    content.dataset.tntDtpContent = '';
-    const actions = picker.querySelector('[data-tnt-dtp-action="cancel"]')?.closest('.tnt-dtp-actions');
-    const surface = picker.querySelector<HTMLElement>('[data-tnt-dtp-surface]') ?? picker;
+    const content = createScopedElement('div', scopeAttributeName, 'nt-dtp-content');
+    content.dataset.ntDtpContent = '';
+    const actions = picker.querySelector('[data-nt-dtp-action="cancel"]')?.closest('.nt-dtp-actions');
+    const surface = picker.querySelector<HTMLElement>('[data-nt-dtp-surface]') ?? picker;
     surface.insertBefore(content, actions ?? null);
     return content;
 }
 
 function createDatePanel(scopeAttributeName: string | null): HTMLElement {
-    const panel = createScopedElement('div', scopeAttributeName, 'tnt-dtp-date-panel');
-    panel.dataset.tntDtpDatePanel = '';
-    const nav = createScopedElement('div', scopeAttributeName, 'tnt-dtp-calendar-nav');
-    const previousButton = createPickerButton(scopeAttributeName, 'tnt-dtp-nav-button', 'prev-month', 'Previous month');
+    const panel = createScopedElement('div', scopeAttributeName, 'nt-dtp-date-panel');
+    panel.dataset.ntDtpDatePanel = '';
+    const nav = createScopedElement('div', scopeAttributeName, 'nt-dtp-calendar-nav');
+    const previousButton = createPickerButton(scopeAttributeName, 'nt-dtp-nav-button', 'prev-month', 'Previous month');
     previousButton.appendChild(createIcon('chevron_left', scopeAttributeName));
 
-    const menuButtons = createScopedElement('div', scopeAttributeName, 'tnt-dtp-menu-buttons');
-    const showMonthsButton = createPickerButton(scopeAttributeName, 'tnt-dtp-menu-button', 'show-months', 'Change month');
+    const menuButtons = createScopedElement('div', scopeAttributeName, 'nt-dtp-menu-buttons');
+    const showMonthsButton = createPickerButton(scopeAttributeName, 'nt-dtp-menu-button', 'show-months', 'Change month');
     const monthLabel = createScopedElement('span', scopeAttributeName);
-    monthLabel.dataset.tntDtpMonthLabel = '';
+    monthLabel.dataset.ntDtpMonthLabel = '';
     monthLabel.textContent = 'Month';
-    showMonthsButton.append(monthLabel, createIcon('arrow_drop_down', scopeAttributeName, 'tnt-dtp-menu-button-icon'));
-    const showYearsButton = createPickerButton(scopeAttributeName, 'tnt-dtp-menu-button', 'show-years', 'Change year');
+    showMonthsButton.append(monthLabel, createIcon('arrow_drop_down', scopeAttributeName, 'nt-dtp-menu-button-icon'));
+    const showYearsButton = createPickerButton(scopeAttributeName, 'nt-dtp-menu-button', 'show-years', 'Change year');
     const yearLabel = createScopedElement('span', scopeAttributeName);
-    yearLabel.dataset.tntDtpCalendarYearLabel = '';
+    yearLabel.dataset.ntDtpCalendarYearLabel = '';
     yearLabel.textContent = 'Year';
-    showYearsButton.append(yearLabel, createIcon('arrow_drop_down', scopeAttributeName, 'tnt-dtp-menu-button-icon'));
+    showYearsButton.append(yearLabel, createIcon('arrow_drop_down', scopeAttributeName, 'nt-dtp-menu-button-icon'));
     menuButtons.append(showMonthsButton, showYearsButton);
 
-    const nextButton = createPickerButton(scopeAttributeName, 'tnt-dtp-nav-button', 'next-month', 'Next month');
+    const nextButton = createPickerButton(scopeAttributeName, 'nt-dtp-nav-button', 'next-month', 'Next month');
     nextButton.appendChild(createIcon('chevron_right', scopeAttributeName));
     nav.append(previousButton, menuButtons, nextButton);
 
-    const weekdays = createScopedElement('div', scopeAttributeName, 'tnt-dtp-weekdays');
+    const weekdays = createScopedElement('div', scopeAttributeName, 'nt-dtp-weekdays');
     weekdays.setAttribute('aria-hidden', 'true');
     for (const label of WEEKDAY_LABELS) {
         const weekday = createScopedElement('span', scopeAttributeName);
@@ -369,13 +369,13 @@ function createDatePanel(scopeAttributeName: string | null): HTMLElement {
         weekdays.appendChild(weekday);
     }
 
-    const dayGrid = createScopedElement('div', scopeAttributeName, 'tnt-dtp-day-grid');
+    const dayGrid = createScopedElement('div', scopeAttributeName, 'nt-dtp-day-grid');
     dayGrid.setAttribute('role', 'grid');
     dayGrid.setAttribute('aria-label', 'Calendar days');
     for (let index = 0; index < CALENDAR_DAY_COUNT; index += 1) {
-        const button = createScopedElement('button', scopeAttributeName, 'tnt-dtp-day');
+        const button = createScopedElement('button', scopeAttributeName, 'nt-dtp-day');
         button.type = 'button';
-        button.dataset.tntDtpDayIndex = String(index);
+        button.dataset.ntDtpDayIndex = String(index);
         button.setAttribute('role', 'gridcell');
         dayGrid.appendChild(button);
     }
@@ -385,26 +385,26 @@ function createDatePanel(scopeAttributeName: string | null): HTMLElement {
 }
 
 function createMonthPanel(scopeAttributeName: string | null): HTMLElement {
-    const panel = createScopedElement('div', scopeAttributeName, 'tnt-dtp-month-panel');
-    panel.dataset.tntDtpMonthPanel = '';
-    const nav = createScopedElement('div', scopeAttributeName, 'tnt-dtp-calendar-nav');
-    const previousButton = createPickerButton(scopeAttributeName, 'tnt-dtp-nav-button', 'prev-year', 'Previous year');
+    const panel = createScopedElement('div', scopeAttributeName, 'nt-dtp-month-panel');
+    panel.dataset.ntDtpMonthPanel = '';
+    const nav = createScopedElement('div', scopeAttributeName, 'nt-dtp-calendar-nav');
+    const previousButton = createPickerButton(scopeAttributeName, 'nt-dtp-nav-button', 'prev-year', 'Previous year');
     previousButton.appendChild(createIcon('chevron_left', scopeAttributeName));
-    const yearLabel = createScopedElement('div', scopeAttributeName, 'tnt-dtp-month-label');
-    yearLabel.dataset.tntDtpYearLabel = '';
+    const yearLabel = createScopedElement('div', scopeAttributeName, 'nt-dtp-month-label');
+    yearLabel.dataset.ntDtpYearLabel = '';
     yearLabel.textContent = 'Year';
-    const nextButton = createPickerButton(scopeAttributeName, 'tnt-dtp-nav-button', 'next-year', 'Next year');
+    const nextButton = createPickerButton(scopeAttributeName, 'nt-dtp-nav-button', 'next-year', 'Next year');
     nextButton.appendChild(createIcon('chevron_right', scopeAttributeName));
     nav.append(previousButton, yearLabel, nextButton);
 
-    const monthGrid = createScopedElement('div', scopeAttributeName, 'tnt-dtp-month-grid');
-    monthGrid.dataset.tntDtpMonthGrid = '';
+    const monthGrid = createScopedElement('div', scopeAttributeName, 'nt-dtp-month-grid');
+    monthGrid.dataset.ntDtpMonthGrid = '';
     monthGrid.setAttribute('role', 'grid');
     monthGrid.setAttribute('aria-label', 'Months');
     for (let index = 0; index < MONTH_COUNT; index += 1) {
-        const button = createScopedElement('button', scopeAttributeName, 'tnt-dtp-month-option');
+        const button = createScopedElement('button', scopeAttributeName, 'nt-dtp-month-option');
         button.type = 'button';
-        button.dataset.tntDtpMonthIndex = String(index);
+        button.dataset.ntDtpMonthIndex = String(index);
         button.setAttribute('role', 'gridcell');
         monthGrid.appendChild(button);
     }
@@ -414,10 +414,10 @@ function createMonthPanel(scopeAttributeName: string | null): HTMLElement {
 }
 
 function createYearPanel(scopeAttributeName: string | null): HTMLElement {
-    const panel = createScopedElement('div', scopeAttributeName, 'tnt-dtp-year-panel');
-    panel.dataset.tntDtpYearPanel = '';
-    const yearList = createScopedElement('div', scopeAttributeName, 'tnt-dtp-year-list');
-    yearList.dataset.tntDtpYearList = '';
+    const panel = createScopedElement('div', scopeAttributeName, 'nt-dtp-year-panel');
+    panel.dataset.ntDtpYearPanel = '';
+    const yearList = createScopedElement('div', scopeAttributeName, 'nt-dtp-year-list');
+    yearList.dataset.ntDtpYearList = '';
     yearList.setAttribute('role', 'listbox');
     yearList.setAttribute('aria-label', 'Years');
     panel.appendChild(yearList);
@@ -425,12 +425,12 @@ function createYearPanel(scopeAttributeName: string | null): HTMLElement {
 }
 
 function createTimePanel(scopeAttributeName: string | null): HTMLElement {
-    const panel = createScopedElement('div', scopeAttributeName, 'tnt-dtp-time-panel');
-    panel.dataset.tntDtpTimePanel = '';
-    const fields = createScopedElement('div', scopeAttributeName, 'tnt-dtp-time-fields');
+    const panel = createScopedElement('div', scopeAttributeName, 'nt-dtp-time-panel');
+    panel.dataset.ntDtpTimePanel = '';
+    const fields = createScopedElement('div', scopeAttributeName, 'nt-dtp-time-fields');
 
-    const createTimeField = (text: string, dataKey: 'tntDtpHour' | 'tntDtpMinute'): HTMLLabelElement => {
-        const label = createScopedElement('label', scopeAttributeName, 'tnt-dtp-time-field');
+    const createTimeField = (text: string, dataKey: 'ntDtpHour' | 'ntDtpMinute'): HTMLLabelElement => {
+        const label = createScopedElement('label', scopeAttributeName, 'nt-dtp-time-field');
         const input = createScopedElement('input', scopeAttributeName);
         input.inputMode = 'numeric';
         input.autocomplete = 'off';
@@ -442,22 +442,22 @@ function createTimePanel(scopeAttributeName: string | null): HTMLElement {
         return label;
     };
 
-    const separator = createScopedElement('span', scopeAttributeName, 'tnt-dtp-time-separator');
+    const separator = createScopedElement('span', scopeAttributeName, 'nt-dtp-time-separator');
     separator.setAttribute('aria-hidden', 'true');
     separator.textContent = ':';
 
-    const meridiemGroup = createScopedElement('div', scopeAttributeName, 'tnt-dtp-meridiem-field');
+    const meridiemGroup = createScopedElement('div', scopeAttributeName, 'nt-dtp-meridiem-field');
     meridiemGroup.setAttribute('role', 'group');
     meridiemGroup.setAttribute('aria-label', 'AM or PM');
-    const amButton = createPickerButton(scopeAttributeName, 'tnt-dtp-meridiem-button', 'set-am');
-    amButton.dataset.tntDtpMeridiem = 'am';
+    const amButton = createPickerButton(scopeAttributeName, 'nt-dtp-meridiem-button', 'set-am');
+    amButton.dataset.ntDtpMeridiem = 'am';
     amButton.textContent = 'AM';
-    const pmButton = createPickerButton(scopeAttributeName, 'tnt-dtp-meridiem-button', 'set-pm');
-    pmButton.dataset.tntDtpMeridiem = 'pm';
+    const pmButton = createPickerButton(scopeAttributeName, 'nt-dtp-meridiem-button', 'set-pm');
+    pmButton.dataset.ntDtpMeridiem = 'pm';
     pmButton.textContent = 'PM';
     meridiemGroup.append(amButton, pmButton);
 
-    fields.append(createTimeField('Hour', 'tntDtpHour'), separator, createTimeField('Minute', 'tntDtpMinute'), meridiemGroup);
+    fields.append(createTimeField('Hour', 'ntDtpHour'), separator, createTimeField('Minute', 'ntDtpMinute'), meridiemGroup);
     panel.appendChild(fields);
     return panel;
 }
@@ -481,10 +481,10 @@ function ensureLazyPickerStructure(state: PickerState): boolean {
     const content = getPickerContentElement(state.picker, scopeAttributeName);
     const { hasDate, hasTime } = getModeConfig(state.mode);
     const panels: [string, boolean, (scope: string | null) => HTMLElement][] = [
-        ['[data-tnt-dtp-date-panel]', hasDate, createDatePanel],
-        ['[data-tnt-dtp-month-panel]', hasDate || state.mode === 'month', createMonthPanel],
-        ['[data-tnt-dtp-year-panel]', hasDate, createYearPanel],
-        ['[data-tnt-dtp-time-panel]', hasTime, createTimePanel],
+        ['[data-nt-dtp-date-panel]', hasDate, createDatePanel],
+        ['[data-nt-dtp-month-panel]', hasDate || state.mode === 'month', createMonthPanel],
+        ['[data-nt-dtp-year-panel]', hasDate, createYearPanel],
+        ['[data-nt-dtp-time-panel]', hasTime, createTimePanel],
     ];
     let changed = false;
 
@@ -531,7 +531,7 @@ function createDefaultDraft(): PickerDraft {
 }
 
 function parseMode(state: PickerState): DateTimePickerMode {
-    const mode = state.input?.dataset?.tntDtpMode ?? state.picker?.dataset?.tntDtpMode ?? 'none';
+    const mode = state.input?.dataset?.ntDtpMode ?? state.picker?.dataset?.ntDtpMode ?? 'none';
     if (mode === 'date' || mode === 'month' || mode === 'time' || mode === 'datetime') {
         return mode;
     }
@@ -897,8 +897,8 @@ function updateConstraints(state: PickerState): void {
 }
 
 function updateDisabledSets(state: PickerState): void {
-    state.disabledDateSet = parseDisabledSet(state.input?.dataset?.tntDtpDisabledDates, normalizeDateToken);
-    state.disabledTimeSet = parseDisabledSet(state.input?.dataset?.tntDtpDisabledTimes, normalizeTimeToken);
+    state.disabledDateSet = parseDisabledSet(state.input?.dataset?.ntDtpDisabledDates, normalizeDateToken);
+    state.disabledTimeSet = parseDisabledSet(state.input?.dataset?.ntDtpDisabledTimes, normalizeTimeToken);
 }
 
 function getComparable(mode: DateTimePickerMode): ((draft: PickerDraft) => number) | null {
@@ -954,11 +954,11 @@ function commitDraft(state: PickerState): boolean {
 function setInputParseError(state: PickerState, message: string | null): void {
     const field = state.input.closest('.nt-input');
     if (message) {
-        if (state.input.dataset.tntDtpParseInvalid !== 'true') {
-            state.input.dataset.tntDtpPreviousAriaInvalid = state.input.getAttribute('aria-invalid') ?? '';
+        if (state.input.dataset.ntDtpParseInvalid !== 'true') {
+            state.input.dataset.ntDtpPreviousAriaInvalid = state.input.getAttribute('aria-invalid') ?? '';
         }
 
-        state.input.dataset.tntDtpParseInvalid = 'true';
+        state.input.dataset.ntDtpParseInvalid = 'true';
         state.input.setCustomValidity(message);
         state.input.setAttribute('aria-invalid', 'true');
         field?.classList.add('nt-dtp-parse-invalid');
@@ -966,19 +966,19 @@ function setInputParseError(state: PickerState, message: string | null): void {
     }
 
     state.input.setCustomValidity('');
-    if (state.input.dataset.tntDtpParseInvalid !== 'true') {
+    if (state.input.dataset.ntDtpParseInvalid !== 'true') {
         return;
     }
 
-    const previousAriaInvalid = state.input.dataset.tntDtpPreviousAriaInvalid;
+    const previousAriaInvalid = state.input.dataset.ntDtpPreviousAriaInvalid;
     if (previousAriaInvalid) {
         state.input.setAttribute('aria-invalid', previousAriaInvalid);
     }
     else {
         state.input.removeAttribute('aria-invalid');
     }
-    delete state.input.dataset.tntDtpParseInvalid;
-    delete state.input.dataset.tntDtpPreviousAriaInvalid;
+    delete state.input.dataset.ntDtpParseInvalid;
+    delete state.input.dataset.ntDtpPreviousAriaInvalid;
     field?.classList.remove('nt-dtp-parse-invalid');
 }
 
@@ -1070,12 +1070,12 @@ function renderTimeFields(state: PickerState): void {
     }
     if (amButton) {
         const isSelected = state.meridiem === 'am';
-        amButton.classList.toggle('tnt-dtp-meridiem-selected', isSelected);
+        amButton.classList.toggle('nt-dtp-meridiem-selected', isSelected);
         amButton.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
     }
     if (pmButton) {
         const isSelected = state.meridiem === 'pm';
-        pmButton.classList.toggle('tnt-dtp-meridiem-selected', isSelected);
+        pmButton.classList.toggle('nt-dtp-meridiem-selected', isSelected);
         pmButton.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
     }
 }
@@ -1111,13 +1111,13 @@ function renderCalendar(state: PickerState): void {
         const disabled = isDateDisabled(state, year, month, day);
 
         button.textContent = String(day);
-        button.dataset.tntDtpYear = String(year);
-        button.dataset.tntDtpMonth = String(month);
-        button.dataset.tntDtpDay = String(day);
+        button.dataset.ntDtpYear = String(year);
+        button.dataset.ntDtpMonth = String(month);
+        button.dataset.ntDtpDay = String(day);
         button.disabled = disabled;
-        button.classList.toggle('tnt-dtp-outside-month', !inCurrentMonth);
-        button.classList.toggle('tnt-dtp-selected-day', selected);
-        button.classList.toggle('tnt-dtp-today', isToday);
+        button.classList.toggle('nt-dtp-outside-month', !inCurrentMonth);
+        button.classList.toggle('nt-dtp-selected-day', selected);
+        button.classList.toggle('nt-dtp-today', isToday);
         button.setAttribute('aria-selected', selected ? 'true' : 'false');
         button.setAttribute('aria-current', isToday ? 'date' : 'false');
     });
@@ -1142,7 +1142,7 @@ function renderMonthGrid(state: PickerState): void {
     const selectedKey = toMonthComparable(state.draft);
 
     monthButtons.forEach((button: HTMLButtonElement) => {
-        const month = toInt(button.dataset.tntDtpMonthIndex, 0);
+        const month = toInt(button.dataset.ntDtpMonthIndex, 0);
         const cellKey = toMonthComparable({ year: state.viewYear, month });
         const selected = cellKey === selectedKey;
         const isToday = cellKey === todayKey;
@@ -1150,11 +1150,11 @@ function renderMonthGrid(state: PickerState): void {
         const monthLabel = formatLocal('monthShort', createLocalDate(state.viewYear, month, 1));
 
         button.textContent = monthLabel;
-        button.dataset.tntDtpYear = String(state.viewYear);
-        button.dataset.tntDtpMonth = String(month);
+        button.dataset.ntDtpYear = String(state.viewYear);
+        button.dataset.ntDtpMonth = String(month);
         button.disabled = disabled;
-        button.classList.toggle('tnt-dtp-selected-day', selected);
-        button.classList.toggle('tnt-dtp-today', isToday);
+        button.classList.toggle('nt-dtp-selected-day', selected);
+        button.classList.toggle('nt-dtp-today', isToday);
         button.setAttribute('aria-selected', selected ? 'true' : 'false');
         button.setAttribute('aria-current', isToday ? 'date' : 'false');
     });
@@ -1196,9 +1196,9 @@ function getCssScopeAttributeName(element: HTMLElement): string | null {
 function createYearOption(year: number, scopeAttributeName: string | null): HTMLButtonElement {
     const yearButton = document.createElement('button');
     yearButton.type = 'button';
-    yearButton.className = 'tnt-dtp-year-option';
+    yearButton.className = 'nt-dtp-year-option';
     yearButton.tabIndex = -1;
-    yearButton.dataset.tntDtpYearOption = String(year);
+    yearButton.dataset.ntDtpYearOption = String(year);
     yearButton.setAttribute('role', 'option');
     yearButton.textContent = padYear(year);
     return applyScopeAttribute(yearButton, scopeAttributeName);
@@ -1222,15 +1222,15 @@ function appendYearOptions(yearList: HTMLElement, start: number, end: number, pl
 function syncYearOptionStates(state: PickerState, yearList: HTMLElement): void {
     const selectedYear = state.draft.year;
     const todayYear = new Date().getFullYear();
-    const yearButtons = yearList.querySelectorAll<HTMLButtonElement>('[data-tnt-dtp-year-option]');
+    const yearButtons = yearList.querySelectorAll<HTMLButtonElement>('[data-nt-dtp-year-option]');
 
     yearButtons.forEach((button: HTMLButtonElement) => {
-        const year = toInt(button.dataset.tntDtpYearOption, state.viewYear);
+        const year = toInt(button.dataset.ntDtpYearOption, state.viewYear);
         const selected = year === selectedYear;
         const isToday = year === todayYear;
         button.disabled = isYearDisabled(state, year);
-        button.classList.toggle('tnt-dtp-selected-year', selected);
-        button.classList.toggle('tnt-dtp-current-year', isToday);
+        button.classList.toggle('nt-dtp-selected-year', selected);
+        button.classList.toggle('nt-dtp-current-year', isToday);
         button.setAttribute('aria-selected', selected ? 'true' : 'false');
         button.setAttribute('aria-current', isToday ? 'date' : 'false');
     });
@@ -1238,12 +1238,12 @@ function syncYearOptionStates(state: PickerState, yearList: HTMLElement): void {
 
 function getFirstRenderedYear(yearList: HTMLElement): number | null {
     const firstButton = yearList.firstElementChild as HTMLButtonElement | null;
-    return firstButton ? toInt(firstButton.dataset.tntDtpYearOption, 0) : null;
+    return firstButton ? toInt(firstButton.dataset.ntDtpYearOption, 0) : null;
 }
 
 function getLastRenderedYear(yearList: HTMLElement): number | null {
     const lastButton = yearList.lastElementChild as HTMLButtonElement | null;
-    return lastButton ? toInt(lastButton.dataset.tntDtpYearOption, 0) : null;
+    return lastButton ? toInt(lastButton.dataset.ntDtpYearOption, 0) : null;
 }
 
 function synchronizeRenderedYearRange(state: PickerState, yearList: HTMLElement): void {
@@ -1301,7 +1301,7 @@ function renderYearList(state: PickerState): void {
     syncYearOptionStates(state, yearList);
 
     if (state.dateView === 'year') {
-        const selectedButton = yearList.querySelector<HTMLElement>('.tnt-dtp-selected-year') ?? yearList.querySelector<HTMLElement>('.tnt-dtp-current-year');
+        const selectedButton = yearList.querySelector<HTMLElement>('.nt-dtp-selected-year') ?? yearList.querySelector<HTMLElement>('.nt-dtp-current-year');
         selectedButton?.scrollIntoView?.({ block: 'center' });
     }
 }
@@ -1405,8 +1405,8 @@ function getRenderSignature(state: PickerState): string {
         state.input?.value ?? '',
         state.input?.min ?? '',
         state.input?.max ?? '',
-        state.input?.dataset?.tntDtpDisabledDates ?? '',
-        state.input?.dataset?.tntDtpDisabledTimes ?? '',
+        state.input?.dataset?.ntDtpDisabledDates ?? '',
+        state.input?.dataset?.ntDtpDisabledTimes ?? '',
     ].join('|');
 }
 
@@ -1425,11 +1425,11 @@ function renderPicker(state: PickerState): void {
     }
 
     state.lastRenderSignature = renderSignature;
-    state.picker.classList.remove('tnt-dtp-mode-date', 'tnt-dtp-mode-month', 'tnt-dtp-mode-time', 'tnt-dtp-mode-datetime');
-    state.picker.classList.add(`tnt-dtp-mode-${state.mode}`);
-    state.picker.classList.toggle('tnt-dtp-view-month', state.dateView === 'month' && (state.mode === 'date' || state.mode === 'datetime'));
-    state.picker.classList.toggle('tnt-dtp-view-year', state.dateView === 'year' && (state.mode === 'date' || state.mode === 'datetime'));
-    state.picker.dataset.tntDtpMode = state.mode;
+    state.picker.classList.remove('nt-dtp-mode-date', 'nt-dtp-mode-month', 'nt-dtp-mode-time', 'nt-dtp-mode-datetime');
+    state.picker.classList.add(`nt-dtp-mode-${state.mode}`);
+    state.picker.classList.toggle('nt-dtp-view-month', state.dateView === 'month' && (state.mode === 'date' || state.mode === 'datetime'));
+    state.picker.classList.toggle('nt-dtp-view-year', state.dateView === 'year' && (state.mode === 'date' || state.mode === 'datetime'));
+    state.picker.dataset.ntDtpMode = state.mode;
 
     renderHeader(state);
 
@@ -1453,7 +1453,7 @@ function renderPicker(state: PickerState): void {
     renderActionState(state);
     if (structureChanged) {
         makePickerUntabbable(state);
-        state.picker.dataset.tntDtpTabbableMarker = '';
+        state.picker.dataset.ntDtpTabbableMarker = '';
         state.didMakePickerUntabbable = true;
     }
 
@@ -1479,15 +1479,15 @@ function isTargetInsideState(state: Maybe<PickerState>, target: EventTarget | nu
 }
 
 function findTrigger(input: HTMLInputElement, picker: HTMLElement): HTMLButtonElement | null {
-    const targetId = input.dataset.tntDtpTarget ?? picker.id;
+    const targetId = input.dataset.ntDtpTarget ?? picker.id;
     const scopedRoot = input.closest<HTMLElement>('.nt-input-date-time') ?? picker.closest<HTMLElement>('.nt-input-date-time');
-    const scopedTrigger = scopedRoot?.querySelector<HTMLButtonElement>('[data-tnt-dtp-trigger="true"][data-tnt-dtp-target]');
-    if (scopedTrigger?.dataset.tntDtpTarget === targetId) {
+    const scopedTrigger = scopedRoot?.querySelector<HTMLButtonElement>('[data-nt-dtp-trigger="true"][data-nt-dtp-target]');
+    if (scopedTrigger?.dataset.ntDtpTarget === targetId) {
         return scopedTrigger;
     }
 
-    const inputParentTrigger = input.parentElement?.querySelector<HTMLButtonElement>('[data-tnt-dtp-trigger="true"][data-tnt-dtp-target]');
-    if (inputParentTrigger?.dataset.tntDtpTarget === targetId) {
+    const inputParentTrigger = input.parentElement?.querySelector<HTMLButtonElement>('[data-nt-dtp-trigger="true"][data-nt-dtp-target]');
+    if (inputParentTrigger?.dataset.ntDtpTarget === targetId) {
         return inputParentTrigger;
     }
 
@@ -1519,7 +1519,7 @@ function positionPicker(state: Maybe<PickerState>): void {
     const picker = state.picker;
     const useModalLayout = shouldUseModalLayout(state);
     state.isModal = useModalLayout;
-    picker.classList.toggle('tnt-dtp-modal', useModalLayout);
+    picker.classList.toggle('nt-dtp-modal', useModalLayout);
     picker.setAttribute('aria-modal', useModalLayout ? 'true' : 'false');
 
     if (useModalLayout) {
@@ -1596,8 +1596,8 @@ function closePicker(state: Maybe<PickerState>, restoreFocus = false): void {
 
     state.isOpen = false;
     state.isModal = false;
-    state.picker.classList.remove('tnt-dtp-open');
-    state.picker.classList.remove('tnt-dtp-modal');
+    state.picker.classList.remove('nt-dtp-open');
+    state.picker.classList.remove('nt-dtp-modal');
     state.picker.setAttribute('aria-hidden', 'true');
     state.picker.setAttribute('aria-modal', 'false');
     state.picker.style.visibility = 'hidden';
@@ -1644,14 +1644,14 @@ function openPicker(state: Maybe<PickerState>): void {
     updateDisabledSets(state);
     syncDraftFromInputValue(state);
     state.openValue = state.input.value;
-    state.picker.classList.add('tnt-dtp-open');
+    state.picker.classList.add('nt-dtp-open');
     state.picker.setAttribute('aria-hidden', 'false');
     state.isOpen = true;
     activePickerState = state;
 
     if (shouldUseModalLayout(state)) {
         state.isModal = true;
-        state.picker.classList.add('tnt-dtp-modal');
+        state.picker.classList.add('nt-dtp-modal');
         state.picker.setAttribute('aria-modal', 'true');
         state.picker.style.left = '0px';
         state.picker.style.top = '0px';
@@ -1659,7 +1659,7 @@ function openPicker(state: Maybe<PickerState>): void {
     }
     else {
         state.isModal = false;
-        state.picker.classList.remove('tnt-dtp-modal');
+        state.picker.classList.remove('nt-dtp-modal');
         state.picker.setAttribute('aria-modal', 'false');
     }
 
@@ -1675,9 +1675,9 @@ function handleDaySelection(state: PickerState, button: Maybe<HTMLButtonElement>
         return;
     }
 
-    state.draft.year = toInt(button.dataset.tntDtpYear, state.draft.year);
-    state.draft.month = toInt(button.dataset.tntDtpMonth, state.draft.month);
-    state.draft.day = toInt(button.dataset.tntDtpDay, state.draft.day);
+    state.draft.year = toInt(button.dataset.ntDtpYear, state.draft.year);
+    state.draft.month = toInt(button.dataset.ntDtpMonth, state.draft.month);
+    state.draft.day = toInt(button.dataset.ntDtpDay, state.draft.day);
     state.viewYear = state.draft.year;
     state.viewMonth = state.draft.month;
     if (commitDraft(state) && state.mode === 'date') {
@@ -1765,7 +1765,7 @@ function configureStateFromAttributes(state: PickerState): void {
     state.label = state.input.closest('label') ?? state.input.labels?.[0] ?? state.label ?? null;
     state.mode = parseMode(state);
     suppressNativeInputPicker(state);
-    state.openOnFocus = state.input?.dataset?.tntDtpOpenOnFocus !== 'false';
+    state.openOnFocus = state.input?.dataset?.ntDtpOpenOnFocus !== 'false';
     setTrigger(state, findTrigger(state.input, state.picker));
     updateConstraints(state);
     updateDisabledSets(state);
@@ -1778,8 +1778,8 @@ function configureStateFromAttributes(state: PickerState): void {
         }
 
         if (!state.isOpen) {
-            if (state.picker.classList.contains('tnt-dtp-open')) {
-                state.picker.classList.remove('tnt-dtp-open');
+            if (state.picker.classList.contains('nt-dtp-open')) {
+                state.picker.classList.remove('nt-dtp-open');
             }
 
             if (state.picker.style.visibility !== 'hidden') {
@@ -1789,10 +1789,10 @@ function configureStateFromAttributes(state: PickerState): void {
     }
 
     const tabbableMarker = `${state.elements.dayButtons.length}:${state.elements.monthButtons.length}:${state.elements.yearList ? 'y' : 'n'}:${state.elements.hourInput ? 'h' : 'n'}:${state.elements.minuteInput ? 'm' : 'n'}:${state.elements.confirmButton ? 'c' : 'n'}:${state.elements.cancelButton ? 'x' : 'n'}`;
-    if (!state.didMakePickerUntabbable || state.picker.dataset.tntDtpTabbableMarker !== tabbableMarker) {
+    if (!state.didMakePickerUntabbable || state.picker.dataset.ntDtpTabbableMarker !== tabbableMarker) {
         makePickerUntabbable(state);
         state.didMakePickerUntabbable = true;
-        state.picker.dataset.tntDtpTabbableMarker = tabbableMarker;
+        state.picker.dataset.ntDtpTabbableMarker = tabbableMarker;
     }
 
     if (state.isOpen) {
@@ -1890,7 +1890,7 @@ function createPickerState(input: HTMLInputElement, picker: HTMLElement): Picker
 
     state.onLabelMouseDown = event => {
         const target = event.target instanceof Element ? event.target : null;
-        const trigger = target?.closest('[data-tnt-dtp-trigger="true"]');
+        const trigger = target?.closest('[data-nt-dtp-trigger="true"]');
         if (!trigger) {
             return;
         }
@@ -1900,7 +1900,7 @@ function createPickerState(input: HTMLInputElement, picker: HTMLElement): Picker
 
     state.onLabelClick = event => {
         const target = event.target instanceof Element ? event.target : null;
-        const trigger = target?.closest('[data-tnt-dtp-trigger="true"]');
+        const trigger = target?.closest('[data-nt-dtp-trigger="true"]');
         if (!trigger) {
             return;
         }
@@ -1957,25 +1957,25 @@ function createPickerState(input: HTMLInputElement, picker: HTMLElement): Picker
 
     state.onPickerClick = event => {
         const target = event.target instanceof Element ? event.target : null;
-        const actionButton = target?.closest<HTMLElement>('[data-tnt-dtp-action]');
+        const actionButton = target?.closest<HTMLElement>('[data-nt-dtp-action]');
         if (actionButton) {
             event.preventDefault();
-            handlePickerAction(state, actionButton.dataset.tntDtpAction);
+            handlePickerAction(state, actionButton.dataset.ntDtpAction);
             return;
         }
 
-        const dayButton = target?.closest<HTMLButtonElement>('[data-tnt-dtp-day-index]');
+        const dayButton = target?.closest<HTMLButtonElement>('[data-nt-dtp-day-index]');
         if (dayButton) {
             event.preventDefault();
             handleDaySelection(state, dayButton);
             return;
         }
 
-        const monthButton = target?.closest<HTMLButtonElement>('[data-tnt-dtp-month-index]');
+        const monthButton = target?.closest<HTMLButtonElement>('[data-nt-dtp-month-index]');
         if (monthButton) {
             event.preventDefault();
-            state.draft.year = toInt(monthButton.dataset.tntDtpYear, state.draft.year);
-            state.draft.month = toInt(monthButton.dataset.tntDtpMonth, state.draft.month);
+            state.draft.year = toInt(monthButton.dataset.ntDtpYear, state.draft.year);
+            state.draft.month = toInt(monthButton.dataset.ntDtpMonth, state.draft.month);
             state.viewYear = state.draft.year;
             state.viewMonth = state.draft.month;
             if (state.mode === 'month' && commitDraft(state)) {
@@ -1988,14 +1988,14 @@ function createPickerState(input: HTMLInputElement, picker: HTMLElement): Picker
             renderPicker(state);
         }
 
-        const yearButton = target?.closest<HTMLButtonElement>('[data-tnt-dtp-year-option]');
+        const yearButton = target?.closest<HTMLButtonElement>('[data-nt-dtp-year-option]');
         if (yearButton) {
             event.preventDefault();
             if (yearButton.disabled) {
                 return;
             }
 
-            state.draft.year = toInt(yearButton.dataset.tntDtpYearOption, state.draft.year);
+            state.draft.year = toInt(yearButton.dataset.ntDtpYearOption, state.draft.year);
             state.viewYear = state.draft.year;
             state.dateView = 'calendar';
             renderPicker(state);
@@ -2004,7 +2004,7 @@ function createPickerState(input: HTMLInputElement, picker: HTMLElement): Picker
 
     state.onPickerInput = event => {
         const target = event.target instanceof Element ? event.target : null;
-        if (target?.matches('[data-tnt-dtp-hour], [data-tnt-dtp-minute]')) {
+        if (target?.matches('[data-nt-dtp-hour], [data-nt-dtp-minute]')) {
             syncDraftFromTimeFields(state);
         }
     };
@@ -2031,7 +2031,7 @@ function createPickerState(input: HTMLInputElement, picker: HTMLElement): Picker
 
     state.onYearListScroll = event => {
         const target = event.target instanceof HTMLElement ? event.target : null;
-        if (target?.matches('[data-tnt-dtp-year-list]')) {
+        if (target?.matches('[data-nt-dtp-year-list]')) {
             handleYearListScroll(state, target);
         }
     };
@@ -2124,7 +2124,7 @@ function getLifecycleScope(element: Maybe<Element>): Element | Document | null {
         return null;
     }
 
-    if (isPickerInput(element) || isNativePickerInput(element) || element.matches('.nt-input-date-time, [data-tnt-dtp-picker="true"], [data-tnt-dtp-trigger="true"], [data-tnt-dtp-native-trigger="true"]')) {
+    if (isPickerInput(element) || isNativePickerInput(element) || element.matches('.nt-input-date-time, [data-nt-dtp-picker="true"], [data-nt-dtp-trigger="true"], [data-nt-dtp-native-trigger="true"]')) {
         return element;
     }
 
@@ -2161,7 +2161,7 @@ function cleanupNativePickerState(state: Maybe<NativePickerState>): void {
 
     state.trigger.removeEventListener('mousedown', state.onTriggerMouseDown);
     state.trigger.removeEventListener('click', state.onTriggerClick);
-    delete state.root.dataset.tntDtpNativeEnhanced;
+    delete state.root.dataset.ntDtpNativeEnhanced;
 }
 
 function showNativePicker(input: HTMLInputElement): void {
@@ -2179,7 +2179,7 @@ function showNativePicker(input: HTMLInputElement): void {
 
 function syncNativePickerInput(input: HTMLInputElement): void {
     const root = input.closest<HTMLElement>('.nt-input-date-time');
-    const trigger = root?.querySelector<HTMLButtonElement>('[data-tnt-dtp-native-trigger="true"]') ?? null;
+    const trigger = root?.querySelector<HTMLButtonElement>('[data-nt-dtp-native-trigger="true"]') ?? null;
     const existing = nativePickerStateByInput.get(input);
     if (existing?.root === root && existing.trigger === trigger) {
         return;
@@ -2211,7 +2211,7 @@ function syncNativePickerInput(input: HTMLInputElement): void {
 
     trigger.addEventListener('mousedown', state.onTriggerMouseDown);
     trigger.addEventListener('click', state.onTriggerClick);
-    root.dataset.tntDtpNativeEnhanced = 'true';
+    root.dataset.ntDtpNativeEnhanced = 'true';
     nativePickerStateByInput.set(input, state);
 }
 
@@ -2244,14 +2244,14 @@ function disposeNativePickerStatesForElement(element: Maybe<Element>): void {
 }
 
 function findPickerForInput(input: HTMLInputElement): HTMLElement | null {
-    const targetId = input.dataset.tntDtpTarget;
+    const targetId = input.dataset.ntDtpTarget;
     if (!targetId) {
         return null;
     }
 
     const scopedRoot = input.closest<HTMLElement>('.nt-input-date-time');
     const scopedPicker = scopedRoot
-        ? Array.from(scopedRoot.querySelectorAll<HTMLElement>('[data-tnt-dtp-picker="true"]')).find(candidate => candidate.id === targetId) ?? null
+        ? Array.from(scopedRoot.querySelectorAll<HTMLElement>('[data-nt-dtp-picker="true"]')).find(candidate => candidate.id === targetId) ?? null
         : null;
 
     return scopedPicker ?? document.getElementById(targetId);

@@ -17,9 +17,8 @@ describe('Material theme preview', () => {
         document.documentElement.removeAttribute('style');
     });
 
-    test('GeneratedPreview_UpdatesModernAndLegacyColors_WithoutChangingRoot', () => {
+    test('GeneratedPreview_UpdatesColors_WithoutChangingRoot', () => {
         document.documentElement.style.setProperty('--nt-color-primary', 'rgb(1 2 3)');
-        document.documentElement.style.setProperty('--tnt-color-primary', 'rgb(4 5 6)');
         const originalRootStyle = document.documentElement.style.cssText;
         const preview = document.getElementById('theme-preview');
         initializeThemePreview('theme-root', 'theme-preview');
@@ -27,21 +26,18 @@ describe('Material theme preview', () => {
         updateThemePreview(request, 'light.css');
 
         expect(preview.style.getPropertyValue('--nt-color-primary')).toBe('rgb(101 85 143)');
-        expect(preview.style.getPropertyValue('--tnt-color-primary')).toBe('rgb(101 85 143)');
         expect(preview.style.getPropertyValue('--nt-color-on-primary')).toBe('rgb(255 255 255)');
         expect(document.documentElement.style.cssText).toBe(originalRootStyle);
 
         updateThemePreview({ ...request, variant: 'vibrant' }, 'light.css');
 
         expect(preview.style.getPropertyValue('--nt-color-primary')).toBe('rgb(111 25 255)');
-        expect(preview.style.getPropertyValue('--tnt-color-primary')).toBe('rgb(111 25 255)');
         expect(document.documentElement.style.cssText).toBe(originalRootStyle);
     });
 
     test('ClearedPreview_RestoresBothNamespaces_AndRemovesAddedColors', () => {
         const preview = document.getElementById('theme-preview');
         preview.style.setProperty('--nt-color-primary', 'rgb(1 2 3)');
-        preview.style.setProperty('--tnt-color-primary', 'rgb(4 5 6)');
         preview.style.setProperty('--other-property', 'original');
         const originalPreviewStyle = preview.style.cssText;
         initializeThemePreview('theme-root', 'theme-preview');
@@ -53,7 +49,6 @@ describe('Material theme preview', () => {
 
         expect(preview.style.cssText).toBe(originalPreviewStyle);
         expect(preview.style.getPropertyValue('--nt-color-on-primary')).toBe('');
-        expect(preview.style.getPropertyValue('--tnt-color-on-primary')).toBe('');
         clearThemePreview();
         expect(preview.style.cssText).toBe(originalPreviewStyle);
     });

@@ -23,7 +23,7 @@ public class NTRichTextEditor_Tests : BunitContext {
         _module.SetupVoid("onUpdate", _ => true).SetVoidResult();
         _module.SetupVoid("onDispose", _ => true).SetVoidResult();
         _module.SetupVoid("focusEditor", _ => true).SetVoidResult();
-        var tooltipModule = JSInterop.SetupModule("./_content/NTComponents/Tooltip/TnTTooltip.razor.js");
+        var tooltipModule = JSInterop.SetupModule("./_content/NTComponents/Tooltip/NTTooltip.razor.js");
         tooltipModule.SetupVoid("onLoad", _ => true).SetVoidResult();
         tooltipModule.SetupVoid("onUpdate", _ => true).SetVoidResult();
         tooltipModule.SetupVoid("onDispose", _ => true).SetVoidResult();
@@ -67,7 +67,7 @@ public class NTRichTextEditor_Tests : BunitContext {
     public void PageScript_RenderFragment_Is_Included() {
         var cut = RenderEditor();
 
-        var pageScripts = cut.FindAll("tnt-page-script").Select(script => script.GetAttribute("src")).ToList();
+        var pageScripts = cut.FindAll("nt-page-script").Select(script => script.GetAttribute("src")).ToList();
         pageScripts.Should().ContainSingle(src => src == "./_content/NTComponents/Editors/NTRichTextEditor.razor.js");
         pageScripts.Where(src => src != "./_content/NTComponents/Editors/NTRichTextEditor.razor.js").Should().OnlyContain(src => src == "./_content/NTComponents/Form/NTInputColor.razor.js" || src == "./_content/NTComponents/Menus/NTContextMenu.razor.js" || src == "./_content/NTComponents/Menus/NTMenu.razor.js", "the tool panels add only the color field and table context menu modules");
     }
@@ -79,22 +79,22 @@ public class NTRichTextEditor_Tests : BunitContext {
             .Add(x => x.Placeholder, "Write something"));
 
         cut.Find("nt-rich-text-editor").Should().NotBeNull();
-        cut.FindAll(".tnt-rich-text-editor-toolbar .tnt-rich-text-editor-toolbar-button").Should().HaveCount(28);
-        cut.FindAll(".tnt-rich-text-editor-toolbar .tnt-rich-text-editor-toolbar-divider").Should().HaveCount(6);
-        cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='undo']").GetAttribute("title").Should().Be("Ctrl+Z");
-        cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='redo']").GetAttribute("title").Should().Be("Ctrl+Y");
-        cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='bold']").GetAttribute("title").Should().Be("Ctrl+B");
-        cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='unorderedList']").GetAttribute("title").Should().Be("Ctrl+Alt+7");
-        cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='strikeThrough']").GetAttribute("title").Should().Be("Ctrl+Shift+S");
-        cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='textColor']").GetAttribute("title").Should().Be("Ctrl+Alt+X");
-        cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='link']").GetAttribute("title").Should().Be("Ctrl+K");
-        cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='alignCenter']").GetAttribute("title").Should().Be("Ctrl+Shift+E");
-        cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='image']").GetAttribute("title").Should().Be("Ctrl+Alt+M");
-        cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='table']").GetAttribute("title").Should().Be("Ctrl+Alt+T");
-        cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='iframe']").GetAttribute("title").Should().Be("Ctrl+Alt+F");
-        cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='ariaLabel']").GetAttribute("aria-haspopup").Should().Be("dialog");
-        cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='editHtml']").GetAttribute("aria-label").Should().Be("Edit HTML source");
-        cut.FindAll(".tnt-rich-text-editor-toolbar .tnt-rich-text-editor-toolbar-icon").Should().OnlyContain(icon => !icon.HasAttribute("title"));
+        cut.FindAll(".nt-rich-text-editor-toolbar .nt-rich-text-editor-toolbar-button").Should().HaveCount(28);
+        cut.FindAll(".nt-rich-text-editor-toolbar .nt-rich-text-editor-toolbar-divider").Should().HaveCount(6);
+        cut.Find(".nt-rich-text-editor-toolbar-button[data-command='undo']").GetAttribute("title").Should().Be("Ctrl+Z");
+        cut.Find(".nt-rich-text-editor-toolbar-button[data-command='redo']").GetAttribute("title").Should().Be("Ctrl+Y");
+        cut.Find(".nt-rich-text-editor-toolbar-button[data-command='bold']").GetAttribute("title").Should().Be("Ctrl+B");
+        cut.Find(".nt-rich-text-editor-toolbar-button[data-command='unorderedList']").GetAttribute("title").Should().Be("Ctrl+Alt+7");
+        cut.Find(".nt-rich-text-editor-toolbar-button[data-command='strikeThrough']").GetAttribute("title").Should().Be("Ctrl+Shift+S");
+        cut.Find(".nt-rich-text-editor-toolbar-button[data-command='textColor']").GetAttribute("title").Should().Be("Ctrl+Alt+X");
+        cut.Find(".nt-rich-text-editor-toolbar-button[data-command='link']").GetAttribute("title").Should().Be("Ctrl+K");
+        cut.Find(".nt-rich-text-editor-toolbar-button[data-command='alignCenter']").GetAttribute("title").Should().Be("Ctrl+Shift+E");
+        cut.Find(".nt-rich-text-editor-toolbar-button[data-command='image']").GetAttribute("title").Should().Be("Ctrl+Alt+M");
+        cut.Find(".nt-rich-text-editor-toolbar-button[data-command='table']").GetAttribute("title").Should().Be("Ctrl+Alt+T");
+        cut.Find(".nt-rich-text-editor-toolbar-button[data-command='iframe']").GetAttribute("title").Should().Be("Ctrl+Alt+F");
+        cut.Find(".nt-rich-text-editor-toolbar-button[data-command='ariaLabel']").GetAttribute("aria-haspopup").Should().Be("dialog");
+        cut.Find(".nt-rich-text-editor-toolbar-button[data-command='editHtml']").GetAttribute("aria-label").Should().Be("Edit HTML source");
+        cut.FindAll(".nt-rich-text-editor-toolbar .nt-rich-text-editor-toolbar-icon").Should().OnlyContain(icon => !icon.HasAttribute("title"));
         cut.Find("[data-role='image-editor']").Should().NotBeNull();
         cut.Find("[data-tool-command='image']").Should().NotBeNull();
         cut.Find("[data-role='image-url']").GetAttribute("type").Should().Be("url");
@@ -124,11 +124,11 @@ public class NTRichTextEditor_Tests : BunitContext {
         cut.Find("[data-role='iframe-title']").GetAttribute("type").Should().Be("text");
         cut.Find("[data-role='iframe-width']").GetAttribute("type").Should().Be("text");
         cut.Find("[data-role='iframe-height']").GetAttribute("type").Should().Be("text");
-        cut.Find(".tnt-rich-text-editor-hidden-input").GetAttribute("type").Should().Be("hidden");
+        cut.Find(".nt-rich-text-editor-hidden-input").GetAttribute("type").Should().Be("hidden");
         cut.Find("[data-role='html-source']").HasAttribute("hidden").Should().BeTrue();
-        cut.Find(".tnt-rich-text-editor-hidden-input").GetAttribute("name").Should().Contain(nameof(RichTextEditorModel.Value));
+        cut.Find(".nt-rich-text-editor-hidden-input").GetAttribute("name").Should().Contain(nameof(RichTextEditorModel.Value));
         cut.FindAll("[data-tool-command] input").Should().OnlyContain(input => !input.HasAttribute("name"));
-        cut.Find(".tnt-rich-text-editor-surface").GetAttribute("data-placeholder").Should().Be("Write something");
+        cut.Find(".nt-rich-text-editor-surface").GetAttribute("data-placeholder").Should().Be("Write something");
     }
 
     [Fact]
@@ -136,10 +136,10 @@ public class NTRichTextEditor_Tests : BunitContext {
         var cut = RenderEditor(parameters => parameters
             .Add(x => x.Value, "<p>This is <strong>bold</strong>, <em>italic</em>, <u>underline</u>, <s>crossed out</s>, <span style=\"color:#2563eb;\">blue text</span>, <a href=\"https://example.com\">linked</a>, and a table.</p><table><thead><tr><th>Name</th><th>Role</th></tr></thead><tbody><tr><td>Avery</td><td>Host</td></tr></tbody></table><iframe src=\"https://example.com/embed\" title=\"Example embed\" width=\"100%\" height=\"315\" loading=\"lazy\"></iframe>"));
 
-        cut.Find(".tnt-rich-text-editor-surface").InnerHtml.Should().BeEmpty();
-        cut.Find(".tnt-rich-text-editor-value").TextContent.Should().Contain("<strong>bold</strong>");
-        cut.Find(".tnt-rich-text-editor-value").TextContent.Should().Contain("<table>");
-        cut.Find(".tnt-rich-text-editor-value").TextContent.Should().Contain("<iframe src=\"https://example.com/embed\"");
+        cut.Find(".nt-rich-text-editor-surface").InnerHtml.Should().BeEmpty();
+        cut.Find(".nt-rich-text-editor-value").TextContent.Should().Contain("<strong>bold</strong>");
+        cut.Find(".nt-rich-text-editor-value").TextContent.Should().Contain("<table>");
+        cut.Find(".nt-rich-text-editor-value").TextContent.Should().Contain("<iframe src=\"https://example.com/embed\"");
     }
 
     [Fact]
@@ -152,12 +152,12 @@ public class NTRichTextEditor_Tests : BunitContext {
             .Add(x => x.Value, "<h2>SSR HTML</h2>")
             .Add(x => x.Placeholder, "Write HTML"));
 
-        cut.Find(".tnt-rich-text-editor-hidden-input").GetAttribute("name").Should().Contain(nameof(RichTextEditorModel.Value));
-        cut.Find(".tnt-rich-text-editor-hidden-input").GetAttribute("value").Should().Be("<h2>SSR HTML</h2>");
-        cut.Find(".tnt-rich-text-editor-value").TextContent.Should().Be("<h2>SSR HTML</h2>");
-        cut.Find(".tnt-rich-text-editor-toolbar").Should().NotBeNull();
-        cut.Find(".tnt-rich-text-editor-surface").GetAttribute("data-placeholder").Should().Be("Write HTML");
-        cut.FindAll("textarea.tnt-rich-text-editor-ssr-input").Should().BeEmpty();
+        cut.Find(".nt-rich-text-editor-hidden-input").GetAttribute("name").Should().Contain(nameof(RichTextEditorModel.Value));
+        cut.Find(".nt-rich-text-editor-hidden-input").GetAttribute("value").Should().Be("<h2>SSR HTML</h2>");
+        cut.Find(".nt-rich-text-editor-value").TextContent.Should().Be("<h2>SSR HTML</h2>");
+        cut.Find(".nt-rich-text-editor-toolbar").Should().NotBeNull();
+        cut.Find(".nt-rich-text-editor-surface").GetAttribute("data-placeholder").Should().Be("Write HTML");
+        cut.FindAll("textarea.nt-rich-text-editor-ssr-input").Should().BeEmpty();
     }
 
     [Fact]
@@ -165,15 +165,15 @@ public class NTRichTextEditor_Tests : BunitContext {
         var cut = RenderEditor(parameters => parameters
             .Add(x => x.Value, "<p>HTML source</p>"));
 
-        cut.Find(".tnt-rich-text-editor-hidden-input").GetAttribute("value").Should().Be("<p>HTML source</p>");
-        cut.Find(".tnt-rich-text-editor-value").TextContent.Should().Be("<p>HTML source</p>");
+        cut.Find(".nt-rich-text-editor-hidden-input").GetAttribute("value").Should().Be("<p>HTML source</p>");
+        cut.Find(".nt-rich-text-editor-value").TextContent.Should().Be("<p>HTML source</p>");
     }
 
     [Fact]
     public void Interactive_Surface_Renders_ReadOnly_Until_The_Script_Enables_It() {
         var cut = RenderEditor();
 
-        cut.Find(".tnt-rich-text-editor-surface").GetAttribute("contenteditable").Should().Be("false");
+        cut.Find(".nt-rich-text-editor-surface").GetAttribute("contenteditable").Should().Be("false");
         cut.Find("nt-rich-text-editor").GetAttribute("data-editable").Should().Be("true");
         cut.Find("nt-rich-text-editor").GetAttribute("data-interactive").Should().Be("true");
     }
@@ -182,8 +182,8 @@ public class NTRichTextEditor_Tests : BunitContext {
     public void Toolbar_And_Accessibility_State_Render_ReadOnly_Until_The_Script_Enables_Them() {
         var cut = RenderEditor();
 
-        cut.Find(".tnt-rich-text-editor-surface").GetAttribute("aria-readonly").Should().Be("true");
-        cut.FindAll(".tnt-rich-text-editor-toolbar-button").Should().OnlyContain(button => button.HasAttribute("disabled"));
+        cut.Find(".nt-rich-text-editor-surface").GetAttribute("aria-readonly").Should().Be("true");
+        cut.FindAll(".nt-rich-text-editor-toolbar-button").Should().OnlyContain(button => button.HasAttribute("disabled"));
     }
 
     [Fact]
@@ -192,7 +192,7 @@ public class NTRichTextEditor_Tests : BunitContext {
 
         var cut = RenderEditor();
 
-        cut.Find(".tnt-rich-text-editor-surface").GetAttribute("contenteditable").Should().Be("false");
+        cut.Find(".nt-rich-text-editor-surface").GetAttribute("contenteditable").Should().Be("false");
         cut.Find("nt-rich-text-editor").GetAttribute("data-interactive").Should().Be("false");
     }
 
@@ -294,7 +294,7 @@ public class NTRichTextEditor_Tests : BunitContext {
         var cut = RenderEditor();
 
         cut.WaitForAssertion(() => cut.Find(".nt-input-error-text").TextContent.Should().Contain("could not load"));
-        cut.Find(".tnt-rich-text-editor-surface").GetAttribute("contenteditable").Should().Be("false");
+        cut.Find(".nt-rich-text-editor-surface").GetAttribute("contenteditable").Should().Be("false");
     }
 
     [Fact]
@@ -588,7 +588,7 @@ public class NTRichTextEditor_Tests : BunitContext {
         var cut = Render<NTRichTextEditor>(parameters => parameters
             .Add(x => x.ValueExpression, () => model.Value));
 
-        cut.Find(".tnt-rich-text-editor-hidden-input").GetAttribute("name").Should().Contain(nameof(RichTextEditorModel.Value));
+        cut.Find(".nt-rich-text-editor-hidden-input").GetAttribute("name").Should().Contain(nameof(RichTextEditorModel.Value));
     }
 
     [Fact]
@@ -616,11 +616,11 @@ public class NTRichTextEditor_Tests : BunitContext {
 
         var cut = RenderEditor(parameters => parameters.Add(x => x.ToolbarButtons, toolbarButtons));
 
-        cut.FindAll(".tnt-rich-text-editor-toolbar .tnt-rich-text-editor-toolbar-button").Should().HaveCount(2);
-        cut.FindAll(".tnt-rich-text-editor-toolbar .tnt-rich-text-editor-toolbar-divider").Should().HaveCount(1);
-        cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='bold']").TextContent.Should().Contain("Bold");
-        cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='heading']").GetAttribute("data-value").Should().Be("2");
-        cut.FindAll(".tnt-rich-text-editor-toolbar-button[data-command='undo']").Should().BeEmpty();
+        cut.FindAll(".nt-rich-text-editor-toolbar .nt-rich-text-editor-toolbar-button").Should().HaveCount(2);
+        cut.FindAll(".nt-rich-text-editor-toolbar .nt-rich-text-editor-toolbar-divider").Should().HaveCount(1);
+        cut.Find(".nt-rich-text-editor-toolbar-button[data-command='bold']").TextContent.Should().Contain("Bold");
+        cut.Find(".nt-rich-text-editor-toolbar-button[data-command='heading']").GetAttribute("data-value").Should().Be("2");
+        cut.FindAll(".nt-rich-text-editor-toolbar-button[data-command='undo']").Should().BeEmpty();
     }
 
     [Fact]
@@ -635,16 +635,16 @@ public class NTRichTextEditor_Tests : BunitContext {
 
         cut.Find(".nt-input-leading").Should().NotBeNull();
         cut.Find(".nt-input-trailing").Should().NotBeNull();
-        cut.Find(".tnt-tooltip-icon").Should().NotBeNull();
+        cut.Find(".nt-tooltip-icon").Should().NotBeNull();
 
-        var surface = cut.Find(".tnt-rich-text-editor-surface");
+        var surface = cut.Find(".nt-rich-text-editor-surface");
         surface.GetAttribute("data-placeholder").Should().Be("Start typing");
         surface.GetAttribute("contenteditable").Should().Be("false");
         surface.GetAttribute("tabindex").Should().Be("-1");
         surface.GetAttribute("aria-label").Should().Contain(nameof(RichTextEditorModel.Value));
 
         cut.Find(".nt-input-counter").TextContent.Should().Be("4/10");
-        cut.FindAll(".tnt-rich-text-editor-toolbar-button").Should().OnlyContain(button => button.HasAttribute("disabled"));
+        cut.FindAll(".nt-rich-text-editor-toolbar-button").Should().OnlyContain(button => button.HasAttribute("disabled"));
         cut.Find("[data-role='image-url']").HasAttribute("disabled").Should().BeTrue();
     }
 
@@ -675,23 +675,23 @@ public class NTRichTextEditor_Tests : BunitContext {
 
         var cut = RenderEditor(parameters => parameters.Add(x => x.ToolbarButtons, toolbarButtons));
 
-        var explicitAriaButton = cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='bold']");
+        var explicitAriaButton = cut.Find(".nt-rich-text-editor-toolbar-button[data-command='bold']");
         explicitAriaButton.GetAttribute("aria-label").Should().Be("Explicit aria");
         explicitAriaButton.GetAttribute("title").Should().Be("Visible Title");
 
-        var textFallbackButton = cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='italic']");
+        var textFallbackButton = cut.Find(".nt-rich-text-editor-toolbar-button[data-command='italic']");
         textFallbackButton.GetAttribute("aria-label").Should().Be("Italic");
         textFallbackButton.GetAttribute("title").Should().Be("Italic");
 
-        var actionFallbackButton = cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='underline']");
+        var actionFallbackButton = cut.Find(".nt-rich-text-editor-toolbar-button[data-command='underline']");
         actionFallbackButton.GetAttribute("aria-label").Should().Be("underline");
         actionFallbackButton.GetAttribute("title").Should().Be("underline");
-        cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='underline'] .tnt-rich-text-editor-toolbar-icon").HasAttribute("title").Should().BeFalse();
+        cut.Find(".nt-rich-text-editor-toolbar-button[data-command='underline'] .nt-rich-text-editor-toolbar-icon").HasAttribute("title").Should().BeFalse();
 
         var defaultFallbackButton = cut.Find(".toolbar-fallback-button");
         defaultFallbackButton.GetAttribute("aria-label").Should().Be("Rich text editor action");
         defaultFallbackButton.GetAttribute("title").Should().Be("Rich text editor action");
-        cut.Find(".toolbar-fallback-button .tnt-rich-text-editor-toolbar-icon").HasAttribute("title").Should().BeFalse();
+        cut.Find(".toolbar-fallback-button .nt-rich-text-editor-toolbar-icon").HasAttribute("title").Should().BeFalse();
     }
 
     [Fact]
@@ -723,7 +723,7 @@ public class NTRichTextEditor_Tests : BunitContext {
         cut.FindAll("[data-test-tool='image']").Should().HaveCount(1);
         cut.FindAll("[data-test-tool='link']").Should().BeEmpty();
 
-        var pageScripts = cut.FindAll("tnt-page-script");
+        var pageScripts = cut.FindAll("nt-page-script");
         pageScripts.Select(script => script.GetAttribute("src")).Should().BeEquivalentTo([
             "./_content/NTComponents/Editors/NTRichTextEditor.razor.js",
             "./_content/NTComponents/Editors/Tool/TestSharedTool.razor.js"
@@ -738,7 +738,7 @@ public class NTRichTextEditor_Tests : BunitContext {
 
         var cut = RenderEditor(parameters => parameters.Add(x => x.ToolbarButtons, toolbarButtons));
 
-        var toolbarButton = cut.Find(".tnt-rich-text-editor-toolbar-button[data-command='bold']");
+        var toolbarButton = cut.Find(".nt-rich-text-editor-toolbar-button[data-command='bold']");
         toolbarButton.GetAttribute("aria-keyshortcuts").Should().Be("Meta+Alt+K");
         toolbarButton.GetAttribute("title").Should().Be("Cmd+Option+K");
     }
