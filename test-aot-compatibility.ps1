@@ -505,7 +505,25 @@ function Invoke-SafariSmoke {
             $lastDom = "DOM capture failed: $($_.Exception.Message)"
         }
 
-        throw "Browser smoke did not render the NTComponents AOT smoke marker in Safari.`nOutput:`n$lastDom"
+        $diagnostics = 'Diagnostics were not captured.'
+        try {
+            $diagnostics = Invoke-SafariWebDriver -Method Post -Uri "$driverUrl/session/$sessionId/execute/async" -TimeoutSec 30 -Body @{ args = @(); script = @'
+const done = arguments[arguments.length - 1];
+const modules = ['./_content/NTComponents/Toast/NTToast.razor.js', './_content/NTComponents/Snackbar/NTSnackbar.razor.js'];
+Promise.allSettled(modules.map(path => import(path))).then(results => done(JSON.stringify({
+    pageScriptDefined: customElements.get('tnt-page-script') !== undefined,
+    toastHosts: document.querySelectorAll('[data-nt-toast-host]').length,
+    snackbarHosts: document.querySelectorAll('[data-nt-snackbar-host]').length,
+    moduleImports: results.map((result, index) => `${modules[index]}: ${result.status === 'fulfilled' ? 'ok' : String(result.reason)}`),
+    errors: window.aotSmokeErrors ?? []
+}, null, 2)));
+'@ }
+        }
+        catch {
+            $diagnostics = "Diagnostics capture failed: $($_.Exception.Message)"
+        }
+
+        throw "Browser smoke did not render the NTComponents AOT smoke marker in Safari.`nDiagnostics:`n$diagnostics`nOutput:`n$lastDom"
     }
     finally {
         if ($sessionId) {
