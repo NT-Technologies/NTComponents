@@ -1,0 +1,23 @@
+@using NTComponents.Charts
+@using NTComponents.Charts.Core
+@using NTComponents.Charts.Core.Series
+
+<NTChart TData="Server" style="height: 320px">
+    <NTBoxPlotSeries Data="_servers"
+                     XValue="@(server => server.Name)"
+                     YValueSelector="@(server => server.Latency.Median)"
+                     BoXValue="@(server => server.Latency)" />
+    <NTComponents.Charts.Core.NTTooltip TData="Server" />
+</NTChart>
+
+@code {
+    private readonly Server[] _servers = [
+        new("api-1", new(40, 52, 60, 71, 88, [140, 165])),
+        new("api-2", new(38, 49, 57, 66, 80, [12])),
+        // A cached endpoint answers in the same time every request, so its box collapses to one line.
+        new("cache", new(18, 18, 18, 18, 18)),
+        new("api-3", new(45, 58, 64, 75, 92, [150]))
+    ];
+
+    private sealed record Server(string Name, BoxPlotValues Latency);
+}

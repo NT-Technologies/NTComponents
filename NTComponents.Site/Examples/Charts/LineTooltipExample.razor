@@ -1,0 +1,36 @@
+@using NTComponents.Charts
+@using NTComponents.Charts.Core
+
+<div class="docs-actions">
+    <NTButton Label="Overlapping points only" Variant="@(_showAll ? NTButtonVariant.Outlined : NTButtonVariant.Filled)" OnClickCallback="@(() => _showAll = false)" />
+    <NTButton Label="Every series at X" Variant="@(_showAll ? NTButtonVariant.Filled : NTButtonVariant.Outlined)" OnClickCallback="@(() => _showAll = true)" />
+</div>
+
+<div class="docs-actions">
+    @foreach (var distance in _distances) {
+        <NTButton Label="@($"OverlapDistance {distance}")" Disabled="_showAll" Variant="@(distance == _overlapDistance ? NTButtonVariant.Filled : NTButtonVariant.Outlined)" OnClickCallback="@(() => _overlapDistance = distance)" />
+    }
+</div>
+
+<NTChart TData="Sale" style="height: 320px">
+    <NTLineSeries Data="_sales" Title="Target" XValue="@(sale => sale.Month)" YValueSelector="@(sale => sale.Target)" />
+    <NTLineSeries Data="_sales" Title="Actual" XValue="@(sale => sale.Month)" YValueSelector="@(sale => sale.Actual)" />
+    <NTLineSeries Data="_sales" Title="Last year" XValue="@(sale => sale.Month)" YValueSelector="@(sale => sale.LastYear)" />
+    <NTLegend TData="Sale" />
+    <NTComponents.Charts.Core.NTTooltip TData="Sale" ShowAllSeriesAtX="_showAll" OverlapDistance="_overlapDistance" />
+</NTChart>
+
+@code {
+    private static readonly float[] _distances = [0f, 8f, 24f];
+    private bool _showAll;
+    private float _overlapDistance = 8f;
+
+    // Actual meets Target exactly in Feb and Jun, lands just beside it in Apr, and sits a little further off in May.
+    // Hover Apr with OverlapDistance 0 to see only one series, and May with 24 to see both.
+    private readonly Sale[] _sales = [
+        new("Jan", 100, 92, 80), new("Feb", 110, 110, 86), new("Mar", 120, 104, 95),
+        new("Apr", 130, 129, 101), new("May", 140, 144, 108), new("Jun", 150, 150, 117)
+    ];
+
+    private sealed record Sale(string Month, decimal Target, decimal Actual, decimal LastYear);
+}

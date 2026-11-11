@@ -1,0 +1,25 @@
+@using NTComponents.Charts
+@using NTComponents.Charts.Core
+@using NTComponents.Charts.Core.Axes
+
+<NTChart TData="Sale" style="height: 320px">
+    <NTXAxisOptions TData="Sale"
+                    TAxisType="string"
+                    ValueSelector="@(sale => sale.Region)"
+                    Title="Region"
+                    AxisFontSize="15"
+                    TitleFontSize="16" />
+    <NTYAxisOptions TData="Sale"
+                    TAxisValue="decimal"
+                    ValueSelector="@(sale => sale.Units)"
+                    Title="Units sold"
+                    AxisFontSize="10"
+                    TitleFontSize="12" />
+    <NTBarSeries Data="_sales" XValue="@(sale => sale.Region)" YValueSelector="@(sale => sale.Units)" />
+</NTChart>
+
+@code {
+    private readonly Sale[] _sales = [new("North", 420), new("South", 310), new("East", 560), new("West", 380)];
+
+    private sealed record Sale(string Region, decimal Units);
+}

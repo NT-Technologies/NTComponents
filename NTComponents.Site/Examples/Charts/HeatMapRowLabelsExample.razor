@@ -1,0 +1,25 @@
+@using NTComponents.Charts
+@using NTComponents.Charts.Core
+@using NTComponents.Charts.Core.Axes
+
+<NTChart TData="Usage" style="height: 360px">
+    <NTYAxisOptions TData="Usage"
+                    TAxisValue="int"
+                    ValueSelector="@(usage => usage.Row)"
+                    LabelFormatter="@(row => _start.AddMonths(row).ToString("MMM yyyy"))" />
+    <NTHeatMapSeries Data="_usage"
+                     XValue="@(usage => usage.Region)"
+                     YValueSelector="@(usage => usage.Row)"
+                     WeightSelector="@(usage => usage.Hours)" />
+    <NTComponents.Charts.Core.NTTooltip TData="Usage" />
+</NTChart>
+
+@code {
+    private static readonly DateTime _start = new(2025, 9, 1);
+    private static readonly string[] _regions = ["North", "South", "East", "West"];
+
+    // Each row is a month counted from _start, so the Y value is a plain number and the formatter turns it back into a month.
+    private readonly Usage[] _usage = [.. Enumerable.Range(0, 8).SelectMany(row => _regions.Select((region, r) => new Usage(region, row, 20 + ((row + 3) * (r + 2) * 7 % 31))))];
+
+    private sealed record Usage(string Region, int Row, decimal Hours);
+}

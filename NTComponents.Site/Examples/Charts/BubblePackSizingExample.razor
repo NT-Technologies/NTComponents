@@ -10,13 +10,15 @@
                             MinBubbleRadius="24f"
                             MaxBubbleRadius="90f"
                             TargetFillRatio="0.45f"
+                            MinLabelFontSize="9f"
+                            MaxLabelFontSize="22f"
                             DataLabelFormat="{0:N1}M"
                             ShowValuesInLabels="true" />
     </NTChart>
 </div>
 
 @code {
-    private readonly City[] _cities = [new("Tokyo", 37.4m), new("Delhi", 31.0m), new("Shanghai", 27.1m), new("Cairo", 21.3m), new("Lisbon", 0.5m), new("Oslo", 0.7m)];
+    private readonly City[] _cities = [new("Tokyo", 37.4m), new("Delhi", 31.0m), new("Shanghai", 27.1m), new("Cairo", 21.3m), new("Rio de Janeiro", 13.7m), new("Lisbon", 0.5m), new("Oslo", 0.7m)];
 
     private sealed record City(string Name, decimal Population);
 }

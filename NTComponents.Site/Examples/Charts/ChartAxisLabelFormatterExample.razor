@@ -1,0 +1,26 @@
+@using NTComponents.Charts
+@using NTComponents.Charts.Core
+@using NTComponents.Charts.Core.Axes
+
+<NTChart TData="Revenue" style="height: 320px">
+    <NTXAxisOptions TData="Revenue"
+                    TAxisType="DateTime"
+                    ValueSelector="@(revenue => revenue.Month)"
+                    LabelFormatter="@(month => month.ToString("MMM ''yy"))" />
+    <NTYAxisOptions TData="Revenue"
+                    TAxisValue="decimal"
+                    ValueSelector="@(revenue => revenue.Amount)"
+                    LabelFormatter="@(amount => amount >= 1000 ? $"${amount / 1000:0.#}k" : $"${amount:0}")" />
+    <NTLineSeries Data="_revenue" XValue="@(revenue => revenue.Month)" YValueSelector="@(revenue => revenue.Amount)" />
+    <NTComponents.Charts.Core.NTTooltip TData="Revenue" />
+</NTChart>
+
+@code {
+    private readonly Revenue[] _revenue = [
+        new(new DateTime(2025, 10, 1), 820), new(new DateTime(2025, 11, 1), 1150), new(new DateTime(2025, 12, 1), 1940),
+        new(new DateTime(2026, 1, 1), 1300), new(new DateTime(2026, 2, 1), 1480), new(new DateTime(2026, 3, 1), 1720),
+        new(new DateTime(2026, 4, 1), 2050), new(new DateTime(2026, 5, 1), 2310)
+    ];
+
+    private sealed record Revenue(DateTime Month, decimal Amount);
+}

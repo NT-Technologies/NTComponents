@@ -1,0 +1,24 @@
+@using NTComponents.Charts
+@using NTComponents.Charts.Core
+
+<NTChart TData="Quarter" style="height: 200px">
+    <NTBarSeries Data="_lastQuarter"
+                 Title="Q1"
+                 Orientation="NTChartOrientation.Horizontal"
+                 XValue="@(quarter => quarter.Metric)"
+                 YValueSelector="@(quarter => quarter.Revenue)" />
+    <NTBarSeries Data="_thisQuarter"
+                 Title="Q2"
+                 Orientation="NTChartOrientation.Horizontal"
+                 XValue="@(quarter => quarter.Metric)"
+                 YValueSelector="@(quarter => quarter.Revenue)" />
+    <NTLegend TData="Quarter" />
+    <NTComponents.Charts.Core.NTTooltip TData="Quarter" />
+</NTChart>
+
+@code {
+    private readonly Quarter[] _lastQuarter = [new("Revenue", 184)];
+    private readonly Quarter[] _thisQuarter = [new("Revenue", 231)];
+
+    private sealed record Quarter(string Metric, decimal Revenue);
+}

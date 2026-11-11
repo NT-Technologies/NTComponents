@@ -1,0 +1,18 @@
+@using NTComponents.Charts
+@using NTComponents.Charts.Core
+
+<NTChart TData="Budget" style="height: 320px">
+    <NTBarSeries Data="_budgets"
+                 Orientation="NTChartOrientation.Horizontal"
+                 ShowDataLabels="true"
+                 DataLabelFormat="{0:C0}"
+                 XValue="@(budget => budget.Team)"
+                 YValueSelector="@(budget => budget.Spend)" />
+</NTChart>
+
+@code {
+    // Short bars cannot hold their label, so it is drawn just past the bar end instead.
+    private readonly Budget[] _budgets = [new("Engineering", 48200), new("Marketing", 21500), new("Legal", 1200), new("Facilities", 0), new("Support", 9800)];
+
+    private sealed record Budget(string Team, decimal Spend);
+}
