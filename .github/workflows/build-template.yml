@@ -52,7 +52,7 @@ jobs:
 
   dotnet-test:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Playwright does not support Ubuntu 26.04 yet
     strategy:
       fail-fast: false
       matrix:

@@ -30,7 +30,7 @@ jobs:
         - name: Windows arm64
           os: windows-11-arm
         - name: Linux x64
-          os: ubuntu-latest
+          os: ubuntu-24.04 # Playwright does not support Ubuntu 26.04 yet
         - name: Linux arm64
           os: ubuntu-24.04-arm
         - name: macOS x64
