@@ -101,6 +101,6 @@ public class NTDivider_Tests : BunitContext {
         divider.GetAttribute("id").Should().Be("divider-id");
         divider.GetAttribute("title").Should().Be("Section separator");
         divider.GetAttribute("lang").Should().Be("en");
-        divider.HasAttribute("tntid").Should().BeTrue();
+        divider.HasAttribute("ntid").Should().BeTrue();
     }
 }

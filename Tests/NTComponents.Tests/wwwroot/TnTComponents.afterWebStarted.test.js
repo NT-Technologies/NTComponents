@@ -4,7 +4,7 @@ import { afterStarted, afterWebStarted } from '../../../NTComponents/wwwroot/NTC
 // Test setup
 if (!global.NTComponents) {
    global.NTComponents = {
-      customAttribute: 'tntid',
+      customAttribute: 'ntid',
    };
 }
 

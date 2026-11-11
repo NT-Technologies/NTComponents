@@ -38,14 +38,14 @@ public class MaterialIcon_Tests : BunitContext {
     }
 
     [Fact]
-    public void HasTnTIdAttribute() {
+    public void HasNtIdAttribute() {
         // Arrange & Act
         var cut = Render<MaterialIcon>(p => p.Add(c => c.Icon, "notifications"));
         var root = cut.Find("span.nt-icon");
 
         // Assert
-        root.HasAttribute("tntid").Should().BeTrue();
-        root.GetAttribute("tntid").Should().NotBeNullOrEmpty();
+        root.HasAttribute("ntid").Should().BeTrue();
+        root.GetAttribute("ntid").Should().NotBeNullOrEmpty();
     }
 
     [Fact]

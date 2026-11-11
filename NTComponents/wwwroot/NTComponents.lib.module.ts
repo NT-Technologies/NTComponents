@@ -1024,7 +1024,7 @@ const isModifierKey = (event) => {
 };
 
 window.NTComponents = Object.assign(window.NTComponents || {}, {
-    customAttribute: "tntid",
+    customAttribute: "ntid",
     getColorValueFromEnumName: function (colorName) {
         if (!colorName || typeof colorName !== 'string') return null;
 

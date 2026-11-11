@@ -56,14 +56,14 @@ public class NTIcon_Tests : BunitContext {
     }
 
     [Fact]
-    public void HasTnTIdAttribute() {
+    public void HasNtIdAttribute() {
         // Arrange & Act
         var cut = Render<TestIcon>(p => p.Add(c => c.Icon, "dashboard"));
         var root = cut.Find("span.test-icon");
 
         // Assert
-        root.HasAttribute("tntid").Should().BeTrue();
-        root.GetAttribute("tntid").Should().NotBeNullOrEmpty();
+        root.HasAttribute("ntid").Should().BeTrue();
+        root.GetAttribute("ntid").Should().NotBeNullOrEmpty();
     }
 
     [Fact]

@@ -56,14 +56,14 @@ public class NTResponsiveTests : BunitContext {
 
         var responsive = cut.Find(".nt-responsive");
         var style = cut.Find("style");
-        var identifier = responsive.GetAttribute("tntid");
+        var identifier = responsive.GetAttribute("ntid");
 
         responsive.GetAttribute("class").Should().Contain("nt-responsive-custom");
         responsive.GetAttribute("class").Should().Contain("nt-responsive-visible-above");
         responsive.GetAttribute("class").Should().NotContain("nt-responsive-extra-large");
         responsive.GetAttribute("data-nt-breakpoint").Should().Be("721");
         style.GetAttribute("media").Should().Be("(min-width: 721px)");
-        style.TextContent.Should().Contain($"[tntid=\"{identifier}\"]");
+        style.TextContent.Should().Contain($"[ntid=\"{identifier}\"]");
         style.TextContent.Should().Contain("display:contents");
     }
 

@@ -7,7 +7,7 @@ namespace NTComponents.Core;
 /// </summary>
 [ExcludeFromCodeCoverage]
 public static class NTComponentIdentifier {
-    private const string _identifierPrefix = "tnt_";
+    private const string _identifierPrefix = "nt_";
 
     /// <summary>
     ///     Returns a new small Id. HTML id must start with a letter.
