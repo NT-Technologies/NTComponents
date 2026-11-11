@@ -2,7 +2,7 @@ import { onDispose as disposeRangeSlider, onLoad as loadRangeSlider } from '../N
 import { onDispose as disposeSlider, onLoad as loadSlider } from '../NTInputSlider.razor.js';
 
 function createPageScript() {
-    return document.createElement('tnt-page-script');
+    return document.createElement('nt-page-script');
 }
 
 function createSlider({ centered = false, value = '25' } = {}) {

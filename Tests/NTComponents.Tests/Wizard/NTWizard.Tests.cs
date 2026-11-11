@@ -459,7 +459,7 @@ public class NTWizard_Tests : BunitContext {
         cut.WaitForAssertion(() => {
             var nextButton = FindNextButton(cut);
             nextButton.HasAttribute("disabled").Should().BeFalse();
-            nextButton.GetAttribute("class")!.Should().Contain("tnt-disabled");
+            nextButton.GetAttribute("class")!.Should().Contain("nt-disabled");
         });
     }
 

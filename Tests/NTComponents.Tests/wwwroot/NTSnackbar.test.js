@@ -28,7 +28,7 @@ describe('NTSnackbar module', () => {
    }
 
    function loadHostFromPageScript(host = createHost()) {
-      const pageScript = document.createElement('tnt-page-script');
+      const pageScript = document.createElement('nt-page-script');
       host.after(pageScript);
       onLoad(pageScript);
       return host;
@@ -59,7 +59,7 @@ describe('NTSnackbar module', () => {
       const host = createHost();
       host.showPopover = jest.fn();
       host.hidePopover = jest.fn();
-      const pageScript = document.createElement('tnt-page-script');
+      const pageScript = document.createElement('nt-page-script');
       host.after(pageScript);
 
       onLoad(pageScript);
@@ -87,7 +87,7 @@ describe('NTSnackbar module', () => {
       dialog.removeAttribute('open');
       await Promise.resolve();
 
-      expect(host.nextElementSibling.localName).toBe('tnt-page-script');
+      expect(host.nextElementSibling.localName).toBe('nt-page-script');
    });
 
    test('queueSnackbar waits for a host when called before setup', () => {

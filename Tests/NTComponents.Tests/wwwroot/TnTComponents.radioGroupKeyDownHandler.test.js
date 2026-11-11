@@ -9,7 +9,7 @@ describe('NTComponents.radioGroupKeyDownHandler', () => {
 
     beforeEach(() => {
         document.body.innerHTML = `
-            <fieldset class="tnt-radio-group" id="group1">
+            <fieldset class="nt-radio-group" id="group1">
                 <input type="radio" id="r1" value="v1" name="g1">
                 <input type="radio" id="r2" value="v2" name="g1">
                 <input type="radio" id="r3" value="v3" name="g1">
@@ -84,8 +84,8 @@ describe('NTComponents.radioGroupKeyDownHandler', () => {
         expect(radio1.checked).toBe(false);
     });
 
-    test('does not select when group has tnt-disabled class', () => {
-        fieldset.classList.add('tnt-disabled');
+    test('does not select when group has nt-disabled class', () => {
+        fieldset.classList.add('nt-disabled');
         const event = new KeyboardEvent('keydown', { key: '1', bubbles: true });
         Object.defineProperty(event, 'currentTarget', { value: fieldset });
 
@@ -94,8 +94,8 @@ describe('NTComponents.radioGroupKeyDownHandler', () => {
         expect(radio1.checked).toBe(false);
     });
 
-    test('does not select when group has tnt-readonly class', () => {
-        fieldset.classList.add('tnt-readonly');
+    test('does not select when group has nt-readonly class', () => {
+        fieldset.classList.add('nt-readonly');
         const event = new KeyboardEvent('keydown', { key: '1', bubbles: true });
         Object.defineProperty(event, 'currentTarget', { value: fieldset });
 

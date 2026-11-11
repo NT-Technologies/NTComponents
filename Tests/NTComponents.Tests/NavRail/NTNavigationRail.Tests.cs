@@ -160,7 +160,7 @@ public class NTNavigationRail_Tests : BunitContext {
         menu.GetAttribute("aria-expanded").Should().Be("false");
         cut.Find(".nt-navigation-rail-menu-button > .nt-button-ripple-host").Should().NotBeNull();
         cut.Find(".nt-navigation-rail-item-content > .nt-navigation-rail-item-ripple.nt-button-ripple-host").Should().NotBeNull();
-        cut.Find("tnt-page-script").GetAttribute("src").Should().Be("./_content/NTComponents/NavRail/NTNavigationRail.razor.js");
+        cut.Find("nt-page-script").GetAttribute("src").Should().Be("./_content/NTComponents/NavRail/NTNavigationRail.razor.js");
         cut.Markup.Should().NotContain("<script");
     }
 
@@ -446,7 +446,7 @@ public class NTNavigationRail_Tests : BunitContext {
         item.HasAttribute("href").Should().BeFalse();
         item.GetAttribute("aria-disabled").Should().Be("true");
         item.GetAttribute("tabindex").Should().Be("-1");
-        item.GetAttribute("class")!.Should().Contain("tnt-disabled");
+        item.GetAttribute("class")!.Should().Contain("nt-disabled");
     }
 
     [Fact]
@@ -514,7 +514,7 @@ public class NTNavigationRail_Tests : BunitContext {
             .Add(x => x.Selected, true));
 
         var iconContainer = cut.Find(".nt-navigation-rail-item-icon");
-        var icon = cut.Find(".nt-navigation-rail-item-icon .tnt-icon");
+        var icon = cut.Find(".nt-navigation-rail-item-icon .nt-icon");
 
         iconContainer.TextContent.Should().Contain("home");
         icon.GetAttribute("class")!.Should().Contain("nt-nav-rail-selected-icon");
@@ -528,8 +528,8 @@ public class NTNavigationRail_Tests : BunitContext {
             .Add(x => x.Icon, MaterialIcon.Home));
 
         cut.Find(".nt-navigation-rail-item-icon").TextContent.Should().Contain("home");
-        cut.Find(".nt-navigation-rail-item-icon .tnt-icon").GetAttribute("class")!.Should().NotContain("nt-nav-rail-selected-icon");
-        cut.Find(".nt-navigation-rail-item-icon .tnt-icon").GetAttribute("style").Should().BeNull();
+        cut.Find(".nt-navigation-rail-item-icon .nt-icon").GetAttribute("class")!.Should().NotContain("nt-nav-rail-selected-icon");
+        cut.Find(".nt-navigation-rail-item-icon .nt-icon").GetAttribute("style").Should().BeNull();
     }
 
     [Fact]

@@ -129,7 +129,7 @@ const variantDefaults: Record<ToastVariant, Pick<ToastRecord, 'backgroundColor' 
 
 function getHosts(root: Maybe<Element | Document>): NTToastHostElement[] {
     const scope = root ?? document;
-    if (scope instanceof HTMLElement && scope.localName === 'tnt-page-script') {
+    if (scope instanceof HTMLElement && scope.localName === 'nt-page-script') {
         const pageScript = scope as NTToastPageScriptElement;
         if (pageScript.__ntToastHost) {
             return [pageScript.__ntToastHost];
@@ -241,7 +241,7 @@ function setStyleVariables(element: HTMLElement, toast: ToastRecord): void {
 
 function createIcon(iconName: string, className: string): HTMLElement {
     const icon = document.createElement('span');
-    icon.className = `tnt-icon material-symbols-outlined mi-medium ${className}`;
+    icon.className = `nt-icon material-symbols-outlined mi-medium ${className}`;
     icon.setAttribute('aria-hidden', 'true');
     icon.textContent = iconName;
     return icon;
@@ -376,7 +376,7 @@ function createToastElement(host: NTToastHostElement, state: NTToastHostState, t
 
     if (toast.showClose) {
         const close = document.createElement('button');
-        close.className = 'nt-toast-close tnt-interactable';
+        close.className = 'nt-toast-close nt-interactable';
         close.type = 'button';
         close.setAttribute('aria-label', 'Dismiss notification');
         close.appendChild(createIcon('close', ''));
@@ -940,7 +940,7 @@ export function onDispose(element?: Maybe<Element>): void {
         disposeHost(host);
     }
 
-    if (element instanceof HTMLElement && element.localName === 'tnt-page-script') {
+    if (element instanceof HTMLElement && element.localName === 'nt-page-script') {
         delete (element as NTToastPageScriptElement).__ntToastHost;
     }
 }

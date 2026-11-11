@@ -13,7 +13,7 @@ public class NTNavLink_Tests : BunitContext {
 
         link.GetAttribute("class")!.Should().Contain("nt-nav-link-button-chrome");
         link.GetAttribute("class")!.Should().Contain("nt-nav-link-filled");
-        link.GetAttribute("class")!.Should().Contain("tnt-size-s");
+        link.GetAttribute("class")!.Should().Contain("nt-size-s");
         link.GetAttribute("style")!.Should().Contain("--nt-nav-link-bg:var(--nt-color-primary)");
         link.GetAttribute("style")!.Should().Contain("--nt-nav-link-fg:var(--nt-color-on-primary)");
         link.GetAttribute("style")!.Should().NotContain("--nt-nav-link-active-bg");
@@ -54,7 +54,7 @@ public class NTNavLink_Tests : BunitContext {
         link.HasAttribute("href").Should().BeFalse();
         link.GetAttribute("aria-disabled").Should().Be("true");
         link.GetAttribute("tabindex").Should().Be("-1");
-        link.GetAttribute("class")!.Should().Contain("tnt-disabled");
+        link.GetAttribute("class")!.Should().Contain("nt-disabled");
     }
 
     [Fact]
@@ -182,7 +182,6 @@ public class NTNavLink_Tests : BunitContext {
         var cut = Render<NTNavLink>(parameters => parameters.Add(x => x.Label, "Home"));
 
         cut.Find(".nt-button-ripple-host").Should().NotBeNull();
-        cut.Markup.Should().NotContain("tnt-ripple-effect");
         cut.Markup.Should().Contain("startRippleHost");
         cut.Markup.Should().NotContain("startButtonInteraction");
     }
@@ -284,7 +283,7 @@ public class NTNavLink_Tests : BunitContext {
             .Add(x => x.LeadingIcon, MaterialIcon.Home)
             .Add(x => x.Label, "Home"));
 
-        cut.Find(".nt-nav-link-icon .tnt-icon").TextContent.Should().Be(MaterialIcon.Home.Icon);
+        cut.Find(".nt-nav-link-icon .nt-icon").TextContent.Should().Be(MaterialIcon.Home.Icon);
         cut.Find("a").TextContent.Should().Contain("Home");
     }
 

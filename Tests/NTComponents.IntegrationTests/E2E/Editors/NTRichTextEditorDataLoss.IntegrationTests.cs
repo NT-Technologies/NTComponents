@@ -298,7 +298,7 @@ public class NTRichTextEditorDataLoss_IntegrationTests : IAsyncLifetime {
 
     private ILocator Section(string testId) => _page.GetByTestId(testId);
 
-    private ILocator Surface(string testId) => Section(testId).Locator(".tnt-rich-text-editor-surface");
+    private ILocator Surface(string testId) => Section(testId).Locator(".nt-rich-text-editor-surface");
 
     private ILocator BoundValue(string testId) => Section(testId).GetByTestId("bound-value");
 
@@ -313,7 +313,7 @@ public class NTRichTextEditorDataLoss_IntegrationTests : IAsyncLifetime {
             """
             testId => {
                 const editor = document.querySelector(`[data-testid="${testId}"] nt-rich-text-editor`);
-                const surface = editor?.querySelector('.tnt-rich-text-editor-surface');
+                const surface = editor?.querySelector('.nt-rich-text-editor-surface');
                 return surface?.getAttribute('contenteditable') === 'true' && surface.textContent.includes('Initial');
             }
             """,

@@ -11,11 +11,11 @@ internal static class NTMenuOptionClass {
         _ => "nt-combobox-option"
     };
 
-    // NTTypeahead historically built these with CssClassBuilder.Create(), which prepends tnt-components.
+    // NTTypeahead historically built these with CssClassBuilder.Create(), which prepends nt-components.
     public static string ForActive(bool active, bool selected) => (active, selected) switch {
-        (true, true) => "tnt-components nt-combobox-option nt-combobox-option-active nt-combobox-option-selected",
-        (true, false) => "tnt-components nt-combobox-option nt-combobox-option-active",
-        (false, true) => "tnt-components nt-combobox-option nt-combobox-option-selected",
-        _ => "tnt-components nt-combobox-option"
+        (true, true) => "nt-components nt-combobox-option nt-combobox-option-active nt-combobox-option-selected",
+        (true, false) => "nt-components nt-combobox-option nt-combobox-option-active",
+        (false, true) => "nt-components nt-combobox-option nt-combobox-option-selected",
+        _ => "nt-components nt-combobox-option"
     };
 }

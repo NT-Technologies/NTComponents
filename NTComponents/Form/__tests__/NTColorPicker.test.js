@@ -418,7 +418,7 @@ describe('NTColorPicker behavior', () => {
 
     it('can be found from a sibling page script marker', () => {
         root = mountPicker({ value: '#ff0000' });
-        const marker = document.createElement('tnt-page-script');
+        const marker = document.createElement('nt-page-script');
         root.after(marker);
 
         onLoad(marker);

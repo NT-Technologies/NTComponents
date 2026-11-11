@@ -31,7 +31,7 @@ public class NTSVGIcon_Tests : BunitContext {
         var cut = Render<NTSVGIcon>(p => p.Add(c => c.Icon, Svg));
 
         // Assert
-        var span = cut.Find("span.tnt-icon.nt-svg-icon");
+        var span = cut.Find("span.nt-icon.nt-svg-icon");
         span.QuerySelector("svg > path").Should().NotBeNull();
         span.TextContent.Should().BeEmpty();
         span.GetAttribute("class")!.Should().Contain("mi-medium").And.NotContain("material-symbols");

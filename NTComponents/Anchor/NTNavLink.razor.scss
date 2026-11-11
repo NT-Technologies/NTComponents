@@ -34,7 +34,7 @@ $nt-nav-link-elevations: (
             color: var(--nt-nav-link-active-fg);
         }
 
-        &.tnt-disabled {
+        &.nt-disabled {
             color: color-mix(in srgb, #{colors.$nt-color-on-surface} 38%, transparent);
             cursor: not-allowed;
             pointer-events: none;
@@ -56,7 +56,7 @@ $nt-nav-link-elevations: (
     &.nt-nav-link-button-chrome {
         @include buttonChrome.root("nt-nav-link-bg", "nt-nav-link-fg", colors.$nt-color-primary, colors.$nt-color-on-primary);
 
-        &:not(.tnt-disabled) {
+        &:not(.nt-disabled) {
             &:hover {
                 color: var(--nt-nav-link-hover-fg, var(--nt-nav-link-fg, #{colors.$nt-color-on-primary}));
             }
@@ -71,7 +71,7 @@ $nt-nav-link-elevations: (
         }
 
         @each $size, $tokens in buttonChrome.$sizes {
-            &.tnt-size-#{$size} {
+            &.nt-size-#{$size} {
                 @include buttonChrome.size("nt-nav-link-shape-square", $tokens...);
             }
         }
@@ -84,7 +84,7 @@ $nt-nav-link-elevations: (
                     box-shadow: map.get(elevation.$nt-elevation-shadows, map.get($tokens, rest));
                 }
 
-                &:not(.tnt-disabled):hover::after {
+                &:not(.nt-disabled):hover::after {
                     box-shadow: map.get(elevation.$nt-elevation-shadows, map.get($tokens, hover));
                 }
             }
@@ -129,7 +129,7 @@ $nt-nav-link-elevations: (
             line-height: 1;
         }
 
-        &.tnt-disabled {
+        &.nt-disabled {
             box-shadow: none;
             color: color-mix(in srgb, #{colors.$nt-color-on-surface} 38%, transparent);
             cursor: not-allowed;
@@ -155,7 +155,7 @@ $nt-nav-link-elevations: (
         @include buttonChrome.ripple-host;
 
         ::deep {
-            .tnt-icon {
+            .nt-icon {
                 display: block;
                 line-height: 1;
             }

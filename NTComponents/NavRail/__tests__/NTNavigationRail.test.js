@@ -43,7 +43,7 @@ describe('NTNavigationRail module', () => {
                 data-nt-navigation-rail-expanded-icon="menu_open"
                 data-nt-navigation-rail-collapsed-icon="menu">
           <span class="nt-navigation-rail-menu-icon" aria-hidden="true">
-            <span class="tnt-icon">menu</span>
+            <span class="nt-icon">menu</span>
           </span>
         </button>
         <a class="nt-navigation-rail-item" href="/">
@@ -63,7 +63,7 @@ describe('NTNavigationRail module', () => {
 
     const rail = document.querySelector('.nt-navigation-rail');
     const button = document.querySelector('.nt-navigation-rail-menu-button');
-    const icon = document.querySelector('.nt-navigation-rail-menu-icon .tnt-icon');
+    const icon = document.querySelector('.nt-navigation-rail-menu-icon .nt-icon');
     const item = document.querySelector('.nt-navigation-rail-item');
 
     expect(registeredElements).toEqual([button, item]);
@@ -106,7 +106,7 @@ describe('NTNavigationRail module', () => {
                 data-nt-navigation-rail-expanded-icon="menu_open"
                 data-nt-navigation-rail-collapsed-icon="menu">
           <span class="nt-navigation-rail-menu-icon" aria-hidden="true">
-            <span class="tnt-icon">menu</span>
+            <span class="nt-icon">menu</span>
           </span>
         </button>
         <a class="nt-navigation-rail-item" href="/">Home</a>
@@ -155,11 +155,11 @@ describe('NTNavigationRail module', () => {
           </div>
         </div>
       </nav>
-      <tnt-page-script src="./_content/NTComponents/NavRail/NTNavigationRail.razor.js"></tnt-page-script>`;
+      <nt-page-script src="./_content/NTComponents/NavRail/NTNavigationRail.razor.js"></nt-page-script>`;
 
     module.onLoad();
 
-    const marker = document.querySelector('tnt-page-script');
+    const marker = document.querySelector('nt-page-script');
     const rail = document.querySelector('#primary-rail');
     const menuButton = rail.querySelector('.nt-navigation-rail-menu-button');
     const groupTrigger = rail.querySelector('.nt-navigation-rail-group-trigger');
@@ -195,7 +195,7 @@ describe('NTNavigationRail module', () => {
                 data-nt-navigation-rail-expanded-icon="menu_open"
                 data-nt-navigation-rail-collapsed-icon="menu">
           <span class="nt-navigation-rail-menu-icon" aria-hidden="true">
-            <span class="tnt-icon">menu</span>
+            <span class="nt-icon">menu</span>
           </span>
         </button>
         <a class="nt-navigation-rail-item" href="/">Home</a>
@@ -205,7 +205,7 @@ describe('NTNavigationRail module', () => {
 
     const rail = document.querySelector('.nt-navigation-rail');
     const button = document.querySelector('.nt-navigation-rail-menu-button');
-    const icon = document.querySelector('.nt-navigation-rail-menu-icon .tnt-icon');
+    const icon = document.querySelector('.nt-navigation-rail-menu-icon .nt-icon');
     const item = document.querySelector('.nt-navigation-rail-item');
 
     expect(window.matchMedia).toHaveBeenCalledWith('(min-width: 840px)');
@@ -411,7 +411,7 @@ describe('NTNavigationRail module', () => {
                   aria-controls="workspace-panel"
                   data-nt-navigation-rail-group-trigger="true">
             <span class="nt-navigation-rail-item-icon" aria-hidden="true">
-              <span class="tnt-icon material-symbols-outlined">workspaces</span>
+              <span class="nt-icon material-symbols-outlined">workspaces</span>
             </span>
             Workspace
           </button>
@@ -472,7 +472,7 @@ describe('NTNavigationRail module', () => {
                 data-nt-navigation-rail-expanded-icon="menu_open"
                 data-nt-navigation-rail-collapsed-icon="menu">
           <span class="nt-navigation-rail-menu-icon" aria-hidden="true">
-            <span class="tnt-icon">menu</span>
+            <span class="nt-icon">menu</span>
           </span>
         </button>
         <div class="nt-navigation-rail-group" data-nt-navigation-rail-group-expanded="true">
@@ -482,7 +482,7 @@ describe('NTNavigationRail module', () => {
                   aria-controls="workspace-panel"
                   data-nt-navigation-rail-group-trigger="true">
             <span class="nt-navigation-rail-item-icon" aria-hidden="true">
-              <span class="tnt-icon material-symbols-outlined">workspaces</span>
+              <span class="nt-icon material-symbols-outlined">workspaces</span>
             </span>
             Workspace
           </button>
@@ -776,7 +776,7 @@ describe('NTNavigationRail module', () => {
       <nav class="nt-navigation-rail nt-navigation-rail-expanded">
         <button class="nt-navigation-rail-menu-button" type="button" aria-expanded="true">Menu</button>
         <a class="nt-navigation-rail-item" href="/home">Home</a>
-        <a class="nt-navigation-rail-item tnt-disabled" href="/disabled" aria-disabled="true" tabindex="-1">Disabled</a>
+        <a class="nt-navigation-rail-item nt-disabled" href="/disabled" aria-disabled="true" tabindex="-1">Disabled</a>
         <div class="nt-navigation-rail-group" data-nt-navigation-rail-group-expanded="false">
           <button class="nt-navigation-rail-group-trigger nt-navigation-rail-item"
                   type="button"
@@ -1422,7 +1422,7 @@ describe('NTNavigationRail module', () => {
               data-nt-navigation-rail-expanded-icon="menu_open"
               data-nt-navigation-rail-collapsed-icon="menu">
         <span class="nt-navigation-rail-menu-icon" aria-hidden="true">
-          <span class="tnt-icon">menu</span>
+          <span class="nt-icon">menu</span>
         </span>
       </button>
       <nav id="primary-rail" class="nt-navigation-rail nt-navigation-rail-hide-on-xs nt-navigation-rail-collapsed">
@@ -1435,7 +1435,7 @@ describe('NTNavigationRail module', () => {
                 data-nt-navigation-rail-expanded-icon="menu_open"
                 data-nt-navigation-rail-collapsed-icon="menu">
           <span class="nt-navigation-rail-menu-icon" aria-hidden="true">
-            <span class="tnt-icon">menu</span>
+            <span class="nt-icon">menu</span>
           </span>
         </button>
         <a class="nt-navigation-rail-item" href="/home">Home</a>
@@ -1458,7 +1458,7 @@ describe('NTNavigationRail module', () => {
     expect(externalButton.getAttribute('aria-expanded')).toBe('true');
     expect(internalButton.getAttribute('aria-expanded')).toBe('true');
     expect(externalButton.getAttribute('aria-label')).toBe('Collapse navigation rail');
-    expect(externalButton.querySelector('.tnt-icon').textContent).toBe('menu_open');
+    expect(externalButton.querySelector('.nt-icon').textContent).toBe('menu_open');
 
     firstItem.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 
@@ -1493,7 +1493,7 @@ describe('NTNavigationRail module', () => {
               data-nt-navigation-rail-expanded-icon="menu_open"
               data-nt-navigation-rail-collapsed-icon="menu">
         <span class="nt-navigation-rail-menu-icon" aria-hidden="true">
-          <span class="tnt-icon">menu</span>
+          <span class="nt-icon">menu</span>
         </span>
       </button>
       <nav id="primary-rail" class="nt-navigation-rail nt-navigation-rail-hide-when-collapsed nt-navigation-rail-collapsed">
@@ -1506,7 +1506,7 @@ describe('NTNavigationRail module', () => {
                 data-nt-navigation-rail-expanded-icon="menu_open"
                 data-nt-navigation-rail-collapsed-icon="menu">
           <span class="nt-navigation-rail-menu-icon" aria-hidden="true">
-            <span class="tnt-icon">menu</span>
+            <span class="nt-icon">menu</span>
           </span>
         </button>
         <a class="nt-navigation-rail-item" href="/home">Home</a>
@@ -1880,7 +1880,7 @@ describe('NTNavigationRail module', () => {
                   aria-controls="workspace-panel"
                   data-nt-navigation-rail-group-trigger="true">
             <span class="nt-navigation-rail-item-icon" aria-hidden="true">
-              <span class="tnt-icon material-symbols-outlined">workspaces</span>
+              <span class="nt-icon material-symbols-outlined">workspaces</span>
             </span>
             Workspace
           </button>
@@ -1893,7 +1893,7 @@ describe('NTNavigationRail module', () => {
                         aria-controls="admin-panel"
                         data-nt-navigation-rail-group-trigger="true">
                   <span class="nt-navigation-rail-item-icon" aria-hidden="true">
-                    <span class="tnt-icon material-symbols-outlined">admin_panel_settings</span>
+                    <span class="nt-icon material-symbols-outlined">admin_panel_settings</span>
                   </span>
                   Admin
                 </button>
@@ -1914,8 +1914,8 @@ describe('NTNavigationRail module', () => {
     const adminGroup = document.querySelector('#admin-group');
     const workspaceTrigger = workspaceGroup.querySelector(':scope > .nt-navigation-rail-group-trigger');
     const adminTrigger = adminGroup.querySelector(':scope > .nt-navigation-rail-group-trigger');
-    const workspaceIcon = workspaceTrigger.querySelector('.nt-navigation-rail-item-icon .tnt-icon');
-    const adminIcon = adminTrigger.querySelector('.nt-navigation-rail-item-icon .tnt-icon');
+    const workspaceIcon = workspaceTrigger.querySelector('.nt-navigation-rail-item-icon .nt-icon');
+    const adminIcon = adminTrigger.querySelector('.nt-navigation-rail-item-icon .nt-icon');
 
     expect(adminGroup.classList.contains('nt-navigation-rail-group-selected')).toBe(true);
     expect(workspaceGroup.classList.contains('nt-navigation-rail-group-selected')).toBe(true);

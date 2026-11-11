@@ -21,7 +21,7 @@ public sealed class NTSVGIcon : NTIcon {
     /// <inheritdoc />
     public override string? ElementClass => CssClassBuilder.Create()
         .AddFromAdditionalAttributes(AdditionalAttributes)
-        .AddClass("tnt-icon")
+        .AddClass("nt-icon")
         .AddClass("nt-svg-icon")
         .AddClass("mi-small", Size == IconSize.Small)
         .AddClass("mi-medium", Size == IconSize.Medium)

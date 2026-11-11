@@ -344,7 +344,7 @@ public partial class NTAutocomplete : IAsyncDisposable {
             builder.Append(",\"leadingIcon\":{");
             AppendJsonProperty(builder, "icon", leadingIcon.Icon);
             builder.Append(',');
-            AppendJsonProperty(builder, "cssClass", leadingIcon.ElementClass ?? "tnt-components tnt-icon material-symbols-outlined mi-medium");
+            AppendJsonProperty(builder, "cssClass", leadingIcon.ElementClass ?? "nt-components nt-icon material-symbols-outlined mi-medium");
             if (!string.IsNullOrWhiteSpace(leadingIcon.ElementStyle)) {
                 builder.Append(',');
                 AppendJsonProperty(builder, "style", leadingIcon.ElementStyle);

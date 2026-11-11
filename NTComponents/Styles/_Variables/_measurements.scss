@@ -1,13 +1,13 @@
 @use 'sass:string';
 
-$tnt-side-nav-width: var(--tnt-side-nav-width, 256px);
-$tnt-header-height: var(--tnt-header-height, 64px);
-$tnt-footer-height: var(--tnt-footer-height, 64px);
-$tnt-pill-border-radius-xs: string.unquote('32px / 100%');
-$tnt-pill-border-radius-small: string.unquote('40px / 100%');
-$tnt-pill-border-radius-medium: string.unquote('56px / 100%');
-$tnt-pill-border-radius-large: string.unquote('96px / 100%');
-$tnt-pill-border-radius-xl: string.unquote('136px / 100%');
+$nt-side-nav-width: var(--nt-side-nav-width, 256px);
+$nt-header-height: var(--nt-header-height, 64px);
+$nt-footer-height: var(--nt-footer-height, 64px);
+$nt-pill-border-radius-xs: string.unquote('32px / 100%');
+$nt-pill-border-radius-small: string.unquote('40px / 100%');
+$nt-pill-border-radius-medium: string.unquote('56px / 100%');
+$nt-pill-border-radius-large: string.unquote('96px / 100%');
+$nt-pill-border-radius-xl: string.unquote('136px / 100%');
 
 // Media Query Ranges
 $small-screen-up: 751px !default;

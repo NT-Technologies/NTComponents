@@ -7,7 +7,7 @@ function createField(value = 'UTC') {
     input.dataset.ntBrowserTimeZone = 'true';
     input.value = value;
 
-    const script = document.createElement('tnt-page-script');
+    const script = document.createElement('nt-page-script');
     document.body.append(input, script);
     return { input, script };
 }
@@ -126,7 +126,7 @@ describe('NTBrowserTimeZone browser behavior', () => {
         expect(changeCount).toBe(0);
     });
 
-    test.each([null, undefined, document.createElement('div'), document.createElement('input'), document.createElement('tnt-page-script')])('ignores a missing or unrelated element', element => {
+    test.each([null, undefined, document.createElement('div'), document.createElement('input'), document.createElement('nt-page-script')])('ignores a missing or unrelated element', element => {
         expect(() => {
             onLoad(element);
             onUpdate(element);

@@ -39,7 +39,7 @@ Downloaded figures were inspected for interaction states, dynamic size examples,
 The replaced implementation had useful foundations that informed the replacement:
 
 - `NTCarousel` owns child registration and stable `Order` sorting.
-- The root renders a dedicated `.tnt-carousel-viewport` native scroll surface.
+- The root renders a dedicated `.nt-carousel-viewport` native scroll surface.
 - Pointer dragging can be enabled or disabled.
 - CSS scroll snapping can be enabled, with centered snapping for center-aligned hero.
 - Clickable items reuse the shared ripple/interactable system.
@@ -49,7 +49,7 @@ The replaced implementation had useful foundations that informed the replacement
 
 The implementation does not yet fulfill its public or Material-shaped surface:
 
-- `CarouselAppearance` lists all six current Material layouts, but styling and layout behavior only distinguish hero and center-aligned hero. `tnt-layout` is otherwise descriptive only.
+- `CarouselAppearance` lists all six current Material layouts, but styling and layout behavior only distinguish hero and center-aligned hero. `nt-layout` is otherwise descriptive only.
 - Every layout is a 700px-high horizontal flex row with 16px side padding. Full-screen is not vertical or edge-to-edge; uncontained variants do not have their specified overflow model.
 - Item widths are driven primarily by `80%`, background-image pixel width, and viewport clipping. There is no large/medium/small keyline layout, 40–56px small-item range, responsive fitting model, or explicit maximum large-item width.
 - Item resizing changes the content box at viewport edges, but there is no defined Material parallax model or reduced-motion alternative.
@@ -57,7 +57,7 @@ The implementation does not yet fulfill its public or Material-shaped surface:
 - Clickable `div` content is mouse/click operable but has no button semantics or Space/Enter behavior.
 - `OnIndexChanged` is public but is not connected to browser behavior.
 - `AutoPlayInterval` is documented as milliseconds while the browser treats its numeric value as seconds. Autoplay has no pause control and does not implement the required focus/hover rules.
-- `BackgroundColor` emits `--tnt-carousel-bg-color`, but the component SCSS always uses transparent and never consumes the variable. Browser code similarly emits `--tnt-carousel-item-gap` while SCSS uses a hardcoded 8px gap.
+- `BackgroundColor` emits `--nt-carousel-bg-color`, but the component SCSS always uses transparent and never consumes the variable. Browser code similarly emits `--nt-carousel-item-gap` while SCSS uses a hardcoded 8px gap.
 - Center alignment is conditional on `EnableSnapping`; disabling snapping removes the centered-layout class instead of changing only scroll settlement behavior.
 - Browser source is hand-authored `.razor.js`, contrary to the repository’s TypeScript-source requirement.
 - The LiveTest page repeats large item sets but does not identify layouts, demonstrate all six appearances, show accessible naming, or provide a “Show all” path.

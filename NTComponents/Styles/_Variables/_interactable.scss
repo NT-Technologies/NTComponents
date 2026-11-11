@@ -1,15 +1,7 @@
 @use '_colors.scss' as colors;
 
-@mixin tnt-disabled {
-    &.tnt-disabled {
-        cursor: not-allowed;
-        opacity: 0.6;
-        box-shadow: none;
-    }
-}
-
-@mixin tnt-interactable($tint-color: null, $on-tint-color: null, $deep-ripple: true) {
-    &.tnt-interactable:not(.tnt-disabled) {
+@mixin nt-interactable($tint-color: null, $on-tint-color: null, $deep-ripple: true) {
+    &.nt-interactable:not(.nt-disabled) {
         position: relative;
         cursor: pointer;
 
@@ -38,13 +30,13 @@
 
             @if $deep-ripple {
                 ::deep {
-                    .tnt-rippling {
+                    .nt-rippling {
                         background-color: #{$tint-color};
                     }
                 }
             }
             @else {
-                .tnt-rippling {
+                .nt-rippling {
                     background-color: #{$tint-color};
                 }
             }

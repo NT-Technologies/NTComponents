@@ -200,7 +200,7 @@ describe('NTTextArea browser behavior', () => {
             configurable: true,
             value: 112,
         });
-        const script = document.createElement('tnt-page-script');
+        const script = document.createElement('nt-page-script');
 
         root.appendChild(input);
         root.appendChild(script);

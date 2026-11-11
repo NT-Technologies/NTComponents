@@ -65,7 +65,7 @@ const contrastHigh = 'HIGH';
 const toggleTagName = 'nt-theme-toggle';
 const selectSelector = 'select.nt-theme-select';
 const iconSelector = 'span.nt-theme-toggle-icon';
-const themeLinkSelector = 'link[data-nt-theme],link[data-tnt-theme]';
+const themeLinkSelector = 'link[data-nt-theme]';
 
 function getNTComponents(): NTComponentsWindow | undefined {
     return (window as Window & { NTComponents?: NTComponentsWindow }).NTComponents;

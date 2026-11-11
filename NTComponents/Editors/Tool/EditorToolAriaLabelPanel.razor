@@ -1,14 +1,14 @@
 @namespace NTComponents
 @using Microsoft.AspNetCore.Components
 
-<div class="tnt-rich-text-editor-inline-tool"
+<div class="nt-rich-text-editor-inline-tool"
      popover="manual"
      data-tool-command="ariaLabel"
      role="dialog"
      aria-label="Accessible label settings"
      hidden
      aria-hidden="true">
-    <div class="tnt-rich-text-editor-inline-tool-fields">
+    <div class="nt-rich-text-editor-inline-tool-fields">
         <NTInputText Label="Accessible label"
                      @bind-Value="_label"
                      Appearance="NTFormAppearance.Outlined"
@@ -18,7 +18,7 @@
                      SubmitValue="false"
                      data-role="aria-label-value" />
     </div>
-    <div class="tnt-rich-text-editor-inline-tool-actions">
+    <div class="nt-rich-text-editor-inline-tool-actions">
         <NTButton Label="Apply label" ButtonSize="NTSize.Small" Disabled="@Disabled" Type="ButtonType.Button" data-role="aria-label-apply" />
         <NTButton Label="Cancel" ButtonSize="NTSize.Small" Disabled="@Disabled" Type="ButtonType.Button" Variant="NTButtonVariant.Text" data-role="aria-label-cancel" />
     </div>

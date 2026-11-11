@@ -13,10 +13,10 @@
         aria-pressed="false"
         disabled="@Disabled">
     @if (Button.Icon is not null) {
-        @Button.Icon.Render("tnt-rich-text-editor-toolbar-icon", suppressTitle: true)
+        @Button.Icon.Render("nt-rich-text-editor-toolbar-icon", suppressTitle: true)
     }
     @if (!string.IsNullOrWhiteSpace(Button.Text)) {
-        <span class="tnt-rich-text-editor-toolbar-button-text">@Button.Text</span>
+        <span class="nt-rich-text-editor-toolbar-button-text">@Button.Text</span>
     }
 </button>
 
@@ -35,6 +35,6 @@
 
     // Constant for the common case; a custom class still goes through the builder so dedupe and trimming stay identical.
     private string ButtonClass => string.IsNullOrWhiteSpace(Button.CssClass)
-        ? "tnt-components tnt-rich-text-editor-toolbar-button"
-        : CssClassBuilder.Create().AddClass("tnt-rich-text-editor-toolbar-button").AddClass(Button.CssClass).Build();
+        ? "nt-components nt-rich-text-editor-toolbar-button"
+        : CssClassBuilder.Create().AddClass("nt-rich-text-editor-toolbar-button").AddClass(Button.CssClass).Build();
 }

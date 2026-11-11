@@ -31,7 +31,7 @@ public class NTInputSlider_Tests : BunitContext {
         input.GetAttribute("aria-describedby").Should().Be("volume-supporting");
         cut.Find("label.nt-slider-label").GetAttribute("for").Should().Be("volume");
         cut.Find("#volume-supporting").TextContent.Should().Be("Applies immediately");
-        cut.Find("tnt-page-script").GetAttribute("src").Should().Be("./_content/NTComponents/Form/NTInputSlider.razor.js");
+        cut.Find("nt-page-script").GetAttribute("src").Should().Be("./_content/NTComponents/Form/NTInputSlider.razor.js");
     }
 
     [Fact]
@@ -190,7 +190,7 @@ public class NTInputSlider_Tests : BunitContext {
         inputs[1].GetAttribute("aria-label").Should().Be("Price Maximum");
         inputs[1].HasAttribute("aria-labelledby").Should().BeFalse();
         cut.FindAll("output.nt-slider-value-indicator").Should().HaveCount(2);
-        cut.Find("tnt-page-script").GetAttribute("src").Should().Be("./_content/NTComponents/Form/NTInputRangeSlider.razor.js");
+        cut.Find("nt-page-script").GetAttribute("src").Should().Be("./_content/NTComponents/Form/NTInputRangeSlider.razor.js");
     }
 
     [Fact]

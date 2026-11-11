@@ -28,7 +28,7 @@ describe('NTToast module', () => {
    }
 
    function loadHostFromPageScript(host = createHost()) {
-      const pageScript = document.createElement('tnt-page-script');
+      const pageScript = document.createElement('nt-page-script');
       host.after(pageScript);
       onLoad(pageScript);
       return host;
@@ -60,7 +60,7 @@ describe('NTToast module', () => {
       const host = createHost();
       host.showPopover = jest.fn();
       host.hidePopover = jest.fn();
-      const pageScript = document.createElement('tnt-page-script');
+      const pageScript = document.createElement('nt-page-script');
       host.after(pageScript);
 
       onLoad(pageScript);
@@ -90,7 +90,7 @@ describe('NTToast module', () => {
       dialog.removeAttribute('open');
       await Promise.resolve();
 
-      expect(host.nextElementSibling.localName).toBe('tnt-page-script');
+      expect(host.nextElementSibling.localName).toBe('nt-page-script');
       expect(host.querySelector('.nt-toast-progress').style.animationDelay).toBe('-2s');
    });
 
@@ -335,7 +335,7 @@ describe('NTToast module', () => {
 
    test('onDispose can clean up a page script after the script element is detached', () => {
       const host = createHost();
-      const pageScript = document.createElement('tnt-page-script');
+      const pageScript = document.createElement('nt-page-script');
       const dotNetReference = { invokeMethodAsync: jest.fn(() => Promise.resolve()) };
       host.after(pageScript);
       onLoad(pageScript);

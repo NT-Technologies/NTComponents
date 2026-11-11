@@ -169,8 +169,8 @@ public partial class NTWizard : NTComponentBase, IDisposable {
     private bool IsCurrentStepFormInvalid => _currentStep is NTWizardFormStep && !_currentStepFormIsValid;
     private bool EffectiveNextButtonDisabled => NextButtonDisabled || !HasNextEnterableStep || ShouldDisableNavigationButtonForInvalidForm();
     private bool EffectiveSubmitButtonDisabled => SubmitButtonDisabled || ShouldDisableSubmitButtonForInvalidForm();
-    private string? NavigationButtonInvalidClass => IsCurrentStepFormInvalid && ShouldValidateCurrentStepOnNavigation() && InvalidFormButtonBehavior == NTWizardInvalidFormButtonBehavior.GrayOutOnly ? "tnt-disabled" : null;
-    private string? SubmitButtonInvalidClass => IsCurrentStepFormInvalid && InvalidFormButtonBehavior == NTWizardInvalidFormButtonBehavior.GrayOutOnly ? "tnt-disabled" : null;
+    private string? NavigationButtonInvalidClass => IsCurrentStepFormInvalid && ShouldValidateCurrentStepOnNavigation() && InvalidFormButtonBehavior == NTWizardInvalidFormButtonBehavior.GrayOutOnly ? "nt-disabled" : null;
+    private string? SubmitButtonInvalidClass => IsCurrentStepFormInvalid && InvalidFormButtonBehavior == NTWizardInvalidFormButtonBehavior.GrayOutOnly ? "nt-disabled" : null;
 
     /// <inheritdoc />
     protected override void OnParametersSet() {

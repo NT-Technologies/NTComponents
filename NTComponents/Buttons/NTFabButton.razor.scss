@@ -89,7 +89,7 @@ $medium-placement-offset: $space-unit;
     }
 
     ::deep {
-        .tnt-icon {
+        .nt-icon {
             font-size: map.get($tokens, icon-size);
         }
     }
@@ -141,7 +141,7 @@ $medium-placement-offset: $space-unit;
     }
 
     @each $name, $tokens in $nt-fab-sizes {
-        &.tnt-size-#{$name} {
+        &.nt-size-#{$name} {
             @include nt-fab-size($tokens);
         }
     }
@@ -152,7 +152,7 @@ $medium-placement-offset: $space-unit;
                 box-shadow: map.get(elevation.$nt-elevation-shadows, map.get($tokens, rest));
             }
 
-            &:not(.tnt-disabled):not(:disabled):hover::after {
+            &:not(.nt-disabled):not(:disabled):hover::after {
                 box-shadow: map.get(elevation.$nt-elevation-shadows, map.get($tokens, hover));
             }
         }
@@ -171,7 +171,7 @@ $medium-placement-offset: $space-unit;
         padding-inline: 26px;
     }
 
-    &:not(.tnt-disabled):not(:disabled) {
+    &:not(.nt-disabled):not(:disabled) {
         &:hover::before {
             opacity: 0.08;
         }
@@ -268,7 +268,7 @@ $medium-placement-offset: $space-unit;
         white-space: nowrap;
     }
 
-    &.tnt-disabled,
+    &.nt-disabled,
     &:disabled:not(.nt-button-progress-active) {
         color: color-mix(in srgb, #{colors.$nt-color-on-surface} 38%, transparent);
         cursor: not-allowed;
@@ -289,45 +289,45 @@ $medium-placement-offset: $space-unit;
             transition: border-radius buttonMotion.$nt-button-shape-transition;
         }
 
-        .tnt-icon {
+        .nt-icon {
             color: inherit;
             font-size: 28px;
             pointer-events: none;
         }
 
-        tnt-page-script {
+        nt-page-script {
             position: absolute;
         }
     }
 }
 
-body:has(.tnt-footer, .nt-footer) {
+body:has(.nt-footer) {
     .nt-fab-button {
         &.nt-fab-button-placement-lower-right,
         &.nt-fab-button-placement-lower-left {
-            inset-block-end: calc(#{measurements.$tnt-footer-height} + #{$compact-placement-offset});
+            inset-block-end: calc(#{measurements.$nt-footer-height} + #{$compact-placement-offset});
         }
 
         @media (min-width: 600px) {
             &.nt-fab-button-placement-lower-right,
             &.nt-fab-button-placement-lower-left {
-                inset-block-end: calc(#{measurements.$tnt-footer-height} + #{$medium-placement-offset});
+                inset-block-end: calc(#{measurements.$nt-footer-height} + #{$medium-placement-offset});
             }
         }
     }
 }
 
-body:has(.tnt-header, .nt-header) {
+body:has(.nt-header) {
     .nt-fab-button {
         &.nt-fab-button-placement-upper-right,
         &.nt-fab-button-placement-upper-left {
-            inset-block-start: calc(#{measurements.$tnt-header-height} + #{$compact-placement-offset});
+            inset-block-start: calc(#{measurements.$nt-header-height} + #{$compact-placement-offset});
         }
 
         @media (min-width: 600px) {
             &.nt-fab-button-placement-upper-right,
             &.nt-fab-button-placement-upper-left {
-                inset-block-start: calc(#{measurements.$tnt-header-height} + #{$medium-placement-offset});
+                inset-block-start: calc(#{measurements.$nt-header-height} + #{$medium-placement-offset});
             }
         }
     }

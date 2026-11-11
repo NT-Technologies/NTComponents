@@ -61,7 +61,7 @@ public class NTLazyLoader_Tests : BunitContext {
 
         cut.Markup.Should().Contain("<template><p class=\"lazy-content\">Expensive editor</p></template>");
         cut.FindAll(".lazy-content").Should().BeEmpty();
-        cut.Find("tnt-page-script").GetAttribute("src").Should().Be(JsModulePath);
+        cut.Find("nt-page-script").GetAttribute("src").Should().Be(JsModulePath);
     }
 
     [Fact]

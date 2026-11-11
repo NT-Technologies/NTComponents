@@ -511,7 +511,7 @@ function Invoke-SafariSmoke {
 const done = arguments[arguments.length - 1];
 const modules = ['./_content/NTComponents/Toast/NTToast.razor.js', './_content/NTComponents/Snackbar/NTSnackbar.razor.js'];
 Promise.allSettled(modules.map(path => import(path))).then(results => done(JSON.stringify({
-    pageScriptDefined: customElements.get('tnt-page-script') !== undefined,
+    pageScriptDefined: customElements.get('nt-page-script') !== undefined,
     toastHosts: document.querySelectorAll('[data-nt-toast-host]').length,
     snackbarHosts: document.querySelectorAll('[data-nt-snackbar-host]').length,
     moduleImports: results.map((result, index) => `${modules[index]}: ${result.status === 'fulfilled' ? 'ok' : String(result.reason)}`),

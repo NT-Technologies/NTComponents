@@ -25,7 +25,7 @@ describe('NTComponents delegated ripple', () => {
       }
 
       const button = document.createElement('button');
-      button.className = 'nt-button tnt-ripple';
+      button.className = 'nt-button nt-ripple';
 
       Object.defineProperty(button, 'offsetWidth', { configurable: true, value: 100 });
       Object.defineProperty(button, 'offsetHeight', { configurable: true, value: 40 });
@@ -88,7 +88,7 @@ describe('NTComponents delegated ripple', () => {
       }
 
       const button = document.createElement('button');
-      button.className = 'nt-button tnt-ripple';
+      button.className = 'nt-button nt-ripple';
 
       Object.defineProperty(button, 'offsetWidth', { configurable: true, value: 120 });
       Object.defineProperty(button, 'offsetHeight', { configurable: true, value: 48 });

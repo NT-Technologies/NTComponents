@@ -182,7 +182,7 @@ public class NTTextArea_Tests : BunitContext {
         cut.Find("textarea").GetAttribute("data-nt-textarea-max-visible-lines").Should().Be("5");
         cut.Find("textarea").GetAttribute("rows").Should().Be("2");
         cut.Find("textarea").HasAttribute("oninput").Should().BeFalse();
-        cut.Find("tnt-page-script").GetAttribute("src").Should().Be("./_content/NTComponents/Form/NTTextArea.razor.js");
+        cut.Find("nt-page-script").GetAttribute("src").Should().Be("./_content/NTComponents/Form/NTTextArea.razor.js");
     }
 
     [Fact]
@@ -192,7 +192,7 @@ public class NTTextArea_Tests : BunitContext {
         cut.Find(".nt-input").GetAttribute("class").Should().NotContain("nt-textarea-autogrow");
         cut.Find("textarea").HasAttribute("data-nt-textarea-autogrow").Should().BeFalse();
         cut.Find("textarea").HasAttribute("oninput").Should().BeFalse();
-        cut.FindAll("tnt-page-script").Should().BeEmpty();
+        cut.FindAll("nt-page-script").Should().BeEmpty();
     }
 
     [Fact]
@@ -203,7 +203,7 @@ public class NTTextArea_Tests : BunitContext {
         cut.Find(".nt-input").GetAttribute("class").Should().NotContain("nt-textarea-autogrow");
         cut.Find("textarea").HasAttribute("data-nt-textarea-autogrow").Should().BeFalse();
         cut.Find("textarea").HasAttribute("data-nt-textarea-max-visible-lines").Should().BeFalse();
-        cut.FindAll("tnt-page-script").Should().BeEmpty();
+        cut.FindAll("nt-page-script").Should().BeEmpty();
     }
 
     [Fact]

@@ -13,7 +13,7 @@ describe('afterWebStarted', () => {
       document.body.innerHTML = '';
       jest.clearAllMocks();
       // Clean up any previously registered custom element
-      if (customElements.get('tnt-page-script')) {
+      if (customElements.get('nt-page-script')) {
          // Can't unregister custom elements, so we'll just skip re-registration
       }
    });
@@ -22,7 +22,7 @@ describe('afterWebStarted', () => {
       const blazor = { addEventListener: jest.fn() };
 
       // Check if element is already defined
-      const alreadyDefined = customElements.get('tnt-page-script') !== undefined;
+      const alreadyDefined = customElements.get('nt-page-script') !== undefined;
 
       if (!alreadyDefined) {
          expect(() => afterWebStarted(blazor)).not.toThrow();
@@ -52,7 +52,7 @@ describe('afterWebStarted', () => {
       expect(() => afterStarted(blazor)).not.toThrow();
 
       expect(blazor.addEventListener).toHaveBeenCalledWith('enhancedload', expect.any(Function));
-      expect(customElements.get('tnt-page-script')).not.toBeUndefined();
+      expect(customElements.get('nt-page-script')).not.toBeUndefined();
    });
 
    test('connected page-script updates already loaded modules', async () => {
@@ -66,13 +66,13 @@ export function onDispose(element) { globalThis.${counterName}.dispose++; global
 
       afterStarted(blazor);
 
-      const first = document.createElement('tnt-page-script');
+      const first = document.createElement('nt-page-script');
       first.setAttribute('src', scriptUrl);
       document.body.appendChild(first);
 
       await waitFor(() => globalThis[counterName]?.update === 1);
 
-      const second = document.createElement('tnt-page-script');
+      const second = document.createElement('nt-page-script');
       second.setAttribute('src', scriptUrl);
       document.body.appendChild(second);
 
@@ -85,11 +85,11 @@ export function onDispose(element) { globalThis.${counterName}.dispose++; global
 
       expect(globalThis[counterName]).toEqual({
          dispose: 2,
-         disposeTags: ['TNT-PAGE-SCRIPT', 'TNT-PAGE-SCRIPT'],
+         disposeTags: ['NT-PAGE-SCRIPT', 'NT-PAGE-SCRIPT'],
          load: 1,
-         loadTags: ['TNT-PAGE-SCRIPT'],
+         loadTags: ['NT-PAGE-SCRIPT'],
          update: 2,
-         updateTags: ['TNT-PAGE-SCRIPT', 'TNT-PAGE-SCRIPT']
+         updateTags: ['NT-PAGE-SCRIPT', 'NT-PAGE-SCRIPT']
       });
 
       delete globalThis[counterName];
@@ -107,7 +107,7 @@ export function onDispose() { globalThis.${counterName}.dispose++; }`;
       afterStarted(blazor);
 
       const host = document.createElement('section');
-      const script = document.createElement('tnt-page-script');
+      const script = document.createElement('nt-page-script');
       script.setAttribute('src', scriptUrl);
       host.appendChild(script);
       document.body.appendChild(host);
@@ -125,39 +125,6 @@ export function onDispose() { globalThis.${counterName}.dispose++; }`;
       await waitFor(() => globalThis[counterName]?.dispose === 1);
 
       delete globalThis[counterName];
-   });
-
-   test('handles missing tnt-body gracefully', () => {
-      const blazor = { addEventListener: jest.fn() };
-      try {
-         afterWebStarted(blazor);
-      } catch (e) {
-         if (!e.message.includes('already been registered')) {
-            throw e;
-         }
-      }
-      expect(blazor.addEventListener).not.toThrow();
-   });
-
-   test('sets up ResizeObserver for tnt-body fill-remaining elements', () => {
-      const body = document.createElement('div');
-      body.className = 'tnt-body';
-      body.style.paddingBottom = '10px';
-      document.body.appendChild(body);
-
-      const fillRemaining = document.createElement('div');
-      fillRemaining.className = 'tnt-fill-remaining';
-      body.appendChild(fillRemaining);
-
-      const blazor = { addEventListener: jest.fn() };
-      try {
-         afterWebStarted(blazor);
-      } catch (e) {
-         if (!e.message.includes('already been registered')) {
-            throw e;
-         }
-      }
-      expect(blazor.addEventListener).not.toThrow();
    });
 });
 

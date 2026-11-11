@@ -156,7 +156,7 @@ public class CssClassBuilder_Tests {
         var result = builder.AddDisabled(true).Build();
 
         // Assert
-        result.Should().Be("tnt-disabled");
+        result.Should().Be("nt-disabled");
     }
 
     [Fact]
@@ -168,7 +168,7 @@ public class CssClassBuilder_Tests {
         var result = builder.AddElevation(15).Build();
 
         // Assert
-        result.Should().Be("tnt-elevation-10");
+        result.Should().Be("nt-elevation-10");
     }
 
     [Fact]
@@ -180,7 +180,7 @@ public class CssClassBuilder_Tests {
         var result = builder.AddElevation(10).Build();
 
         // Assert
-        result.Should().Be("tnt-elevation-10");
+        result.Should().Be("nt-elevation-10");
     }
 
     [Fact]
@@ -204,7 +204,7 @@ public class CssClassBuilder_Tests {
         var result = builder.AddElevation(5).Build();
 
         // Assert
-        result.Should().Be("tnt-elevation-5");
+        result.Should().Be("nt-elevation-5");
     }
 
     [Fact]
@@ -228,7 +228,7 @@ public class CssClassBuilder_Tests {
         var result = builder.AddElevation(0).Build();
 
         // Assert
-        result.Should().Be("tnt-elevation-0");
+        result.Should().Be("nt-elevation-0");
     }
 
     [Fact]
@@ -240,7 +240,7 @@ public class CssClassBuilder_Tests {
         var result = builder.AddFilled().Build();
 
         // Assert
-        result.Should().Be("tnt-filled");
+        result.Should().Be("nt-filled");
     }
 
     [Fact]
@@ -264,7 +264,7 @@ public class CssClassBuilder_Tests {
         var result = builder.AddFilled(true).Build();
 
         // Assert
-        result.Should().Be("tnt-filled");
+        result.Should().Be("nt-filled");
     }
 
     [Fact]
@@ -353,7 +353,7 @@ public class CssClassBuilder_Tests {
         var result = builder.AddRipple().Build();
 
         // Assert
-        result.Should().Be("tnt-ripple");
+        result.Should().Be("nt-ripple");
     }
 
     [Fact]
@@ -377,7 +377,7 @@ public class CssClassBuilder_Tests {
         var result = builder.AddRipple(true).Build();
 
         // Assert
-        result.Should().Be("tnt-ripple");
+        result.Should().Be("nt-ripple");
     }
 
     [Fact]
@@ -389,7 +389,7 @@ public class CssClassBuilder_Tests {
         var result = builder.AddSize(NTSize.Large).Build();
 
         // Assert
-        result.Should().Be("tnt-size-l");
+        result.Should().Be("nt-size-l");
     }
 
     [Fact]
@@ -401,7 +401,7 @@ public class CssClassBuilder_Tests {
         var result = builder.AddSize(NTSize.Largest).Build();
 
         // Assert
-        result.Should().Be("tnt-size-xl");
+        result.Should().Be("nt-size-xl");
     }
 
     [Fact]
@@ -413,7 +413,7 @@ public class CssClassBuilder_Tests {
         var result = builder.AddSize(NTSize.Medium).Build();
 
         // Assert
-        result.Should().Be("tnt-size-m");
+        result.Should().Be("nt-size-m");
     }
 
     [Fact]
@@ -437,7 +437,7 @@ public class CssClassBuilder_Tests {
         var result = builder.AddSize(NTSize.Smallest).Build();
 
         // Assert
-        result.Should().Be("tnt-size-xs");
+        result.Should().Be("nt-size-xs");
     }
 
     [Fact]
@@ -449,7 +449,7 @@ public class CssClassBuilder_Tests {
         var result = builder.AddSize(NTSize.Small).Build();
 
         // Assert
-        result.Should().Be("tnt-size-s");
+        result.Should().Be("nt-size-s");
     }
 
     [Fact]
@@ -461,7 +461,7 @@ public class CssClassBuilder_Tests {
         var result = builder.AddTextAlign(NTTextAlign.Center).Build();
 
         // Assert
-        result.Should().Be("tnt-text-align-center");
+        result.Should().Be("nt-text-align-center");
     }
 
     [Fact]
@@ -473,7 +473,7 @@ public class CssClassBuilder_Tests {
         var result = builder.AddTextAlign(NTTextAlign.Justify).Build();
 
         // Assert
-        result.Should().Be("tnt-text-align-justify");
+        result.Should().Be("nt-text-align-justify");
     }
 
     [Fact]
@@ -485,7 +485,7 @@ public class CssClassBuilder_Tests {
         var result = builder.AddTextAlign(NTTextAlign.Left).Build();
 
         // Assert
-        result.Should().Be("tnt-text-align-left");
+        result.Should().Be("nt-text-align-left");
     }
 
     [Fact]
@@ -509,7 +509,7 @@ public class CssClassBuilder_Tests {
         var result = builder.AddTextAlign(NTTextAlign.Right).Build();
 
         // Assert
-        result.Should().Be("tnt-text-align-right");
+        result.Should().Be("nt-text-align-right");
     }
 
     [Fact]
@@ -541,7 +541,7 @@ public class CssClassBuilder_Tests {
         result.Should().Contain("base");
         result.Should().Contain("enabled-class");
         result.Should().NotContain("highlighted-class");
-        result.Should().NotContain("tnt-disabled");
+        result.Should().NotContain("nt-disabled");
     }
 
     [Fact]
@@ -591,12 +591,12 @@ public class CssClassBuilder_Tests {
         // Assert
         result.Should().Contain("base-class");
         result.Should().Contain("additional-class");
-        result.Should().Contain("tnt-size-l");
-        result.Should().Contain("tnt-elevation-3");
-        result.Should().Contain("tnt-filled");
-        result.Should().Contain("tnt-ripple");
-        result.Should().Contain("tnt-text-align-center");
-        result.Should().NotContain("tnt-disabled");
+        result.Should().Contain("nt-size-l");
+        result.Should().Contain("nt-elevation-3");
+        result.Should().Contain("nt-filled");
+        result.Should().Contain("nt-ripple");
+        result.Should().Contain("nt-text-align-center");
+        result.Should().NotContain("nt-disabled");
     }
 
     [Fact]
@@ -616,7 +616,7 @@ public class CssClassBuilder_Tests {
         var result = builder.Build();
 
         // Assert
-        result.Should().Be("tnt-components");
+        result.Should().Be("nt-components");
     }
 
     [Fact]

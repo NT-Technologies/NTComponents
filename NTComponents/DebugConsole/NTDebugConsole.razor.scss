@@ -96,7 +96,7 @@ $nt-debug-console-transition: motion.$nt-motion-duration-medium_1 motion.$nt-mot
     .nt-debug-console-icon {
         display: inline-flex;
 
-        .tnt-icon {
+        .nt-icon {
             color: colors.$nt-color-on-surface-variant;
         }
     }
@@ -122,19 +122,19 @@ $nt-debug-console-transition: motion.$nt-motion-duration-medium_1 motion.$nt-mot
         gap: 4px;
         white-space: nowrap;
 
-        .tnt-icon {
+        .nt-icon {
             font-size: $nt-debug-console-count-icon-size;
             color: inherit;
         }
 
         &.nt-debug-console-count-error {
-            .tnt-icon {
+            .nt-icon {
                 color: colors.$nt-color-error;
             }
         }
 
         &.nt-debug-console-count-warning {
-            .tnt-icon {
+            .nt-icon {
                 color: colors.$nt-color-warning;
             }
         }

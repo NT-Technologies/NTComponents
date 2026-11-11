@@ -159,7 +159,7 @@ function getModalDialog(rail: NavigationRailElement): HTMLDialogElement | null {
 }
 
 function getMenuIcon(button: HTMLButtonElement): HTMLElement | null {
-    return button.querySelector<HTMLElement>(':scope .nt-navigation-rail-menu-icon .tnt-icon');
+    return button.querySelector<HTMLElement>(':scope .nt-navigation-rail-menu-icon .nt-icon');
 }
 
 function shouldOpenByDefault(rail: NavigationRailElement, state: NavigationRailState): boolean {
@@ -200,7 +200,7 @@ function getGroupTrigger(group: HTMLElement): HTMLButtonElement | null {
 }
 
 function getGroupTriggerIcon(trigger: HTMLButtonElement): HTMLElement | null {
-    return trigger.querySelector<HTMLElement>(':scope .nt-navigation-rail-item-icon .tnt-icon');
+    return trigger.querySelector<HTMLElement>(':scope .nt-navigation-rail-item-icon .nt-icon');
 }
 
 function isMaterialSymbolIcon(icon: HTMLElement): boolean {
@@ -297,7 +297,7 @@ function setItemSelected(item: HTMLElement, selected: boolean): void {
         item.removeAttribute('aria-current');
     }
 
-    const icon = item.querySelector<HTMLElement>(':scope .nt-navigation-rail-item-icon .tnt-icon');
+    const icon = item.querySelector<HTMLElement>(':scope .nt-navigation-rail-item-icon .nt-icon');
     if (icon && isMaterialSymbolIcon(icon)) {
         icon.classList.toggle('nt-nav-rail-selected-icon', selected);
     }
@@ -338,7 +338,7 @@ function getItemsContainer(rail: NavigationRailElement): HTMLElement | null {
 }
 
 function isDisabledNavigationElement(element: HTMLElement): boolean {
-    return element.classList.contains('tnt-disabled')
+    return element.classList.contains('nt-disabled')
         || element.getAttribute('aria-disabled') === 'true'
         || element.getAttribute('tabindex') === '-1'
         || (element instanceof HTMLButtonElement && element.disabled);
@@ -1564,7 +1564,7 @@ function registerGroups(rail: NavigationRailElement, state: NavigationRailState)
         }
 
         const onClick = (event: MouseEvent): void => {
-            if (trigger.disabled || trigger.classList.contains('tnt-disabled')) {
+            if (trigger.disabled || trigger.classList.contains('nt-disabled')) {
                 return;
             }
 

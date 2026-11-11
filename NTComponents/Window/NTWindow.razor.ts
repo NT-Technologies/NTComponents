@@ -46,7 +46,7 @@ const windowSelector = '[data-nt-window="true"]';
 let topWindowZIndex = 1100;
 
 function getWindows(root?: Element | null): NTWindowElement[] {
-    if (root instanceof HTMLElement && root.localName === 'tnt-page-script') {
+    if (root instanceof HTMLElement && root.localName === 'nt-page-script') {
         const pageScript = root as NTWindowPageScriptElement;
         const sibling = root.previousElementSibling;
         if (sibling instanceof HTMLElement && sibling.matches(windowSelector)) {
@@ -135,7 +135,7 @@ function updateControlState(element: NTWindowElement, state: WindowVisualState):
         const minimized = state === 'minimized';
         minimizeButton.setAttribute('aria-expanded', String(!minimized));
         minimizeButton.setAttribute('aria-label', minimizeButton.getAttribute('data-nt-window-aria-label') ?? (minimized ? `Restore ${title}` : `Minimize ${title}`));
-        const icon = minimizeButton.querySelector<HTMLElement>('.tnt-icon');
+        const icon = minimizeButton.querySelector<HTMLElement>('.nt-icon');
         if (icon) {
             icon.textContent = minimized ? 'keyboard_arrow_up' : 'minimize';
         }
@@ -145,7 +145,7 @@ function updateControlState(element: NTWindowElement, state: WindowVisualState):
         const fullscreen = state === 'fullscreen';
         fullscreenButton.setAttribute('aria-pressed', String(fullscreen));
         fullscreenButton.setAttribute('aria-label', fullscreenButton.getAttribute('data-nt-window-aria-label') ?? (fullscreen ? `Restore ${title}` : `Show ${title} fullscreen`));
-        const icon = fullscreenButton.querySelector<HTMLElement>('.tnt-icon');
+        const icon = fullscreenButton.querySelector<HTMLElement>('.nt-icon');
         if (icon) {
             icon.textContent = fullscreen ? 'fullscreen_exit' : 'fullscreen';
         }
@@ -468,7 +468,7 @@ export function onDispose(element: Element): void {
         disposeWindow(windowElement);
     }
 
-    if (element instanceof HTMLElement && element.localName === 'tnt-page-script') {
+    if (element instanceof HTMLElement && element.localName === 'nt-page-script') {
         delete (element as NTWindowPageScriptElement).__ntWindowElement;
     }
 }

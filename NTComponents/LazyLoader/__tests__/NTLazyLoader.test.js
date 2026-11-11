@@ -108,7 +108,7 @@ describe('NTLazyLoader browser behavior', () => {
 
 describe('NTLazyLoader static SSR behavior', () => {
     const originalIntersectionObserver = globalThis.IntersectionObserver;
-    const pageScript = document.createElement('tnt-page-script');
+    const pageScript = document.createElement('nt-page-script');
 
     beforeEach(() => {
         document.body.innerHTML = '';

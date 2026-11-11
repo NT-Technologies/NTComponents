@@ -255,7 +255,7 @@ export class NTContextMenu extends HTMLElement {
     }
 
     private isDisabled(): boolean {
-        return this.dataset.disabled === 'true' || this.hasAttribute('disabled') || this.classList.contains('tnt-disabled');
+        return this.dataset.disabled === 'true' || this.hasAttribute('disabled') || this.classList.contains('nt-disabled');
     }
 
     private openAt(clientX: number, clientY: number, sourceElement: Maybe<Element>): void {

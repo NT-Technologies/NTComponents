@@ -100,13 +100,13 @@ public partial class NTInputDateTime<DateTimeType> {
             ["format"] = _effectiveFormat
         };
         if (EnableCustomPicker) {
-            attributes["data-tnt-dtp-input"] = "true";
-            attributes["data-tnt-dtp-target"] = pickerId;
-            attributes["data-tnt-dtp-mode"] = _metadata.PickerMode;
-            attributes["data-tnt-dtp-open-on-focus"] = "true";
+            attributes["data-nt-dtp-input"] = "true";
+            attributes["data-nt-dtp-target"] = pickerId;
+            attributes["data-nt-dtp-mode"] = _metadata.PickerMode;
+            attributes["data-nt-dtp-open-on-focus"] = "true";
         }
         else {
-            attributes["data-tnt-dtp-native-input"] = "true";
+            attributes["data-nt-dtp-native-input"] = "true";
             attributes["onfocus"] = EventCallback.Factory.Create<FocusEventArgs>(this, OnNativeInputFocusAsync);
         }
 
@@ -242,7 +242,7 @@ public partial class NTInputDateTime<DateTimeType> {
     private void CachePickerState() {
         _pickerId = BuildPickerId();
         _pickerHeadlineId = $"{_pickerId}-headline";
-        _pickerClass = $"tnt-dtp-overlay tnt-dtp-mode-{_metadata.PickerMode}";
+        _pickerClass = $"nt-dtp-overlay nt-dtp-mode-{_metadata.PickerMode}";
         _rootClass = BuildRootClass(Density ?? Form?.Density ?? NTFormDensity.Standard);
         _resolvedPickerTriggerIcon = ResolvePickerTriggerIcon();
     }

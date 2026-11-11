@@ -23,7 +23,7 @@ public class NTScheduler_Tests : BunitContext {
         picker.Instance.EnableCustomPicker.Should().BeTrue();
         picker.Instance.MonthOnly.Should().BeTrue();
         picker.Instance.Format.Should().BeNull();
-        cut.Find("input[data-tnt-dtp-mode='month']").GetAttribute("aria-label").Should().Be("Displayed date");
+        cut.Find("input[data-nt-dtp-mode='month']").GetAttribute("aria-label").Should().Be("Displayed date");
         cut.FindAll(".range-title").Should().BeEmpty();
     }
 
@@ -39,7 +39,7 @@ public class NTScheduler_Tests : BunitContext {
         picker.Instance.Value.Should().Be(new DateOnly(2024, 6, 15));
         picker.Instance.MonthOnly.Should().BeFalse();
         picker.Instance.Format.Should().BeNull();
-        var input = cut.Find("input[data-tnt-dtp-mode='date']");
+        var input = cut.Find("input[data-nt-dtp-mode='date']");
         input.GetAttribute("aria-label").Should().Be("Displayed date");
         input.GetAttribute("value").Should().Be("2024-06-15");
     }
@@ -57,7 +57,7 @@ public class NTScheduler_Tests : BunitContext {
         picker.Instance.Value.Should().Be(new DateOnly(2024, 6, 10));
         picker.Instance.MonthOnly.Should().BeFalse();
         picker.Instance.Format.Should().BeNull();
-        cut.Find("input[data-tnt-dtp-mode='date']").GetAttribute("value").Should().Be("2024-06-10");
+        cut.Find("input[data-nt-dtp-mode='date']").GetAttribute("value").Should().Be("2024-06-10");
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class NTScheduler_Tests : BunitContext {
 
         changedDate.Should().Be(new DateTimeOffset(2024, 6, 19, 12, 0, 0, TimeSpan.Zero));
         cut.FindComponent<NTInputDateTime<DateOnly>>().Instance.Value.Should().Be(new DateOnly(2024, 6, 17));
-        cut.Find("input[data-tnt-dtp-mode='date']").GetAttribute("value").Should().Be("2024-06-17");
+        cut.Find("input[data-nt-dtp-mode='date']").GetAttribute("value").Should().Be("2024-06-17");
     }
 
     [Fact]

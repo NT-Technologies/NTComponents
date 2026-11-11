@@ -55,18 +55,18 @@
                 }
 
                 <span class="nt-input-control-container">
-                    <span class="tnt-rich-text-editor-shell">
+                    <span class="nt-rich-text-editor-shell">
 			            @if (ShouldRenderFormPostValue) {
                             <input type="hidden"
 			                       id="@FormPostInputId"
-			                       class="tnt-rich-text-editor-hidden-input"
+			                       class="nt-rich-text-editor-hidden-input"
 			                       name="@ElementName"
 			                       value="@FormPostValue" />
                         }
 
-			            <span class="tnt-rich-text-editor-value" hidden>@CurrentValueAsString</span>
+			            <span class="nt-rich-text-editor-value" hidden>@CurrentValueAsString</span>
 
-			            <span class="tnt-rich-text-editor-toolbar" role="toolbar" aria-label="Text formatting">
+			            <span class="nt-rich-text-editor-toolbar" role="toolbar" aria-label="Text formatting">
 				            @foreach (var toolbarButton in ToolbarButtons ?? NTRichTextEditor.DefaultToolbarButtons) {
 					            if (toolbarButton.IsDivider) {
 						            <span class="@GetToolbarDividerClass(toolbarButton)" aria-hidden="true"></span>
@@ -84,10 +84,10 @@
 						                    aria-pressed="false"
 						                    disabled>
 							            @if (toolbarButton.Icon is not null) {
-								            @toolbarButton.Icon.Render("tnt-rich-text-editor-toolbar-icon", suppressTitle: true)
+								            @toolbarButton.Icon.Render("nt-rich-text-editor-toolbar-icon", suppressTitle: true)
 							            }
 							            @if (!string.IsNullOrWhiteSpace(toolbarButton.Text)) {
-								            <span class="tnt-rich-text-editor-toolbar-button-text">@toolbarButton.Text</span>
+								            <span class="nt-rich-text-editor-toolbar-button-text">@toolbarButton.Text</span>
 							            }
 						            </button>
 					            }
@@ -104,7 +104,7 @@
 
 			            @* Must be a block element: Chromium inserts <br> instead of a new list item when the editing host is a span. *@
 			            <div id="@InputId"
-			                  class="tnt-rich-text-editor-surface nt-input-control"
+			                  class="nt-rich-text-editor-surface nt-input-control"
 			                  data-role="surface"
 			                  data-placeholder="@RichTextPlaceholder"
 			                  data-empty="@(string.IsNullOrWhiteSpace(CurrentValueAsString) ? "true" : "false")"
@@ -122,9 +122,9 @@
 			                  spellcheck="true"
 			                  onkeydown="NTComponents.stopEnterPropagation(event)"
 			                  @ref="Element"></div>
-			            <span class="tnt-rich-text-editor-source-container">
-			                <pre class="tnt-rich-text-editor-source-highlight" aria-hidden="true"><code></code></pre>
-			                <textarea class="tnt-rich-text-editor-source nt-input-control"
+			            <span class="nt-rich-text-editor-source-container">
+			                <pre class="nt-rich-text-editor-source-highlight" aria-hidden="true"><code></code></pre>
+			                <textarea class="nt-rich-text-editor-source nt-input-control"
 			                          data-role="html-source"
 			                          aria-label="Edit HTML source"
 			                          rows="1"
@@ -157,7 +157,7 @@
     </div>
 
     @if (Tooltip is not null) {
-        @TooltipIcon.Render("tnt-tooltip-icon")
+        @TooltipIcon.Render("nt-tooltip-icon")
     }
 
     @if (hasErrorText || hasSupportingText || HasSupportingRowContent) {

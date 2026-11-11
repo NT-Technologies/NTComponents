@@ -223,7 +223,7 @@
         }
 
         .nt-container-view-quick-nav {
-            inset-block-start: calc(var(--tnt-header-height, 0px) + #{view.$gap});
+            inset-block-start: calc(var(--nt-header-height, 0px) + #{view.$gap});
             inline-size: min(220px, 30%);
             margin-block: 0 view.$gap;
             margin-inline: 0;

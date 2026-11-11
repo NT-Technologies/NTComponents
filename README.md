@@ -238,6 +238,8 @@ dotnet format analyzers --diagnostics NTC1077 NTC1079 --severity warn
 
 Themes must define `--nt-color-*` tokens. 2.0 no longer reads `--tnt-color-*`, so rename those tokens in your theme files, for example `--tnt-color-primary` → `--nt-color-primary`. Do the same in any custom CSS that uses `var(--tnt-color-*)`.
 
+Every other `tnt-` name is now `nt-`: CSS classes (`tnt-icon` → `nt-icon`), custom properties, `data-tnt-*` attributes, the `<tnt-page-script>` element, and the `tnt-theme-changed` event (`nt-theme-changed`). Update any custom CSS, JavaScript, or test selectors that target the old names.
+
 ## Development
 
 Restore, build, and test from the repository root:

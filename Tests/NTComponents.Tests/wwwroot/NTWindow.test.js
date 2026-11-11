@@ -32,13 +32,13 @@ describe('NTWindow module', () => {
                <h2 class="nt-window-title">Report</h2>
                <div class="nt-window-controls">
                   <button data-nt-window-action="minimize" aria-label="Minimize Report" aria-expanded="true">
-                     <span class="tnt-icon">minimize</span>
+                     <span class="nt-icon">minimize</span>
                   </button>
                   <button data-nt-window-action="fullscreen" aria-label="Show Report fullscreen" aria-pressed="false">
-                     <span class="tnt-icon">fullscreen</span>
+                     <span class="nt-icon">fullscreen</span>
                   </button>
                   <button data-nt-window-action="close" aria-label="Close Report">
-                     <span class="tnt-icon">close</span>
+                     <span class="nt-icon">close</span>
                   </button>
                </div>
             </header>
@@ -46,10 +46,10 @@ describe('NTWindow module', () => {
                <div class="nt-window-content">Quarterly results</div>
             </div>
          </section>
-         <tnt-page-script></tnt-page-script>`;
+         <nt-page-script></nt-page-script>`;
 
       const element = document.querySelector('[data-nt-window]');
-      const pageScript = document.querySelector('tnt-page-script');
+      const pageScript = document.querySelector('nt-page-script');
       if (initialize) {
          onLoad(pageScript);
       }
@@ -236,7 +236,7 @@ describe('NTWindow module', () => {
       const { element } = createWindow();
       const second = element.cloneNode(true);
       second.id = 'second-window';
-      document.body.insertBefore(second, document.querySelector('tnt-page-script'));
+      document.body.insertBefore(second, document.querySelector('nt-page-script'));
       element.style.zIndex = '9000';
       onLoad(document.body);
 
@@ -306,7 +306,7 @@ describe('NTWindow module', () => {
       const { element } = createWindow();
       const second = element.cloneNode(true);
       second.id = 'second-window';
-      document.body.insertBefore(second, document.querySelector('tnt-page-script'));
+      document.body.insertBefore(second, document.querySelector('nt-page-script'));
       onLoad(document.body);
 
       element.querySelector('[data-nt-window-action="minimize"]').click();
@@ -319,7 +319,7 @@ describe('NTWindow module', () => {
    test('removing a minimized window compacts the remaining docked windows', () => {
       const { element, pageScript } = createWindow();
       const second = element.cloneNode(true);
-      const secondPageScript = document.createElement('tnt-page-script');
+      const secondPageScript = document.createElement('nt-page-script');
       second.id = 'second-window';
       document.body.append(second, secondPageScript);
       onLoad(secondPageScript);
@@ -379,7 +379,7 @@ describe('NTWindow module', () => {
       if (first) {
          document.body.prepend(element);
       } else {
-         document.body.insertBefore(element, document.querySelector('tnt-page-script'));
+         document.body.insertBefore(element, document.querySelector('nt-page-script'));
       }
       layOut(element, layout);
       return element;
@@ -560,7 +560,7 @@ describe('NTWindow module', () => {
       onDispose(pageScript);
 
       element.setAttribute('data-nt-window', 'true');
-      const newPageScript = document.createElement('tnt-page-script');
+      const newPageScript = document.createElement('nt-page-script');
       element.after(newPageScript);
       onLoad(newPageScript);
 

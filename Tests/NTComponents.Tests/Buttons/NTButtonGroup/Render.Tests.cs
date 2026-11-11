@@ -143,7 +143,7 @@ public sealed class Render_Tests : NTButtonGroupTestContext {
         var group = cut.Find("div.nt-button-group");
         group.ClassList.Should().Contain("nt-invalid");
         group.ClassList.Should().Contain("nt-modified");
-        cut.Find(".tnt-validation-message").TextContent.Should().Be("Choose an option");
+        cut.Find(".nt-validation-message").TextContent.Should().Be("Choose an option");
 
         await cut.Find("button.nt-btn-grp-btn").ClickAsync();
 
@@ -154,7 +154,7 @@ public sealed class Render_Tests : NTButtonGroupTestContext {
         model.SelectedKey.Should().Be(items.First().Key);
         cut.Instance.EditContext!.GetValidationMessages().Should().BeEmpty();
         // .NET 11 retains an empty hidden validation target for client-side validation.
-        cut.FindAll(".tnt-validation-message:not([hidden])").Should().BeEmpty();
+        cut.FindAll(".nt-validation-message:not([hidden])").Should().BeEmpty();
     }
 
     /// <summary>
@@ -172,7 +172,7 @@ public sealed class Render_Tests : NTButtonGroupTestContext {
         var container = cut.Find("div.nt-button-group");
 
         // Assert
-        container.ClassList.Should().Contain("tnt-size-l");
+        container.ClassList.Should().Contain("nt-size-l");
     }
 
     /// <summary>

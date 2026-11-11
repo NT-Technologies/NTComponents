@@ -135,8 +135,8 @@ describe('NTContainerView quick navigation runtime', () => {
     const view = setContainerMarkup(`
       <h1 id="intro">Intro</h1>
       <h2>Details</h2>
-      <tnt-page-script src="./_content/NTComponents/Layout/Views/NTContainerView.razor.js"></tnt-page-script>`);
-    const pageScript = view.querySelector('tnt-page-script');
+      <nt-page-script src="./_content/NTComponents/Layout/Views/NTContainerView.razor.js"></nt-page-script>`);
+    const pageScript = view.querySelector('nt-page-script');
 
     onLoad(pageScript);
 

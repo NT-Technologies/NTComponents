@@ -25,21 +25,20 @@ public class NTHeadDependencies_Tests : BunitContext {
         var cut = Render<NTHeadDependencies>();
         var markup = cut.Markup;
 
-        markup.Should().Contain("data-tnt-theme-critical");
         markup.Should().Contain("data-nt-theme-critical");
         markup.Should().Contain("data-permanent");
         markup.Should().Contain("data-nt-theme-default");
         markup.Should().Contain("id=\"nt-theme-config\"");
         markup.Should().Contain("id=\"nt-theme-state\"");
         markup.Should().Contain("_content/NTComponents/NTTheme.js");
-        cut.Find("#nt-measurement-tokens").TextContent.Should().Be(":root{--tnt-header-height:64px;--tnt-footer-height:64px;--tnt-side-nav-width:256px;}");
+        cut.Find("#nt-measurement-tokens").TextContent.Should().Be(":root{--nt-header-height:64px;--nt-footer-height:64px;--nt-side-nav-width:256px;}");
         markup.Should().Contain("_content/NTComponents/nt-measurements.css");
 
         markup.IndexOf("data-nt-theme-default", StringComparison.Ordinal).Should().BeLessThan(markup.IndexOf("id=\"nt-theme-config\"", StringComparison.Ordinal));
         markup.IndexOf("id=\"nt-theme-config\"", StringComparison.Ordinal).Should().BeLessThan(markup.IndexOf("_content/NTComponents/NTTheme.js", StringComparison.Ordinal));
         markup.IndexOf("id=\"nt-theme-state\"", StringComparison.Ordinal).Should().BeLessThan(markup.IndexOf("_content/NTComponents/NTTheme.js", StringComparison.Ordinal));
-        markup.IndexOf("_content/NTComponents/NTTheme.js", StringComparison.Ordinal).Should().BeLessThan(markup.IndexOf("class=\"tnt-measurements\"", StringComparison.Ordinal));
-        markup.IndexOf("class=\"tnt-measurements\"", StringComparison.Ordinal).Should().BeLessThan(markup.IndexOf("id=\"nt-measurements-stylesheet\"", StringComparison.Ordinal));
+        markup.IndexOf("_content/NTComponents/NTTheme.js", StringComparison.Ordinal).Should().BeLessThan(markup.IndexOf("class=\"nt-measurements\"", StringComparison.Ordinal));
+        markup.IndexOf("class=\"nt-measurements\"", StringComparison.Ordinal).Should().BeLessThan(markup.IndexOf("id=\"nt-measurements-stylesheet\"", StringComparison.Ordinal));
         markup.IndexOf("id=\"nt-measurements-stylesheet\"", StringComparison.Ordinal).Should().BeLessThan(markup.IndexOf("id=\"nt-ripple-stylesheet\"", StringComparison.Ordinal));
     }
 
@@ -223,7 +222,7 @@ public class NTHeadDependencies_Tests : BunitContext {
             .Add(p => p.FooterHeight, 48)
             .Add(p => p.SideNavWidth, 300));
 
-        cut.Find("#nt-measurement-tokens").TextContent.Should().Be(".app-shell{--tnt-header-height:72.5px;--tnt-footer-height:48px;--tnt-side-nav-width:300px;}");
+        cut.Find("#nt-measurement-tokens").TextContent.Should().Be(".app-shell{--nt-header-height:72.5px;--nt-footer-height:48px;--nt-side-nav-width:300px;}");
     }
 
 }

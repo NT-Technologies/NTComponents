@@ -105,22 +105,22 @@
         return stateElement;
     };
 
-    const readAttribute = (element: Element | null | undefined, ntName: string, legacyName: string): string | undefined => element?.getAttribute(ntName) || element?.getAttribute(legacyName) || undefined;
+    const readAttribute = (element: Element | null | undefined, name: string): string | undefined => element?.getAttribute(name) || undefined;
     const getElementConfig = (element?: Element | null): Partial<NTThemeConfiguration> => {
         if (!element) {
             return {};
         }
 
         return {
-            themesRoot: readAttribute(element, 'nt-themes-root', 'tnt-themes-root'),
-            lightDefaultCss: readAttribute(element, 'nt-light-default', 'tnt-light-default'),
-            lightMediumCss: readAttribute(element, 'nt-light-medium', 'tnt-light-medium'),
-            lightHighCss: readAttribute(element, 'nt-light-high', 'tnt-light-high'),
-            darkDefaultCss: readAttribute(element, 'nt-dark-default', 'tnt-dark-default'),
-            darkMediumCss: readAttribute(element, 'nt-dark-medium', 'tnt-dark-medium'),
-            darkHighCss: readAttribute(element, 'nt-dark-high', 'tnt-dark-high'),
-            defaultTheme: readAttribute(element, 'nt-default-theme', 'tnt-default-theme'),
-            defaultContrast: readAttribute(element, 'nt-default-contrast', 'tnt-default-contrast'),
+            themesRoot: readAttribute(element, 'nt-themes-root'),
+            lightDefaultCss: readAttribute(element, 'nt-light-default'),
+            lightMediumCss: readAttribute(element, 'nt-light-medium'),
+            lightHighCss: readAttribute(element, 'nt-light-high'),
+            darkDefaultCss: readAttribute(element, 'nt-dark-default'),
+            darkMediumCss: readAttribute(element, 'nt-dark-medium'),
+            darkHighCss: readAttribute(element, 'nt-dark-high'),
+            defaultTheme: readAttribute(element, 'nt-default-theme'),
+            defaultContrast: readAttribute(element, 'nt-default-contrast'),
         } as Partial<NTThemeConfiguration>;
     };
 
@@ -218,12 +218,9 @@
         link.removeAttribute('media');
         link.removeAttribute('as');
         link.removeAttribute('data-nt-theme');
-        link.removeAttribute('data-tnt-theme');
         link.removeAttribute('data-nt-theme-default');
-        link.removeAttribute('data-tnt-theme-default');
         link.removeAttribute('data-nt-theme-pending');
         link.removeAttribute('data-nt-theme-loaded');
-        link.removeAttribute('data-tnt-theme-loaded');
         link.setAttribute('data-permanent', link.id);
     };
     const deactivateDefaultThemeLink = (link: HTMLLinkElement): void => {
@@ -231,12 +228,9 @@
         link.media = 'not all';
         link.removeAttribute('as');
         link.removeAttribute('data-nt-theme');
-        link.removeAttribute('data-tnt-theme');
         link.removeAttribute('data-nt-theme-default');
-        link.removeAttribute('data-tnt-theme-default');
         link.removeAttribute('data-nt-theme-pending');
         link.removeAttribute('data-nt-theme-loaded');
-        link.removeAttribute('data-tnt-theme-loaded');
         link.setAttribute('data-permanent', link.id);
     };
     const releaseThemeLink = (link?: HTMLLinkElement | null): void => {
@@ -249,9 +243,8 @@
         }
     };
     const removeCriticalThemeStyles = (): void => {
-        document.querySelectorAll<HTMLStyleElement>('style[data-tnt-theme-critical],style[data-nt-theme-critical]').forEach(style => {
+        document.querySelectorAll<HTMLStyleElement>('style[data-nt-theme-critical]').forEach(style => {
             if (style.id === 'nt-theme-critical') {
-                style.removeAttribute('data-tnt-theme-critical');
                 style.removeAttribute('data-nt-theme-critical');
                 style.textContent = '';
             } else {
@@ -259,14 +252,13 @@
             }
         });
     };
-    const removeFallbackStyles = (): void => document.querySelector('style[data-tnt-theme],style[data-nt-theme-fallback]')?.remove();
-    const removeDefaultThemeStylesheets = (): void => document.querySelectorAll<HTMLLinkElement>('link[data-nt-theme-default],link[data-tnt-theme-default]').forEach(releaseThemeLink);
+    const removeFallbackStyles = (): void => document.querySelector('style[data-nt-theme-fallback]')?.remove();
+    const removeDefaultThemeStylesheets = (): void => document.querySelectorAll<HTMLLinkElement>('link[data-nt-theme-default]').forEach(releaseThemeLink);
     const injectFallbackStyles = (): void => {
         let style = document.head.querySelector<HTMLStyleElement>('style[data-nt-theme-fallback]');
         if (!style) {
             style = document.createElement('style');
             style.setAttribute('data-nt-theme-fallback', 'true');
-            style.setAttribute('data-tnt-theme', 'true');
             style.setAttribute('data-permanent', '');
             document.head.appendChild(style);
         }
@@ -279,16 +271,14 @@
             return Promise.resolve('error');
         }
 
-        if (link.getAttribute('data-nt-theme-loaded') === 'true' || link.getAttribute('data-tnt-theme-loaded') === 'true' || link.sheet) {
+        if (link.getAttribute('data-nt-theme-loaded') === 'true' || link.sheet) {
             link.setAttribute('data-nt-theme-loaded', 'true');
-            link.setAttribute('data-tnt-theme-loaded', 'true');
             return Promise.resolve('true');
         }
 
         return new Promise<NTThemeLinkStatus>(resolve => {
             const complete = (status: NTThemeLinkStatus): void => {
                 link.setAttribute('data-nt-theme-loaded', status);
-                link.setAttribute('data-tnt-theme-loaded', status);
                 resolve(status);
             };
 
@@ -302,16 +292,13 @@
         link.removeAttribute('as');
         link.removeAttribute('media');
         link.removeAttribute('data-nt-theme-default');
-        link.removeAttribute('data-tnt-theme-default');
         link.removeAttribute('data-nt-theme-pending');
         link.setAttribute('data-nt-theme', 'true');
-        link.setAttribute('data-tnt-theme', 'true');
         link.setAttribute('data-nt-theme-loaded', 'false');
-        link.setAttribute('data-tnt-theme-loaded', 'false');
         link.setAttribute('data-permanent', link.id);
     };
 
-    const findCurrentThemeLink = (): HTMLLinkElement | null => document.head.querySelector<HTMLLinkElement>('link[data-nt-theme],link[data-tnt-theme]');
+    const findCurrentThemeLink = (): HTMLLinkElement | null => document.head.querySelector<HTMLLinkElement>('link[data-nt-theme]');
     const ensureThemeSlot = (id: string): HTMLLinkElement => {
         const existing = document.getElementById(id);
         if (existing instanceof HTMLLinkElement) {
@@ -325,13 +312,13 @@
         document.head.appendChild(link);
         return link;
     };
-    const findMatchingDefaultThemeLink = (href: string): HTMLLinkElement | undefined => Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[data-nt-theme-default],link[data-tnt-theme-default]'))
+    const findMatchingDefaultThemeLink = (href: string): HTMLLinkElement | undefined => Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[data-nt-theme-default]'))
         .find(link => new URL(link.href, rootWindow.location.href).href === href);
     const findAvailableThemeSlot = (current: HTMLLinkElement | null): HTMLLinkElement => {
         const activeSlot = ensureThemeSlot(activeThemeSlotId);
         return activeSlot === current ? ensureThemeSlot(pendingThemeSlotId) : activeSlot;
     };
-    const releaseOtherActiveThemeLinks = (active: HTMLLinkElement): void => document.head.querySelectorAll<HTMLLinkElement>('link[data-nt-theme],link[data-tnt-theme]').forEach(link => {
+    const releaseOtherActiveThemeLinks = (active: HTMLLinkElement): void => document.head.querySelectorAll<HTMLLinkElement>('link[data-nt-theme]').forEach(link => {
         if (link !== active) {
             releaseThemeLink(link);
         }
@@ -390,7 +377,6 @@
         pending.rel = 'preload';
         pending.setAttribute('data-nt-theme-pending', 'true');
         pending.setAttribute('data-nt-theme-loaded', 'false');
-        pending.setAttribute('data-tnt-theme-loaded', 'false');
         pending.setAttribute('data-permanent', pending.id);
         current.after(pending);
 
@@ -402,7 +388,6 @@
                 pending.removeAttribute('data-nt-theme-pending');
                 markThemeLink(pending);
                 pending.setAttribute('data-nt-theme-loaded', 'true');
-                pending.setAttribute('data-tnt-theme-loaded', 'true');
                 releaseOtherActiveThemeLinks(pending);
                 removeCriticalThemeStyles();
                 removeFallbackStyles();
@@ -452,7 +437,7 @@
     };
     const hasCurrentThemeState = (): boolean => {
         const href = normalizeStateHref(readThemeState().href);
-        const activeThemes = document.head.querySelectorAll<HTMLLinkElement>('link[data-nt-theme],link[data-tnt-theme]');
+        const activeThemes = document.head.querySelectorAll<HTMLLinkElement>('link[data-nt-theme]');
         if (!href || activeThemes.length !== 1) {
             return false;
         }
@@ -468,7 +453,6 @@
     };
     const dispatchThemeChanged = (result: NTThemeResult): void => {
         document.dispatchEvent(new CustomEvent('nt-theme-changed', { detail: result }));
-        document.dispatchEvent(new CustomEvent('tnt-theme-changed', { detail: result }));
     };
     const resolveThemeState = (config: NTThemeConfiguration): NTThemeResult => {
         cleanupInvalidStoredValues(config);

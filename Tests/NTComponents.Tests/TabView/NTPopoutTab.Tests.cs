@@ -22,7 +22,7 @@ public class NTPopoutTab_Tests : BunitContext {
         panel.HasAttribute("data-nt-window").Should().BeFalse();
         panel.ClassList.Should().Contain("nt-tab-view-panel").And.NotContain("nt-window");
         panel.QuerySelector(".nt-popout-tab-action button[aria-label='Open One in a window']").Should().NotBeNull();
-        cut.FindAll("tnt-page-script[src*='NTWindow']").Should().BeEmpty();
+        cut.FindAll("nt-page-script[src*='NTWindow']").Should().BeEmpty();
     }
 
     [Fact]

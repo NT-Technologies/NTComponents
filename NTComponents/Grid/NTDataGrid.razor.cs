@@ -1278,7 +1278,7 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     private string GetPaginationButtonClass(bool disabled, bool currentPage, string? roleClass = null) => CssClassBuilder.Create("pagination-btn")
         .AddClass(roleClass, !string.IsNullOrWhiteSpace(roleClass))
         .AddClass("current-page", currentPage)
-        .AddClass("tnt-disabled", disabled)
+        .AddClass("nt-disabled", disabled)
         .Build();
 
     private IReadOnlyList<int> GetResolvedPageSizeOptions() {

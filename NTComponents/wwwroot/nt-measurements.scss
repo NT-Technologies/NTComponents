@@ -56,68 +56,8 @@ body {
 }
 
 // Page-script loaders only register client behavior; they must never take layout space, such as a grid cell beside a field.
-tnt-page-script {
+nt-page-script {
     display: none;
-}
-
-.tnt-display-large {
-    @include typescale.tnt-display-large;
-}
-
-.tnt-display-medium {
-    @include typescale.tnt-display-medium;
-}
-
-.tnt-display-small {
-    @include typescale.tnt-display-small;
-}
-
-.tnt-headline-large {
-    @include typescale.tnt-headline-large;
-}
-
-.tnt-headline-medium {
-    @include typescale.tnt-headline-medium;
-}
-
-.tnt-headline-small {
-    @include typescale.tnt-headline-small;
-}
-
-.tnt-body-large {
-    @include typescale.tnt-body-large;
-}
-
-.tnt-body-medium {
-    @include typescale.tnt-body-medium;
-}
-
-.tnt-body-small {
-    @include typescale.tnt-body-small;
-}
-
-.tnt-label-large {
-    @include typescale.tnt-label-large;
-}
-
-.tnt-label-medium {
-    @include typescale.tnt-label-medium;
-}
-
-.tnt-label-small {
-    @include typescale.tnt-label-small;
-}
-
-.tnt-title-large {
-    @include typescale.tnt-title-large;
-}
-
-.tnt-title-medium {
-    @include typescale.tnt-title-medium;
-}
-
-.tnt-title-small {
-    @include typescale.tnt-title-small;
 }
 
 .nt-display-large {

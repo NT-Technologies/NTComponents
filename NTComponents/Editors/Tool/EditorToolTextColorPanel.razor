@@ -1,7 +1,7 @@
 @namespace NTComponents
 @using Microsoft.AspNetCore.Components
 
-<div class="tnt-rich-text-editor-inline-tool tnt-rich-text-editor-text-color-editor"
+<div class="nt-rich-text-editor-inline-tool nt-rich-text-editor-text-color-editor"
      popover="manual"
      data-tool-command="textColor"
      data-role="text-color-editor"
@@ -9,7 +9,7 @@
      aria-label="Text color settings"
      hidden
      aria-hidden="true">
-    <div class="tnt-rich-text-editor-inline-tool-fields">
+    <div class="nt-rich-text-editor-inline-tool-fields">
         <NTInputColor Label="Text color"
                       @bind-Value="_textColor"
                       Appearance="NTFormAppearance.Outlined"
@@ -18,7 +18,7 @@
                       SubmitValue="false"
                       data-role="text-color-value" />
     </div>
-    <div class="tnt-rich-text-editor-inline-tool-actions">
+    <div class="nt-rich-text-editor-inline-tool-actions">
         <NTButton Label="Apply color"
                   ButtonSize="NTSize.Small"
                   Disabled="@Disabled"

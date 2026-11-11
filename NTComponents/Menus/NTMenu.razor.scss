@@ -226,7 +226,7 @@ $menu-selected-content-color: colors.$nt-color-on-tertiary-container;
             position: relative;
             z-index: 2;
 
-            .tnt-icon {
+            .nt-icon {
                 color: inherit;
                 font-size: 24px;
                 pointer-events: none;
@@ -300,7 +300,7 @@ $menu-selected-content-color: colors.$nt-color-on-tertiary-container;
                 block-size: 20px;
                 inline-size: 20px;
 
-                .tnt-icon {
+                .nt-icon {
                     font-size: 20px;
                 }
             }

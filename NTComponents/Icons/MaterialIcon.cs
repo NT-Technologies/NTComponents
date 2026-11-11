@@ -12,7 +12,7 @@ public sealed partial class MaterialIcon : NTIcon {
     /// <inheritdoc />
     public override string? ElementClass => CssClassBuilder.Create()
         .AddFromAdditionalAttributes(AdditionalAttributes)
-        .AddClass("tnt-icon")
+        .AddClass("nt-icon")
         .AddClass("material-symbols-outlined", Appearance is IconAppearance.Default or IconAppearance.Filled or IconAppearance.Outlined)
         .AddClass("material-symbols-sharp", Appearance == IconAppearance.Sharp)
         .AddClass("material-symbols-rounded", Appearance == IconAppearance.Round)

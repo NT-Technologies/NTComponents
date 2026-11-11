@@ -52,7 +52,7 @@ describe('NTTabView page-script module', () => {
           <section class="nt-tab-view-panel" id="panel-specs" role="tabpanel" data-nt-tab-panel="true" data-nt-tab-value="specs" hidden>Specs content</section>
         </div>
       </nt-tab-view>
-      <tnt-page-script></tnt-page-script>`;
+      <nt-page-script></nt-page-script>`;
 
     return document.querySelector('nt-tab-view');
   }
@@ -97,7 +97,7 @@ describe('NTTabView page-script module', () => {
     window.history.replaceState(null, '', initialUrl);
 
     expect(selectTabByValue(tabView, 'specs')).toBe(true);
-    onLoad(document.querySelector('tnt-page-script'));
+    onLoad(document.querySelector('nt-page-script'));
     expect(selectTabByValue(tabView, 'specs')).toBe(true);
     onUpdate(tabView);
 
@@ -184,7 +184,7 @@ describe('NTTabView page-script module', () => {
 
   test('onLoad resolves a page-script element to the preceding tab view', () => {
     const tabView = createTabView();
-    const pageScript = document.querySelector('tnt-page-script');
+    const pageScript = document.querySelector('nt-page-script');
 
     onLoad(pageScript);
 
@@ -272,7 +272,7 @@ describe('NTTabView page-script module', () => {
     const tabs = Array.from(tabView.querySelectorAll('[role="tab"]'));
     tabs.forEach(tab => { tab.scrollIntoView = jest.fn(); });
 
-    onLoad(document.querySelector('tnt-page-script'));
+    onLoad(document.querySelector('nt-page-script'));
 
     tabs.forEach(tab => expect(tab.scrollIntoView).not.toHaveBeenCalled());
     expect(tabView.querySelector(`#tab-${query ? 'specs' : 'overview'}`).getAttribute('aria-selected')).toBe('true');
@@ -477,7 +477,7 @@ describe('NTTabView page-script module', () => {
 
   test('dispose can resolve the tab view after page script element is detached', () => {
     const tabView = createTabView();
-    const pageScript = document.querySelector('tnt-page-script');
+    const pageScript = document.querySelector('nt-page-script');
     onLoad(pageScript);
     const state = tabView.__ntTabViewState;
 

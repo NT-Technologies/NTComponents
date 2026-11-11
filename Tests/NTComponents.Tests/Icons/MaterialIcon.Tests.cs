@@ -41,7 +41,7 @@ public class MaterialIcon_Tests : BunitContext {
     public void HasTnTIdAttribute() {
         // Arrange & Act
         var cut = Render<MaterialIcon>(p => p.Add(c => c.Icon, "notifications"));
-        var root = cut.Find("span.tnt-icon");
+        var root = cut.Find("span.nt-icon");
 
         // Assert
         root.HasAttribute("tntid").Should().BeTrue();
@@ -72,8 +72,8 @@ public class MaterialIcon_Tests : BunitContext {
         var cls = cut.Find("span").GetAttribute("class")!;
 
         // Assert
-        cls.Should().Contain("tnt-icon");
-        cls.Should().Contain("tnt-components");
+        cls.Should().Contain("nt-icon");
+        cls.Should().Contain("nt-components");
         cls.Should().Contain("material-symbols-sharp");
         cls.Should().Contain("mi-large");
         cut.Find("span").TextContent.Should().Be("build");
@@ -105,7 +105,7 @@ public class MaterialIcon_Tests : BunitContext {
         // Assert
         var cls = cut.Find("span").GetAttribute("class")!;
         cls.Should().Contain("material-extra");
-        cls.Should().Contain("tnt-icon");
+        cls.Should().Contain("nt-icon");
     }
 
     [Fact]
@@ -248,12 +248,12 @@ public class MaterialIcon_Tests : BunitContext {
     public void Render_WithDefaultParameters_RendersSpanWithMaterialIconClasses() {
         // Arrange & Act
         var cut = Render<MaterialIcon>(p => p.Add(c => c.Icon, "search"));
-        var root = cut.Find("span.tnt-icon");
+        var root = cut.Find("span.nt-icon");
 
         // Assert
         root.Should().NotBeNull();
-        root.GetAttribute("class")!.Should().Contain("tnt-icon");
-        root.GetAttribute("class")!.Should().Contain("tnt-components");
+        root.GetAttribute("class")!.Should().Contain("nt-icon");
+        root.GetAttribute("class")!.Should().Contain("nt-components");
         root.GetAttribute("class")!.Should().Contain("material-symbols-outlined"); // default appearance
         root.GetAttribute("class")!.Should().Contain("mi-medium"); // default size
         root.TextContent.Should().Be("search");

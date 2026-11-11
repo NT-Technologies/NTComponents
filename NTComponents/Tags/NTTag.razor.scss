@@ -16,8 +16,8 @@ $text-color: var(--nt-tag-text-color);
     background-color: $bg-color;
     color: $text-color;
     border-radius: 8px;
-    @include typescale.tnt-label-medium;
-    @include elevation.tnt-elevations(elevation.$nt-elevation-shadows);
+    @include typescale.nt-label-medium;
+    @include elevation.nt-elevations(elevation.$nt-elevation-shadows);
 
     .nt-tag-label {
         min-width: 0;

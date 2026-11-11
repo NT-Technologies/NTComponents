@@ -79,7 +79,7 @@ describe('NTInputDateRange popover behavior', () => {
                     <button type="button" data-nt-input-date-range-action="clear">Clear</button>
                     <button type="button" data-nt-input-date-range-action="done">Done</button>
                 </div>
-                <tnt-page-script></tnt-page-script>
+                <nt-page-script></nt-page-script>
             </div>`;
         root = document.querySelector('[data-nt-input-date-range]');
         popover().showPopover = jest.fn();
@@ -91,7 +91,7 @@ describe('NTInputDateRange popover behavior', () => {
             element.addEventListener('change', () => events.push(`change:${name}:${element.value}`));
         }
 
-        onLoad(root.querySelector('tnt-page-script'));
+        onLoad(root.querySelector('nt-page-script'));
     }
 
     function key(target, name) {
@@ -108,7 +108,7 @@ describe('NTInputDateRange popover behavior', () => {
 
     afterEach(() => {
         if (root) {
-            onDispose(root.querySelector('tnt-page-script') ?? root);
+            onDispose(root.querySelector('nt-page-script') ?? root);
         }
 
         document.body.innerHTML = '';
@@ -441,13 +441,13 @@ describe('NTInputDateRange popover behavior', () => {
 
     it('is idempotent across updates and stops reacting after dispose', () => {
         mount();
-        onUpdate(root.querySelector('tnt-page-script'));
-        onLoad(root.querySelector('tnt-page-script'));
+        onUpdate(root.querySelector('nt-page-script'));
+        onLoad(root.querySelector('nt-page-script'));
         input().click();
         expect(popover().showPopover).toHaveBeenCalledTimes(1);
         action('done').click();
 
-        onDispose(root.querySelector('tnt-page-script'));
+        onDispose(root.querySelector('nt-page-script'));
         input().click();
 
         expect(popover().showPopover).toHaveBeenCalledTimes(1);

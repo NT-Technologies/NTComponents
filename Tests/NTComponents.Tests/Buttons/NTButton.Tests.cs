@@ -43,7 +43,7 @@ public class NTButton_Tests : BunitContext {
             .Add(x => x.Label, "Edit")
             .Add(x => x.LeadingIcon, MaterialIcon.Edit));
 
-        cut.Find(".nt-button-icon .tnt-icon").TextContent.Should().Be(MaterialIcon.Edit.Icon);
+        cut.Find(".nt-button-icon .nt-icon").TextContent.Should().Be(MaterialIcon.Edit.Icon);
         cut.Find("button").TextContent.Should().Contain("Edit");
     }
 
@@ -53,7 +53,7 @@ public class NTButton_Tests : BunitContext {
             .Add(x => x.Label, "No ripple")
             .Add(x => x.EnableRipple, false));
 
-        cut.Markup.Should().NotContain("tnt-ripple-effect");
+        cut.FindAll(".nt-button-ripple-host").Should().BeEmpty();
         cut.Markup.Should().NotContain("nt-button-ripple-host");
     }
 
@@ -80,7 +80,7 @@ public class NTButton_Tests : BunitContext {
 
         button.HasAttribute("disabled").Should().BeTrue();
         button.GetAttribute("class")!.Should().Contain("nt-button-progress-active");
-        button.GetAttribute("class")!.Should().NotContain("tnt-disabled");
+        button.GetAttribute("class")!.Should().NotContain("nt-disabled");
         progress.GetAttribute("class")!.Should().Contain("nt-progress-ring");
         progress.GetAttribute("class")!.Should().Contain("nt-progress-indeterminate");
         progress.HasAttribute("aria-valuenow").Should().BeFalse();
@@ -223,7 +223,7 @@ public class NTButton_Tests : BunitContext {
             .Add(x => x.Label, "XS")
             .Add(x => x.ButtonSize, NTSize.Smallest));
 
-        cut.Find("button").GetAttribute("class")!.Should().Contain("tnt-size-xs");
+        cut.Find("button").GetAttribute("class")!.Should().Contain("nt-size-xs");
     }
 
     [Fact]
@@ -231,7 +231,6 @@ public class NTButton_Tests : BunitContext {
         var cut = Render<NTButton>(parameters => parameters.Add(x => x.Label, "Ripple"));
 
         cut.Find(".nt-button-ripple-host").Should().NotBeNull();
-        cut.Markup.Should().NotContain("tnt-ripple-effect");
     }
 
     [Fact]

@@ -18,7 +18,7 @@ public class NTLayout_Tests : BunitContext {
 
         var layout = cut.Find("div.nt-layout");
 
-        layout.GetAttribute("class")!.Should().Contain("tnt-components");
+        layout.GetAttribute("class")!.Should().Contain("nt-components");
         layout.TextContent.Should().Contain("Layout content");
     }
 

@@ -52,7 +52,7 @@ describe('NTLoader runtime', () => {
     shape.animate = jest.fn(() => animation)
 
     loader.appendChild(shape)
-    const marker = document.createElement('tnt-page-script')
+    const marker = document.createElement('nt-page-script')
     marker.setAttribute('src', './_content/NTComponents/Progress/NTLoader.razor.js')
     const scriptHost = document.createElement('div')
     scriptHost.hidden = true

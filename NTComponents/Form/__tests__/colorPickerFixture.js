@@ -36,7 +36,7 @@ export function inputColorMarkup({ value = '', showAlpha = false, disabled = fal
         <button type="button" data-nt-input-color-action="cancel">Cancel</button>
         <button type="button" data-nt-input-color-action="confirm">OK</button>
     </div>
-    <tnt-page-script></tnt-page-script>
+    <nt-page-script></nt-page-script>
 </div>`;
 }
 

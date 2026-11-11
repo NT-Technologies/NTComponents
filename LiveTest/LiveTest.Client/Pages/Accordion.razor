@@ -1,7 +1,7 @@
 @page "/accordion"
 @using NTComponents
 
-<main class="tnt-column gap-24">
+<main class="nt-column gap-24">
     <section>
         <h1>Accordion</h1>
         <p>
@@ -9,7 +9,7 @@
         </p>
     </section>
 
-    <section class="tnt-column gap-16">
+    <section class="nt-column gap-16">
         <h2>Filled</h2>
         <NTAccordion>
             <NTAccordionItem Label="Account details" SupportingText="Open by default" LeadingIcon="@MaterialIcon.AccountCircle" Open="true">
@@ -40,7 +40,7 @@
         </NTAccordion>
     </section>
 
-    <section class="tnt-column gap-16">
+    <section class="nt-column gap-16">
         <h2>Outlined</h2>
         <NTAccordion Variant="NTAccordionVariant.Outlined" Separated="true">
             <NTAccordionItem Label="Project overview" SupportingText="Outlined separated surfaces" LeadingIcon="@MaterialIcon.Article" Open="true">
@@ -61,7 +61,7 @@
         </NTAccordion>
     </section>
 
-    <section class="tnt-column gap-16">
+    <section class="nt-column gap-16">
         <h2>Single Expanded</h2>
         <NTAccordion LimitToOneExpanded="true" GroupName="accordion-demo-single" Variant="NTAccordionVariant.Outlined">
             <NTAccordionItem Label="Shipping" SupportingText="Only one item in this group can stay open" Open="true">
@@ -82,7 +82,7 @@
         </NTAccordion>
     </section>
 
-    <section class="tnt-column gap-16">
+    <section class="nt-column gap-16">
         <h2>Elevated</h2>
         <NTAccordion Variant="NTAccordionVariant.Elevated" HeaderColor="NTColor.SurfaceContainerLow" ContentColor="NTColor.SurfaceContainerLowest" Separated="true">
             <NTAccordionItem Label="Build output" LeadingIcon="@MaterialIcon.Terminal" UseRegionRole="true">
@@ -98,10 +98,10 @@
         </NTAccordion>
     </section>
 
-    <section class="tnt-column gap-16">
+    <section class="nt-column gap-16">
         <h2>Density</h2>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; align-items: start;">
-            <section class="tnt-column gap-12">
+            <section class="nt-column gap-12">
                 <h3>Standard</h3>
                 <NTAccordion LimitToOneExpanded="true" GroupName="accordion-demo-density-standard" Separated="true">
                     <NTAccordionItem Label="Profile" SupportingText="Supporting text below the label" LeadingIcon="@MaterialIcon.Person" Open="true">
@@ -122,7 +122,7 @@
                 </NTAccordion>
             </section>
 
-            <section class="tnt-column gap-12">
+            <section class="nt-column gap-12">
                 <h3>Compact</h3>
                 <NTAccordion Appearance="NTAccordionAppearance.Compact" LimitToOneExpanded="true" GroupName="accordion-demo-density-compact" Separated="true">
                     <NTAccordionItem Label="Profile" SupportingText="Inline supporting text" LeadingIcon="@MaterialIcon.Person">

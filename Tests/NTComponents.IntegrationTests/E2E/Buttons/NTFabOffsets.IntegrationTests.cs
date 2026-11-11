@@ -59,16 +59,8 @@ public class NTFabOffsets_IntegrationTests : IAsyncLifetime {
 
         await page.EvaluateAsync("""
             () => {
-                document.querySelector('.nt-layout > .nt-header').classList.replace('nt-header', 'tnt-header');
-                document.querySelector('.nt-layout > .nt-footer').classList.replace('nt-footer', 'tnt-footer');
-            }
-            """);
-        await AssertOffsetsAsync(page, headerBox.Height + gap, footerBox.Height + gap);
-
-        await page.EvaluateAsync("""
-            () => {
-                document.querySelector('.nt-layout > .tnt-header').classList.remove('tnt-header');
-                document.querySelector('.nt-layout > .tnt-footer').classList.remove('tnt-footer');
+                document.querySelector('.nt-layout > .nt-header').classList.remove('nt-header');
+                document.querySelector('.nt-layout > .nt-footer').classList.remove('nt-footer');
             }
             """);
         await AssertOffsetsAsync(page, gap, gap);

@@ -42,7 +42,7 @@ public class NTProgress_Tests : BunitContext {
         progress.HasAttribute("aria-valuenow").Should().BeFalse();
         cut.Find(".nt-progress-track").LocalName.Should().Be("div");
         cut.FindAll("nt-shape").Should().BeEmpty();
-        cut.FindAll("tnt-page-script").Should().BeEmpty();
+        cut.FindAll("nt-page-script").Should().BeEmpty();
     }
 
     [Theory]
@@ -81,7 +81,7 @@ public class NTProgress_Tests : BunitContext {
         cut.FindAll(".nt-progress-sine-wave-track").Should().HaveCount(expectedSineWaveTrackCount);
         cut.FindAll(".nt-progress-sine-wave-path").Should().HaveCount(expectedSineWavePathCount);
         cut.FindAll("nt-shape").Should().BeEmpty();
-        cut.FindAll("tnt-page-script").Should().BeEmpty();
+        cut.FindAll("nt-page-script").Should().BeEmpty();
     }
 
     [Theory]
@@ -306,7 +306,7 @@ public class NTProgress_Tests : BunitContext {
 
         var cut = Render<NTProgress>(p => p.Add(c => c.Variant, NTProgressVariant.Linear));
 
-        cut.FindAll("tnt-page-script").Should().BeEmpty();
+        cut.FindAll("nt-page-script").Should().BeEmpty();
         JSInterop.Invocations.Should().NotContain(invocation => invocation.Identifier == "import");
     }
 
@@ -372,11 +372,11 @@ public class NTProgress_Tests : BunitContext {
     }
 
     [Theory]
-    [InlineData(NTSize.Smallest, "tnt-size-xs")]
-    [InlineData(NTSize.Small, "tnt-size-s")]
-    [InlineData(NTSize.Medium, "tnt-size-m")]
-    [InlineData(NTSize.Large, "tnt-size-l")]
-    [InlineData(NTSize.Largest, "tnt-size-xl")]
+    [InlineData(NTSize.Smallest, "nt-size-xs")]
+    [InlineData(NTSize.Small, "nt-size-s")]
+    [InlineData(NTSize.Medium, "nt-size-m")]
+    [InlineData(NTSize.Large, "nt-size-l")]
+    [InlineData(NTSize.Largest, "nt-size-xl")]
     public void Size_Adds_Correct_Size_Class(NTSize size, string expectedClass) {
         var cut = Render<NTProgress>(p => p.Add(c => c.Size, size));
         var progress = cut.Find(".nt-progress");

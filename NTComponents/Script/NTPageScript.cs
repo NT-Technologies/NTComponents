@@ -10,7 +10,7 @@ namespace NTComponents;
 [NTDocumentation(
     RenderCompatibility = NTComponentRenderCompatibility.ProgressivelyEnhanced,
     CompatibilitySummary = "Renders a static page-script marker that the browser-side loader enhances.",
-    CompatibilityDetails = "Static SSR emits the custom tnt-page-script element with the requested source. The browser-side loader consumes that marker to load component scripts after the page reaches the browser.")]
+    CompatibilityDetails = "Static SSR emits the custom nt-page-script element with the requested source. The browser-side loader consumes that marker to load component scripts after the page reaches the browser.")]
 public class NTPageScript : ComponentBase {
 
     /// <summary>
@@ -21,7 +21,7 @@ public class NTPageScript : ComponentBase {
 
     /// <inheritdoc />
     protected override void BuildRenderTree(RenderTreeBuilder builder) {
-        builder.OpenElement(0, "tnt-page-script");
+        builder.OpenElement(0, "nt-page-script");
         builder.AddAttribute(1, "src", Src);
         builder.CloseElement();
     }

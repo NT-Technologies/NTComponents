@@ -43,14 +43,14 @@ function exampleActionLabel(action) {
     let text = "";
     const walker = document.createTreeWalker(action, NodeFilter.SHOW_TEXT);
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-        if (!node.parentElement?.closest("script, style, .tnt-icon, [aria-hidden='true']")) {
+        if (!node.parentElement?.closest("script, style, .nt-icon, [aria-hidden='true']")) {
             text += ` ${node.textContent}`;
         }
     }
 
     return text.replace(/\s+/g, " ").trim()
         || action.getAttribute("title")?.trim()
-        || action.querySelector(".tnt-icon")?.textContent?.trim()
+        || action.querySelector(".nt-icon")?.textContent?.trim()
         || "unlabeled";
 }
 

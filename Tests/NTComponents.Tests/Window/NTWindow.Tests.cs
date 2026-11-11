@@ -27,7 +27,7 @@ public class NTWindow_Tests : BunitContext {
         cut.Find("button[aria-label='Minimize Report']").GetAttribute("aria-expanded").Should().Be("true");
         cut.Find("button[aria-label='Show Report fullscreen']").GetAttribute("aria-pressed").Should().Be("false");
         cut.Find("button[aria-label='Close Report']").Should().NotBeNull();
-        cut.Find("tnt-page-script").GetAttribute("src").Should().Be(NTWindow.JsModulePathValue);
+        cut.Find("nt-page-script").GetAttribute("src").Should().Be(NTWindow.JsModulePathValue);
         JSInterop.Invocations.Should().BeEmpty();
     }
 
@@ -52,7 +52,7 @@ public class NTWindow_Tests : BunitContext {
         cut.FindAll(".nt-window-header").Should().BeEmpty();
         cut.Find(".nt-window-content-frame").HasAttribute("aria-hidden").Should().BeFalse();
         cut.Find(".nt-window-content").InnerHtml.Should().Contain("Quarterly results");
-        cut.FindAll("tnt-page-script").Should().BeEmpty();
+        cut.FindAll("nt-page-script").Should().BeEmpty();
     }
 
     [Fact]

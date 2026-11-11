@@ -255,7 +255,7 @@ public class NTIcon_Tests : BunitContext {
         // Assert
         root.Should().NotBeNull();
         root.GetAttribute("class")!.Should().Contain("test-icon");
-        root.GetAttribute("class")!.Should().Contain("tnt-components");
+        root.GetAttribute("class")!.Should().Contain("nt-components");
         root.GetAttribute("class")!.Should().Contain("test-medium"); // default size
         root.TextContent.Should().Be("home");
     }

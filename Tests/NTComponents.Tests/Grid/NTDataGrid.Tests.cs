@@ -727,7 +727,7 @@ public class NTDataGrid_Tests : BunitContext {
             var link = cut.Find(".nt-data-grid-sort-link");
             var indicator = cut.Find(".nt-data-grid-sort-indicator");
             link.ClassList.Should().Contain("nt-data-grid-sort-link-sorted");
-            indicator.ClassList.Should().Contain("tnt-icon");
+            indicator.ClassList.Should().Contain("nt-icon");
             indicator.ClassList.Should().Contain("material-symbols-outlined");
             indicator.ClassList.Should().Contain("nt-data-grid-sort-indicator-ascending");
             indicator.TextContent.Should().Be("arrow_drop_down");
@@ -1269,18 +1269,18 @@ public class NTDataGrid_Tests : BunitContext {
             .Add(grid => grid.ChildContent, DefaultColumns));
 
         cut.WaitForAssertion(() => {
-            cut.Find(".pagination-first-page").ClassList.Should().Contain("tnt-disabled");
-            cut.Find(".pagination-previous-page").ClassList.Should().Contain("tnt-disabled");
-            cut.Find(".pagination-next-page").ClassList.Should().NotContain("tnt-disabled");
+            cut.Find(".pagination-first-page").ClassList.Should().Contain("nt-disabled");
+            cut.Find(".pagination-previous-page").ClassList.Should().Contain("nt-disabled");
+            cut.Find(".pagination-next-page").ClassList.Should().NotContain("nt-disabled");
         });
 
         cut.Find(".pagination-last-page").Click();
 
         cut.WaitForAssertion(() => {
-            cut.Find(".pagination-first-page").ClassList.Should().NotContain("tnt-disabled");
-            cut.Find(".pagination-previous-page").ClassList.Should().NotContain("tnt-disabled");
-            cut.Find(".pagination-next-page").ClassList.Should().Contain("tnt-disabled");
-            cut.Find(".pagination-last-page").ClassList.Should().Contain("tnt-disabled");
+            cut.Find(".pagination-first-page").ClassList.Should().NotContain("nt-disabled");
+            cut.Find(".pagination-previous-page").ClassList.Should().NotContain("nt-disabled");
+            cut.Find(".pagination-next-page").ClassList.Should().Contain("nt-disabled");
+            cut.Find(".pagination-last-page").ClassList.Should().Contain("nt-disabled");
             cut.Markup.Should().Contain("Item 5").And.Contain("Item 6");
         });
     }

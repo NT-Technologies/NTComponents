@@ -36,12 +36,12 @@ public class DatePickersStaticSsr_IntegrationTests : IAsyncLifetime {
         await Assertions.Expect(form.Locator("[data-nt-input-date-range-end]")).ToHaveValueAsync($"{month}-20");
         await Assertions.Expect(form.Locator("[data-nt-input-date-range-input]")).Not.ToHaveValueAsync("");
 
-        await form.Locator("[data-tnt-dtp-trigger][data-tnt-dtp-target='date-ssr-form-departure-picker']").ClickAsync();
+        await form.Locator("[data-nt-dtp-trigger][data-nt-dtp-target='date-ssr-form-departure-picker']").ClickAsync();
         var picker = form.Locator("#date-ssr-form-departure-picker");
-        await picker.Locator("[data-tnt-dtp-day='12']:not(.tnt-dtp-outside-month)").ClickAsync();
+        await picker.Locator("[data-nt-dtp-day='12']:not(.nt-dtp-outside-month)").ClickAsync();
 
         await Assertions.Expect(form.Locator("#date-ssr-form-departure")).ToHaveValueAsync($"{month}-12");
-        await Assertions.Expect(picker).Not.ToHaveClassAsync(new System.Text.RegularExpressions.Regex("tnt-dtp-open"));
+        await Assertions.Expect(picker).Not.ToHaveClassAsync(new System.Text.RegularExpressions.Regex("nt-dtp-open"));
 
         await form.GetByRole(AriaRole.Button, new() { Name = "Submit" }).ClickAsync();
 
@@ -59,8 +59,8 @@ public class DatePickersStaticSsr_IntegrationTests : IAsyncLifetime {
         var popover = form.Locator("[data-nt-input-date-range-popover]");
         await popover.Locator($"button.day[data-date='{month}-01']").ClickAsync();
         await popover.Locator($"button.day[data-date='{month}-28']").ClickAsync();
-        await form.Locator("[data-tnt-dtp-trigger][data-tnt-dtp-target='date-ssr-form-departure-picker']").ClickAsync();
-        await form.Locator("#date-ssr-form-departure-picker [data-tnt-dtp-day='12']:not(.tnt-dtp-outside-month)").ClickAsync();
+        await form.Locator("[data-nt-dtp-trigger][data-nt-dtp-target='date-ssr-form-departure-picker']").ClickAsync();
+        await form.Locator("#date-ssr-form-departure-picker [data-nt-dtp-day='12']:not(.nt-dtp-outside-month)").ClickAsync();
 
         await form.GetByRole(AriaRole.Button, new() { Name = "Submit" }).ClickAsync();
 

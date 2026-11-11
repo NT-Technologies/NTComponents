@@ -23,7 +23,7 @@ describe('NTInputColor popover behavior', () => {
         events = [];
         input.addEventListener('input', () => events.push(`input:${input.value}`));
         input.addEventListener('change', () => events.push(`change:${input.value}`));
-        onLoad(root.querySelector('tnt-page-script'));
+        onLoad(root.querySelector('nt-page-script'));
         return root;
     }
 
@@ -33,7 +33,7 @@ describe('NTInputColor popover behavior', () => {
 
     afterEach(() => {
         if (root) {
-            onDispose(root.querySelector('tnt-page-script') ?? root);
+            onDispose(root.querySelector('nt-page-script') ?? root);
             disposePicker(root.querySelector('[data-nt-color-picker]'));
         }
 
@@ -258,14 +258,14 @@ describe('NTInputColor popover behavior', () => {
         mount();
 
         input.value = '#123456';
-        onUpdate(root.querySelector('tnt-page-script'));
+        onUpdate(root.querySelector('nt-page-script'));
 
         expect(swatch().style.getPropertyValue('--nt-input-color-swatch')).toBe('#123456');
     });
 
     it('stops reacting after disposal', () => {
         mount();
-        onDispose(root.querySelector('tnt-page-script'));
+        onDispose(root.querySelector('nt-page-script'));
 
         trigger().click();
 
@@ -275,7 +275,7 @@ describe('NTInputColor popover behavior', () => {
     it('ignores markup that has no field or popover', () => {
         const orphan = document.createElement('div');
         orphan.dataset.ntInputColor = 'true';
-        orphan.innerHTML = '<tnt-page-script></tnt-page-script>';
+        orphan.innerHTML = '<nt-page-script></nt-page-script>';
         document.body.append(orphan);
 
         expect(() => onLoad(orphan.firstElementChild)).not.toThrow();

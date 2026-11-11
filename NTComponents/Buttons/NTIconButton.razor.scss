@@ -9,11 +9,11 @@
 @use './buttonFocusRing' as focus;
 
 $nt-icon-button-sizes: (
-    xs: (32px, 32px, 40px, 52px, 20px, measurements.$tnt-pill-border-radius-xs, corners.$nt-corner-radius-small, corners.$nt-corner-radius-medium),
-    s: (40px, 40px, 48px, 64px, 24px, measurements.$tnt-pill-border-radius-small, corners.$nt-corner-radius-small, corners.$nt-corner-radius-medium),
-    m: (56px, 56px, 64px, 80px, 24px, measurements.$tnt-pill-border-radius-medium, corners.$nt-corner-radius-medium, corners.$nt-corner-radius-large),
-    l: (96px, 96px, 112px, 128px, 32px, measurements.$tnt-pill-border-radius-large, corners.$nt-corner-radius-large, corners.$nt-corner-radius-extra-large),
-    xl: (136px, 136px, 152px, 168px, 40px, measurements.$tnt-pill-border-radius-xl, corners.$nt-corner-radius-large, corners.$nt-corner-radius-extra-large)
+    xs: (32px, 32px, 40px, 52px, 20px, measurements.$nt-pill-border-radius-xs, corners.$nt-corner-radius-small, corners.$nt-corner-radius-medium),
+    s: (40px, 40px, 48px, 64px, 24px, measurements.$nt-pill-border-radius-small, corners.$nt-corner-radius-small, corners.$nt-corner-radius-medium),
+    m: (56px, 56px, 64px, 80px, 24px, measurements.$nt-pill-border-radius-medium, corners.$nt-corner-radius-medium, corners.$nt-corner-radius-large),
+    l: (96px, 96px, 112px, 128px, 32px, measurements.$nt-pill-border-radius-large, corners.$nt-corner-radius-large, corners.$nt-corner-radius-extra-large),
+    xl: (136px, 136px, 152px, 168px, 40px, measurements.$nt-pill-border-radius-xl, corners.$nt-corner-radius-large, corners.$nt-corner-radius-extra-large)
 );
 
 @mixin nt-icon-button-container($height, $width) {
@@ -71,7 +71,7 @@ $nt-icon-button-sizes: (
         border-radius: $square-radius;
     }
 
-    &:not(.tnt-disabled):not(:disabled) {
+    &:not(.nt-disabled):not(:disabled) {
         &:active,
         &.nt-button--pressed-shape {
             border-radius: $pressed-radius;
@@ -79,7 +79,7 @@ $nt-icon-button-sizes: (
     }
 
     ::deep {
-        .tnt-icon {
+        .nt-icon {
             font-size: $icon-size;
         }
     }
@@ -91,7 +91,7 @@ $nt-icon-button-sizes: (
     appearance: none;
     background: transparent;
     border: 0;
-    border-radius: measurements.$tnt-pill-border-radius-small;
+    border-radius: measurements.$nt-pill-border-radius-small;
     box-sizing: border-box;
     color: var(--nt-icon-button-fg, #{colors.$nt-color-on-surface-variant});
     cursor: pointer;
@@ -135,7 +135,7 @@ $nt-icon-button-sizes: (
         z-index: 1;
     }
 
-    &:not(.tnt-disabled):not(:disabled) {
+    &:not(.nt-disabled):not(:disabled) {
         &:hover::before {
             opacity: 0.08;
         }
@@ -156,7 +156,7 @@ $nt-icon-button-sizes: (
     }
 
     @each $size, $tokens in $nt-icon-button-sizes {
-        &.tnt-size-#{$size} {
+        &.nt-size-#{$size} {
             @include nt-icon-button-size($tokens...);
         }
     }
@@ -221,7 +221,7 @@ $nt-icon-button-sizes: (
         }
     }
 
-    &.tnt-disabled,
+    &.nt-disabled,
     &:disabled:not(.nt-button-progress-active) {
         box-shadow: none;
         color: color-mix(in srgb, #{colors.$nt-color-on-surface} 38%, transparent);
@@ -252,13 +252,13 @@ $nt-icon-button-sizes: (
             transition: border-radius buttonMotion.$nt-button-shape-transition;
         }
 
-        .tnt-icon {
+        .nt-icon {
             color: inherit;
             font-size: 24px;
             pointer-events: none;
         }
 
-        tnt-page-script {
+        nt-page-script {
             position: absolute;
         }
     }
