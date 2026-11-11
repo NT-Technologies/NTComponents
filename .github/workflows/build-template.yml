@@ -130,7 +130,7 @@ jobs:
 
       - name: Ensure browsers are installed
         if: matrix.install-playwright
-        run: pwsh Tests/NTComponents.IntegrationTests/bin/${{ inputs.configuration }}/${{ matrix.framework }}/playwright.ps1 install --with-deps chromium
+        run: pwsh Tests/NTComponents.IntegrationTests/bin/${{ inputs.configuration }}/${{ matrix.framework }}/playwright.ps1 install chromium
 
       - name: Install dotnet-coverage
         run: dotnet tool install --global dotnet-coverage

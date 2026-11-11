@@ -84,7 +84,7 @@ jobs:
     - name: Install Chromium for AOT browser smoke
       if: runner.os == 'Linux'
       shell: pwsh
-      run: npx --yes playwright@1.60.0 install --with-deps --no-shell chromium
+      run: npx --yes playwright@1.60.0 install --no-shell chromium
 
     - name: Restore WebAssembly workloads
       shell: pwsh

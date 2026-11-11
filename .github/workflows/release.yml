@@ -58,7 +58,7 @@ jobs:
         run: dotnet build NTComponents.slnx --no-restore --configuration Release
 
       - name: Ensure browsers are installed
-        run: pwsh Tests/NTComponents.IntegrationTests/bin/Release/net10.0/playwright.ps1 install --with-deps
+        run: pwsh Tests/NTComponents.IntegrationTests/bin/Release/net10.0/playwright.ps1 install chromium
 
       - name: Run .NET tests
         run: dotnet test NTComponents.slnx --no-restore --configuration Release --results-directory ./TestResults -v minimal
