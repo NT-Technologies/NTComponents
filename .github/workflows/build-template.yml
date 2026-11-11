@@ -9,7 +9,7 @@ on:
         default: Release
 
 env:
-  COVERAGE_THRESHOLD: 50
+  COVERAGE_THRESHOLD: 90
   TESTINGPLATFORM_EXITCODE_IGNORE: 8
   NuGetAudit: false
 
