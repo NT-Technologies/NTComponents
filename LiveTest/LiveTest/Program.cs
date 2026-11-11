@@ -335,63 +335,6 @@ app.MapPost("/api/uploads/process", async (HttpRequest request, CancellationToke
     MultipartBodyLengthLimit = maxMultipartBodyLengthBytes
 });
 
-app.MapGet("/api/uploads/progress/{uploadId}/net9", async (HttpContext context, string uploadId, CancellationToken cancellationToken) => {
-    if (!IsValidUploadId(uploadId)) {
-        context.Response.StatusCode = StatusCodes.Status400BadRequest;
-        await context.Response.WriteAsJsonAsync(new UploadError("invalid_upload_id", "uploadId must be a 32-character hex string."), cancellationToken);
-        return;
-    }
-
-    CleanupExpiredSessions(DateTimeOffset.UtcNow);
-    var session = GetOrCreateSession(uploadId);
-
-    context.Response.Headers.ContentType = "text/event-stream";
-    context.Response.Headers.CacheControl = "no-cache, no-store";
-    context.Response.Headers["Pragma"] = "no-cache";
-    context.Response.Headers["X-Accel-Buffering"] = "no";
-    await context.Response.StartAsync(cancellationToken);
-
-    UploadProgressEvent? lastSent = null;
-
-    if (session.IsTerminal && session.LastEvent is { } terminalEvent) {
-        await WriteSseEventAsync(context, terminalEvent, cancellationToken);
-        return;
-    }
-
-    var reader = session.Channel.Reader;
-    while (!cancellationToken.IsCancellationRequested) {
-        while (reader.TryRead(out var progress)) {
-            lastSent = progress;
-            await WriteSseEventAsync(context, progress, cancellationToken);
-            if (progress.IsCompleted || progress.IsError) {
-                return;
-            }
-        }
-
-        if (session.IsTerminal) {
-            var finalEvent = session.LastEvent;
-            if (finalEvent is not null && !finalEvent.Equals(lastSent)) {
-                await WriteSseEventAsync(context, finalEvent, cancellationToken);
-            }
-            return;
-        }
-
-        var waitTask = reader.WaitToReadAsync(cancellationToken).AsTask();
-        var delayTask = Task.Delay(sseKeepAliveInterval, cancellationToken);
-        var completedTask = await Task.WhenAny(waitTask, delayTask);
-
-        if (completedTask == waitTask) {
-            if (!await waitTask) {
-                return;
-            }
-            continue;
-        }
-
-        await context.Response.WriteAsync(": keep-alive\n\n", cancellationToken);
-        await context.Response.Body.FlushAsync(cancellationToken);
-    }
-});
-
 app.MapPost("/api/uploads/static-test", async (HttpRequest request, CancellationToken cancellationToken) => {
     var form = await request.ReadFormAsync(cancellationToken);
     var file = form.Files.GetFile("staticFile");
@@ -402,16 +345,6 @@ app.MapPost("/api/uploads/static-test", async (HttpRequest request, Cancellation
 
     return Results.Json(new StaticUploadResult(file.Name, file.FileName, file.Length, file.ContentType));
 }).DisableAntiforgery();
-
-#if NET10_0_OR_GREATER
-app.MapGet("/api/uploads/progress/{uploadId}/net10", (string uploadId, CancellationToken cancellationToken) => {
-    if (!IsValidUploadId(uploadId)) {
-        return Results.BadRequest(new UploadError("invalid_upload_id", "uploadId must be a 32-character hex string."));
-    }
-
-    return TypedResults.ServerSentEvents(StreamProgressItems(uploadId, cancellationToken));
-});
-#endif
 
 await app.RunAsync();
 
@@ -597,54 +530,6 @@ static string NormalizeExtension(string extension) {
 
     return normalized.ToLowerInvariant();
 }
-
-static async Task WriteSseEventAsync(HttpContext context, UploadProgressEvent progress, CancellationToken cancellationToken) {
-    var eventId = progress.TimestampUtc.ToUnixTimeMilliseconds();
-    await context.Response.WriteAsync($"id: {eventId}\n", cancellationToken);
-    await context.Response.WriteAsync($"event: {progress.Stage}\n", cancellationToken);
-    await context.Response.WriteAsync($"data: {JsonSerializer.Serialize(progress)}\n\n", cancellationToken);
-    await context.Response.Body.FlushAsync(cancellationToken);
-}
-
-#if NET10_0_OR_GREATER
-async IAsyncEnumerable<System.Net.ServerSentEvents.SseItem<UploadProgressEvent>> StreamProgressItems(
-    string uploadId,
-    [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken) {
-    CleanupExpiredSessions(DateTimeOffset.UtcNow);
-    var session = GetOrCreateSession(uploadId);
-    var reader = session.Channel.Reader;
-
-    UploadProgressEvent? lastSent = null;
-
-    if (session.IsTerminal && session.LastEvent is { } terminalEvent) {
-        yield return new System.Net.ServerSentEvents.SseItem<UploadProgressEvent>(terminalEvent, terminalEvent.Stage);
-        yield break;
-    }
-
-    while (!cancellationToken.IsCancellationRequested) {
-        while (reader.TryRead(out var progress)) {
-            lastSent = progress;
-            yield return new System.Net.ServerSentEvents.SseItem<UploadProgressEvent>(progress, progress.Stage);
-
-            if (progress.IsCompleted || progress.IsError) {
-                yield break;
-            }
-        }
-
-        if (session.IsTerminal) {
-            var finalEvent = session.LastEvent;
-            if (finalEvent is not null && !finalEvent.Equals(lastSent)) {
-                yield return new System.Net.ServerSentEvents.SseItem<UploadProgressEvent>(finalEvent, finalEvent.Stage);
-            }
-            yield break;
-        }
-
-        if (!await reader.WaitToReadAsync(cancellationToken)) {
-            yield break;
-        }
-    }
-}
-#endif
 
 public sealed record UploadResult(
     string UploadId,

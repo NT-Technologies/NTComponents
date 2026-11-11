@@ -9,7 +9,7 @@ namespace NTComponents;
 /// </summary>
 /// <remarks>
 /// <para> Use this view when page content should stay centered and bounded instead of stretching across the full
-/// viewport. It replaces the legacy <see cref="TnTContainer" /> width behavior with Material 3 window-size breakpoints.
+/// viewport. It provides Material 3 window-size breakpoints.
 /// </para> <para> Best practice: use this as a layout wrapper around page sections, forms, articles, or view
 /// compositions that need comfortable reading width. Keep shape, color, elevation, and surface styling on the content
 /// inside the container. </para> <para> Do not use this view to create cards, panels, or visual surfaces. It controls

@@ -21,7 +21,7 @@ namespace NTComponents;
 ///         Static SSR markup should use guarded browser JavaScript, for example <code>window.NTToast?.queueToast({ title: 'Saved' })</code>.
 ///     </para>
 ///     <para>
-///         <code>NTToast</code> is the host for <see cref="INTToastService" />. The legacy <code>TnTToast</code> host uses <code>ITnTToastService</code>; the two host/service pairs are not interchangeable.
+///         <code>NTToast</code> is the host for <see cref="INTToastService" />.
 ///     </para>
 ///     <para>
 ///         From JavaScript, prefer a guarded call so early clicks before the module loads do not throw:

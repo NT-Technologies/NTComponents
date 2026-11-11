@@ -875,13 +875,13 @@ public class NTDataGrid_Tests : BunitContext {
             builder.OpenComponent<NTPropertyColumn<TestGridItem, string>>(0);
             builder.AddAttribute(1, nameof(NTPropertyColumn<TestGridItem, string>.Title), "Name");
             builder.AddAttribute(2, nameof(NTPropertyColumn<TestGridItem, string>.Property), (System.Linq.Expressions.Expression<Func<TestGridItem, string>>)(item => item.Name));
-            builder.AddAttribute(3, nameof(NTPropertyColumn<TestGridItem, string>.TextAlign), TextAlign.Left);
+            builder.AddAttribute(3, nameof(NTPropertyColumn<TestGridItem, string>.TextAlign), NTTextAlign.Left);
             builder.CloseComponent();
             builder.OpenComponent<NTPropertyColumn<TestGridItem, decimal>>(4);
             builder.AddAttribute(5, nameof(NTPropertyColumn<TestGridItem, decimal>.Title), "Amount");
             builder.AddAttribute(6, nameof(NTPropertyColumn<TestGridItem, decimal>.Property), (System.Linq.Expressions.Expression<Func<TestGridItem, decimal>>)(item => item.Amount));
-            builder.AddAttribute(7, nameof(NTPropertyColumn<TestGridItem, decimal>.TextAlign), TextAlign.Right);
-            builder.AddAttribute(8, nameof(NTPropertyColumn<TestGridItem, decimal>.HeaderTextAlign), TextAlign.Left);
+            builder.AddAttribute(7, nameof(NTPropertyColumn<TestGridItem, decimal>.TextAlign), NTTextAlign.Right);
+            builder.AddAttribute(8, nameof(NTPropertyColumn<TestGridItem, decimal>.HeaderTextAlign), NTTextAlign.Left);
             builder.CloseComponent();
         });
 
@@ -1009,8 +1009,8 @@ public class NTDataGrid_Tests : BunitContext {
 
     [Fact]
     public void Cell_Classes_Update_When_Alignment_Parameters_Change() {
-        var textAlign = TextAlign.Left;
-        var headerTextAlign = TextAlign.Right;
+        var textAlign = NTTextAlign.Left;
+        var headerTextAlign = NTTextAlign.Right;
         RenderFragment columns = builder => {
             builder.OpenComponent<NTPropertyColumn<TestGridItem, string>>(0);
             builder.AddAttribute(1, nameof(NTPropertyColumn<TestGridItem, string>.Title), "Name");
@@ -1026,8 +1026,8 @@ public class NTDataGrid_Tests : BunitContext {
             cut.Find("tbody td").ClassList.Should().Contain("nt-data-grid-align-left");
         });
 
-        textAlign = TextAlign.Center;
-        headerTextAlign = TextAlign.Justify;
+        textAlign = NTTextAlign.Center;
+        headerTextAlign = NTTextAlign.Justify;
         cut.Render(parameters => parameters
             .Add(grid => grid.Items, _items)
             .Add(grid => grid.Caption, "Invoices")
@@ -1961,7 +1961,7 @@ public class NTDataGrid_Tests : BunitContext {
         builder.AddAttribute(8, nameof(NTPropertyColumn<TestGridItem, decimal>.Title), "Amount");
         builder.AddAttribute(9, nameof(NTPropertyColumn<TestGridItem, decimal>.Property), (System.Linq.Expressions.Expression<Func<TestGridItem, decimal>>)(item => item.Amount));
         builder.AddAttribute(10, nameof(NTPropertyColumn<TestGridItem, decimal>.Format), "C");
-        builder.AddAttribute(11, nameof(NTPropertyColumn<TestGridItem, decimal>.TextAlign), TextAlign.Right);
+        builder.AddAttribute(11, nameof(NTPropertyColumn<TestGridItem, decimal>.TextAlign), NTTextAlign.Right);
         builder.CloseComponent();
     };
 

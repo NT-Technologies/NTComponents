@@ -46,24 +46,8 @@ public sealed class CssStyleBuilder {
         return this;
     }
 
-    /// <summary>
-    ///     Adds a <c>background-color</c> style using a theme color variable when provided.
-    /// </summary>
-    /// <param name="color">  The optional <see cref="TnTColor" /> to use as the background color.</param>
-    /// <param name="enabled">If false, the background-color will not be added.</param>
-    /// <returns>The current instance of <see cref="CssStyleBuilder" /> for chaining.</returns>
-    public CssStyleBuilder AddBackgroundColor(TnTColor? color, bool enabled = true) => enabled && color.HasValue ? AddStyle("background-color", color?.ToCssTnTColorVariable()) : this;
-
     /// <summary>Adds an NT theme background color.</summary>
     public CssStyleBuilder AddBackgroundColor(NTColor color, bool enabled = true) => AddStyle("background-color", color.ToCssNTColorVariable(), enabled);
-
-    /// <summary>
-    ///     Adds a <c>color</c> (foreground) style using a theme color variable when provided.
-    /// </summary>
-    /// <param name="color">  The optional <see cref="TnTColor" /> to use as the text color.</param>
-    /// <param name="enabled">If false, the color will not be added.</param>
-    /// <returns>The current instance of <see cref="CssStyleBuilder" /> for chaining.</returns>
-    public CssStyleBuilder AddForegroundColor(TnTColor? color, bool enabled = true) => enabled && color.HasValue ? AddStyle("color", color?.ToCssTnTColorVariable()) : this;
 
     /// <summary>Adds an NT theme foreground color.</summary>
     public CssStyleBuilder AddForegroundColor(NTColor color, bool enabled = true) => AddStyle("color", color.ToCssNTColorVariable(), enabled);
@@ -101,15 +85,6 @@ public sealed class CssStyleBuilder {
     /// <param name="enabled"> If false, the variable will not be added.</param>
     /// <returns>The current instance of <see cref="CssStyleBuilder" /> for chaining.</returns>
     public CssStyleBuilder AddVariable(string varName, string varValue, bool enabled = true) => enabled ? AddStyle($"--{varName}", varValue) : this;
-
-    /// <summary>
-    ///     Adds a CSS variable referencing a theme color to the builder.
-    /// </summary>
-    /// <param name="varName">The name of the CSS variable (without the leading <c>--</c>).</param>
-    /// <param name="color">  The <see cref="TnTColor" /> value used to construct the variable reference.</param>
-    /// <param name="enabled">If false, the variable will not be added.</param>
-    /// <returns>The current instance of <see cref="CssStyleBuilder" /> for chaining.</returns>
-    public CssStyleBuilder AddVariable(string varName, TnTColor color, bool enabled = true) => enabled ? AddStyle($"--{varName}", $"var(--tnt-color-{color.ToCssClassName()})") : this;
 
     /// <summary>Adds a custom property referencing an NT theme color.</summary>
     public CssStyleBuilder AddVariable(string varName, NTColor color, bool enabled = true) => AddStyle($"--{varName}", color.ToCssNTColorVariable(), enabled);

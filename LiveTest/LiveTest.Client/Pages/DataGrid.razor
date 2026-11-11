@@ -31,10 +31,10 @@
                     RowKey="item => item.Id"
                     OnRowClicked="ItemClicked">
             <ChildContent>
-                <NTPropertyColumn TItem="DataGridItem" TValue="int" Title="Id" Property="item => item.Id" Width="96px" TextAlign="TextAlign.Right" HeaderTextAlign="TextAlign.Right" InitialSortDirection="SortDirection.Ascending" />
+                <NTPropertyColumn TItem="DataGridItem" TValue="int" Title="Id" Property="item => item.Id" Width="96px" TextAlign="NTTextAlign.Right" HeaderTextAlign="NTTextAlign.Right" InitialSortDirection="SortDirection.Ascending" />
                 <NTPropertyColumn TItem="DataGridItem" TValue="string" Title="Customer" Property="item => item.Customer" MinWidth="220px" />
                 <NTPropertyColumn TItem="DataGridItem" TValue="DateTime" Title="Created" Property="item => item.Created" Format="MMM d, yyyy" MinWidth="160px" />
-                <NTPropertyColumn TItem="DataGridItem" TValue="decimal" Title="Amount" Property="item => item.Amount" Format="C" TextAlign="TextAlign.Right" HeaderTextAlign="TextAlign.Right" />
+                <NTPropertyColumn TItem="DataGridItem" TValue="decimal" Title="Amount" Property="item => item.Amount" Format="C" TextAlign="NTTextAlign.Right" HeaderTextAlign="NTTextAlign.Right" />
                 <NTTemplateColumn TItem="DataGridItem" Title="Action" SortBy="_actionSort">
                     <button type="button" class="nt-data-grid-demo-action" @onclick="@(() => ActionClicked(context))" @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">Open</button>
                 </NTTemplateColumn>
@@ -55,10 +55,10 @@
                     Appearance="NTDataGridAppearance.Striped"
                     RowKey="item => item.Id"
                     OnRowClicked="ItemClicked">
-            <NTPropertyColumn TItem="DataGridItem" TValue="int" Title="Id" Property="item => item.Id" Width="96px" TextAlign="TextAlign.Right" HeaderTextAlign="TextAlign.Right" />
+            <NTPropertyColumn TItem="DataGridItem" TValue="int" Title="Id" Property="item => item.Id" Width="96px" TextAlign="NTTextAlign.Right" HeaderTextAlign="NTTextAlign.Right" />
             <NTPropertyColumn TItem="DataGridItem" TValue="string" Title="Customer" Property="item => item.Customer" MinWidth="220px" InitialSortDirection="SortDirection.Ascending" />
             <NTPropertyColumn TItem="DataGridItem" TValue="DateTime" Title="Created" Property="item => item.Created" Format="MMM d, yyyy" MinWidth="160px" />
-            <NTPropertyColumn TItem="DataGridItem" TValue="decimal" Title="Amount" Property="item => item.Amount" Format="C" TextAlign="TextAlign.Right" HeaderTextAlign="TextAlign.Right" />
+            <NTPropertyColumn TItem="DataGridItem" TValue="decimal" Title="Amount" Property="item => item.Amount" Format="C" TextAlign="NTTextAlign.Right" HeaderTextAlign="NTTextAlign.Right" />
         </NTDataGrid>
     </section>
 </main>

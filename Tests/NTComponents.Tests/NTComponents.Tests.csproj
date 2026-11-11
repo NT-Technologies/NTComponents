@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFrameworks>net10.0;net11.0</TargetFrameworks>
 		<TestTfmsInParallel>true</TestTfmsInParallel>
-		<NoWarn>$(NoWarn);CS0618;NTC1077;NTC1078;NTC1079</NoWarn>
+		<NoWarn>$(NoWarn);CS0618</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>

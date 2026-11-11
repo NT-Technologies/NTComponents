@@ -19,9 +19,4 @@ public class NTDebouncer_Tests {
         executed.Should().Equal(2);
     }
 
-    [Fact]
-    public void TnTDebouncer_IsAnObsoleteAliasOfNTDebouncer() {
-        typeof(TnTDebouncer).BaseType.Should().Be<NTDebouncer>();
-        typeof(TnTDebouncer).GetCustomAttributes(typeof(ObsoleteAttribute), inherit: false).Should().ContainSingle();
-    }
 }

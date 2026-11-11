@@ -5,7 +5,7 @@ namespace NTComponents.Tests.Scheduler;
 
 public class NTScheduler_Tests : BunitContext {
     public NTScheduler_Tests() {
-        var module = JSInterop.SetupModule(NTScheduler<TnTEvent>.JsModulePathValue);
+        var module = JSInterop.SetupModule(NTScheduler<NTEvent>.JsModulePathValue);
         module.SetupVoid("onLoad", _ => true).SetVoidResult();
         module.SetupVoid("onUpdate", _ => true).SetVoidResult();
         module.SetupVoid("onDispose", _ => true).SetVoidResult();
@@ -13,8 +13,8 @@ public class NTScheduler_Tests : BunitContext {
 
     [Fact]
     public void Toolbar_Renders_Month_Picker_For_Month_View() {
-        var cut = Render<NTScheduler<TnTEvent>>(parameters => parameters
-            .Add(p => p.Events, new List<TnTEvent>())
+        var cut = Render<NTScheduler<NTEvent>>(parameters => parameters
+            .Add(p => p.Events, new List<NTEvent>())
             .Add(p => p.Date, new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero))
             .Add(p => p.TimeZone, TimeZoneInfo.Utc));
 
@@ -29,8 +29,8 @@ public class NTScheduler_Tests : BunitContext {
 
     [Fact]
     public void Toolbar_Renders_Current_Date_In_Day_Picker() {
-        var cut = Render<NTScheduler<TnTEvent>>(parameters => parameters
-            .Add(p => p.Events, new List<TnTEvent>())
+        var cut = Render<NTScheduler<NTEvent>>(parameters => parameters
+            .Add(p => p.Events, new List<NTEvent>())
             .Add(p => p.Date, new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero))
             .Add(p => p.TimeZone, TimeZoneInfo.Utc)
             .Add(p => p.View, NTSchedulerView.Day));
@@ -46,8 +46,8 @@ public class NTScheduler_Tests : BunitContext {
 
     [Fact]
     public void Toolbar_Renders_First_Day_Of_Week_In_Week_Picker() {
-        var cut = Render<NTScheduler<TnTEvent>>(parameters => parameters
-            .Add(p => p.Events, new List<TnTEvent>())
+        var cut = Render<NTScheduler<NTEvent>>(parameters => parameters
+            .Add(p => p.Events, new List<NTEvent>())
             .Add(p => p.Date, new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero))
             .Add(p => p.TimeZone, TimeZoneInfo.Utc)
             .Add(p => p.StartViewOn, DayOfWeek.Monday)
@@ -63,8 +63,8 @@ public class NTScheduler_Tests : BunitContext {
     [Fact]
     public void Toolbar_Week_Picker_Updates_To_First_Day_When_Week_Changes() {
         DateTimeOffset? changedDate = null;
-        var cut = Render<NTScheduler<TnTEvent>>(parameters => parameters
-            .Add(p => p.Events, new List<TnTEvent>())
+        var cut = Render<NTScheduler<NTEvent>>(parameters => parameters
+            .Add(p => p.Events, new List<NTEvent>())
             .Add(p => p.Date, new DateTimeOffset(2024, 6, 12, 12, 0, 0, TimeSpan.Zero))
             .Add(p => p.DateChanged, value => changedDate = value)
             .Add(p => p.TimeZone, TimeZoneInfo.Utc)
@@ -81,8 +81,8 @@ public class NTScheduler_Tests : BunitContext {
     [Fact]
     public void Toolbar_Date_Picker_Updates_Date() {
         DateTimeOffset? changedDate = null;
-        var cut = Render<NTScheduler<TnTEvent>>(parameters => parameters
-            .Add(p => p.Events, new List<TnTEvent>())
+        var cut = Render<NTScheduler<NTEvent>>(parameters => parameters
+            .Add(p => p.Events, new List<NTEvent>())
             .Add(p => p.Date, new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero))
             .Add(p => p.DateChanged, value => changedDate = value)
             .Add(p => p.StartViewOn, DayOfWeek.Monday)
@@ -97,11 +97,11 @@ public class NTScheduler_Tests : BunitContext {
 
     [Fact]
     public void MonthView_Renders_Segments_For_MultiWeek_Event() {
-        var events = new List<TnTEvent> {
+        var events = new List<NTEvent> {
             new() { Title = "Month boundary", EventStart = new DateTimeOffset(2024, 6, 14, 9, 0, 0, TimeSpan.Zero), EventEnd = new DateTimeOffset(2024, 6, 18, 17, 0, 0, TimeSpan.Zero) }
         };
 
-        var cut = Render<NTScheduler<TnTEvent>>(parameters => parameters
+        var cut = Render<NTScheduler<NTEvent>>(parameters => parameters
             .Add(p => p.Events, events)
             .Add(p => p.Date, new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero))
             .Add(p => p.View, NTSchedulerView.Month)
@@ -116,7 +116,7 @@ public class NTScheduler_Tests : BunitContext {
 
     [Fact]
     public void Events_Use_Custom_Css_Colors_When_Provided() {
-        var events = new List<TnTEvent> {
+        var events = new List<NTEvent> {
             new() {
                 Title = "Colored event",
                 EventStart = new DateTimeOffset(2024, 6, 12, 9, 0, 0, TimeSpan.Zero),
@@ -126,7 +126,7 @@ public class NTScheduler_Tests : BunitContext {
             }
         };
 
-        var cut = Render<NTScheduler<TnTEvent>>(parameters => parameters
+        var cut = Render<NTScheduler<NTEvent>>(parameters => parameters
             .Add(p => p.Events, events)
             .Add(p => p.Date, new DateTimeOffset(2024, 6, 12, 12, 0, 0, TimeSpan.Zero))
             .Add(p => p.View, NTSchedulerView.Day)
@@ -140,14 +140,14 @@ public class NTScheduler_Tests : BunitContext {
 
     [Fact]
     public async Task MonthView_Moving_Event_Preserves_Reordered_Sibling_Events() {
-        var standup = new TnTEvent { Title = "Standup", EventStart = new DateTimeOffset(2024, 6, 13, 8, 0, 0, TimeSpan.Zero), EventEnd = new DateTimeOffset(2024, 6, 13, 9, 0, 0, TimeSpan.Zero) };
-        var events = new List<TnTEvent> {
+        var standup = new NTEvent { Title = "Standup", EventStart = new DateTimeOffset(2024, 6, 13, 8, 0, 0, TimeSpan.Zero), EventEnd = new DateTimeOffset(2024, 6, 13, 9, 0, 0, TimeSpan.Zero) };
+        var events = new List<NTEvent> {
             new() { Title = "Multi-day launch", EventStart = new DateTimeOffset(2024, 6, 10, 10, 0, 0, TimeSpan.Zero), EventEnd = new DateTimeOffset(2024, 6, 15, 15, 0, 0, TimeSpan.Zero) },
             standup,
             new() { Title = "Implementation block", EventStart = new DateTimeOffset(2024, 6, 14, 14, 0, 0, TimeSpan.Zero), EventEnd = new DateTimeOffset(2024, 6, 14, 16, 0, 0, TimeSpan.Zero) }
         };
 
-        var cut = Render<NTScheduler<TnTEvent>>(parameters => parameters
+        var cut = Render<NTScheduler<NTEvent>>(parameters => parameters
             .Add(p => p.Events, events)
             .Add(p => p.Date, new DateTimeOffset(2024, 6, 12, 12, 0, 0, TimeSpan.Zero))
             .Add(p => p.View, NTSchedulerView.Month)
@@ -162,12 +162,12 @@ public class NTScheduler_Tests : BunitContext {
 
     [Fact]
     public void WeekView_Renders_AllDay_And_Timed_Events() {
-        var events = new List<TnTEvent> {
+        var events = new List<NTEvent> {
             new() { Title = "Timed event", EventStart = new DateTimeOffset(2024, 6, 12, 9, 0, 0, TimeSpan.Zero), EventEnd = new DateTimeOffset(2024, 6, 12, 10, 0, 0, TimeSpan.Zero) },
             new() { Title = "All-day event", EventStart = new DateTimeOffset(2024, 6, 11, 8, 0, 0, TimeSpan.Zero), EventEnd = new DateTimeOffset(2024, 6, 13, 17, 0, 0, TimeSpan.Zero), IsAllDay = true }
         };
 
-        var cut = Render<NTScheduler<TnTEvent>>(parameters => parameters
+        var cut = Render<NTScheduler<NTEvent>>(parameters => parameters
             .Add(p => p.Events, events)
             .Add(p => p.Date, new DateTimeOffset(2024, 6, 12, 12, 0, 0, TimeSpan.Zero))
             .Add(p => p.View, NTSchedulerView.Week)
@@ -181,11 +181,11 @@ public class NTScheduler_Tests : BunitContext {
 
     [Fact]
     public void WeekView_Renders_MultiDay_Timed_Event_In_Each_Day_Time_Grid() {
-        var events = new List<TnTEvent> {
+        var events = new List<NTEvent> {
             new() { Title = "Timed trip", EventStart = new DateTimeOffset(2024, 6, 11, 8, 0, 0, TimeSpan.Zero), EventEnd = new DateTimeOffset(2024, 6, 13, 17, 0, 0, TimeSpan.Zero) }
         };
 
-        var cut = Render<NTScheduler<TnTEvent>>(parameters => parameters
+        var cut = Render<NTScheduler<NTEvent>>(parameters => parameters
             .Add(p => p.Events, events)
             .Add(p => p.Date, new DateTimeOffset(2024, 6, 12, 12, 0, 0, TimeSpan.Zero))
             .Add(p => p.View, NTSchedulerView.Week)
@@ -203,8 +203,8 @@ public class NTScheduler_Tests : BunitContext {
 
     [Fact]
     public void WeekView_AllDay_DropZones_Pin_To_Day_Columns() {
-        var cut = Render<NTScheduler<TnTEvent>>(parameters => parameters
-            .Add(p => p.Events, new List<TnTEvent>())
+        var cut = Render<NTScheduler<NTEvent>>(parameters => parameters
+            .Add(p => p.Events, new List<NTEvent>())
             .Add(p => p.Date, new DateTimeOffset(2024, 6, 12, 12, 0, 0, TimeSpan.Zero))
             .Add(p => p.View, NTSchedulerView.Week)
             .Add(p => p.StartViewOn, DayOfWeek.Monday)
@@ -219,12 +219,12 @@ public class NTScheduler_Tests : BunitContext {
 
     [Fact]
     public void WeekView_OverlappingTimedEvents_Use_Separate_Lanes() {
-        var events = new List<TnTEvent> {
+        var events = new List<NTEvent> {
             new() { Title = "Nine", EventStart = new DateTimeOffset(2024, 6, 12, 9, 0, 0, TimeSpan.Zero), EventEnd = new DateTimeOffset(2024, 6, 12, 10, 0, 0, TimeSpan.Zero) },
             new() { Title = "Nine fifteen", EventStart = new DateTimeOffset(2024, 6, 12, 9, 15, 0, TimeSpan.Zero), EventEnd = new DateTimeOffset(2024, 6, 12, 10, 15, 0, TimeSpan.Zero) }
         };
 
-        var cut = Render<NTScheduler<TnTEvent>>(parameters => parameters
+        var cut = Render<NTScheduler<NTEvent>>(parameters => parameters
             .Add(p => p.Events, events)
             .Add(p => p.Date, new DateTimeOffset(2024, 6, 12, 12, 0, 0, TimeSpan.Zero))
             .Add(p => p.View, NTSchedulerView.Week)
@@ -239,12 +239,12 @@ public class NTScheduler_Tests : BunitContext {
 
     [Fact]
     public void WeekView_NonOverlappingTimedEvents_Reuse_Lane() {
-        var events = new List<TnTEvent> {
+        var events = new List<NTEvent> {
             new() { Title = "Nine", EventStart = new DateTimeOffset(2024, 6, 12, 9, 0, 0, TimeSpan.Zero), EventEnd = new DateTimeOffset(2024, 6, 12, 10, 0, 0, TimeSpan.Zero) },
             new() { Title = "Ten", EventStart = new DateTimeOffset(2024, 6, 12, 10, 0, 0, TimeSpan.Zero), EventEnd = new DateTimeOffset(2024, 6, 12, 11, 0, 0, TimeSpan.Zero) }
         };
 
-        var cut = Render<NTScheduler<TnTEvent>>(parameters => parameters
+        var cut = Render<NTScheduler<NTEvent>>(parameters => parameters
             .Add(p => p.Events, events)
             .Add(p => p.Date, new DateTimeOffset(2024, 6, 12, 12, 0, 0, TimeSpan.Zero))
             .Add(p => p.View, NTSchedulerView.Week)
@@ -262,11 +262,11 @@ public class NTScheduler_Tests : BunitContext {
     [InlineData(NTSchedulerView.Week)]
     [InlineData(NTSchedulerView.Day)]
     public void TimedEvents_Render_Start_And_End_Resize_Handles(NTSchedulerView view) {
-        var events = new List<TnTEvent> {
+        var events = new List<NTEvent> {
             new() { Title = "Resizable", EventStart = new DateTimeOffset(2024, 6, 12, 9, 0, 0, TimeSpan.Zero), EventEnd = new DateTimeOffset(2024, 6, 12, 10, 0, 0, TimeSpan.Zero) }
         };
 
-        var cut = Render<NTScheduler<TnTEvent>>(parameters => parameters
+        var cut = Render<NTScheduler<NTEvent>>(parameters => parameters
             .Add(p => p.Events, events)
             .Add(p => p.Date, new DateTimeOffset(2024, 6, 12, 12, 0, 0, TimeSpan.Zero))
             .Add(p => p.View, view)
@@ -281,14 +281,14 @@ public class NTScheduler_Tests : BunitContext {
 
     [Fact]
     public async Task NotifyEventDroppedAsync_Moves_Event_With_DateTimeOffset_And_Raises_Callback() {
-        var @event = new TnTEvent {
+        var @event = new NTEvent {
             Title = "Move me",
             EventStart = new DateTimeOffset(2024, 6, 12, 8, 15, 0, TimeSpan.Zero),
             EventEnd = new DateTimeOffset(2024, 6, 12, 9, 45, 0, TimeSpan.Zero)
         };
-        var events = new List<TnTEvent> { @event };
-        NTSchedulerEventDropArgs<TnTEvent>? droppedArgs = null;
-        var cut = Render<NTScheduler<TnTEvent>>(parameters => parameters
+        var events = new List<NTEvent> { @event };
+        NTSchedulerEventDropArgs<NTEvent>? droppedArgs = null;
+        var cut = Render<NTScheduler<NTEvent>>(parameters => parameters
             .Add(p => p.Events, events)
             .Add(p => p.Date, new DateTimeOffset(2024, 6, 12, 12, 0, 0, TimeSpan.Zero))
             .Add(p => p.HideDateControls, true)
@@ -306,14 +306,14 @@ public class NTScheduler_Tests : BunitContext {
 
     [Fact]
     public async Task NotifyEventResizedAsync_Clamps_To_Fifteen_Minute_Minimum() {
-        var @event = new TnTEvent {
+        var @event = new NTEvent {
             Title = "Resize me",
             EventStart = new DateTimeOffset(2024, 6, 12, 9, 0, 0, TimeSpan.Zero),
             EventEnd = new DateTimeOffset(2024, 6, 12, 10, 0, 0, TimeSpan.Zero)
         };
-        var events = new List<TnTEvent> { @event };
-        NTSchedulerEventDropArgs<TnTEvent>? resizeArgs = null;
-        var cut = Render<NTScheduler<TnTEvent>>(parameters => parameters
+        var events = new List<NTEvent> { @event };
+        NTSchedulerEventDropArgs<NTEvent>? resizeArgs = null;
+        var cut = Render<NTScheduler<NTEvent>>(parameters => parameters
             .Add(p => p.Events, events)
             .Add(p => p.Date, new DateTimeOffset(2024, 6, 12, 12, 0, 0, TimeSpan.Zero))
             .Add(p => p.HideDateControls, true)
@@ -333,8 +333,8 @@ public class NTScheduler_Tests : BunitContext {
     [Fact]
     public async Task NotifySlotSelectedAsync_Raises_Selected_Time_Range() {
         NTSchedulerSlotSelectedArgs? selectedArgs = null;
-        var cut = Render<NTScheduler<TnTEvent>>(parameters => parameters
-            .Add(p => p.Events, new List<TnTEvent>())
+        var cut = Render<NTScheduler<NTEvent>>(parameters => parameters
+            .Add(p => p.Events, new List<NTEvent>())
             .Add(p => p.Date, new DateTimeOffset(2024, 6, 12, 12, 0, 0, TimeSpan.Zero))
             .Add(p => p.View, NTSchedulerView.Week)
             .Add(p => p.HideDateControls, true)
@@ -354,8 +354,8 @@ public class NTScheduler_Tests : BunitContext {
     [InlineData(NTSchedulerView.Day)]
     public void TimedView_Clicking_Empty_Slot_Uses_Nearest_Snap_Interval(NTSchedulerView view) {
         DateTimeOffset? clickedSlot = null;
-        var cut = Render<NTScheduler<TnTEvent>>(parameters => parameters
-            .Add(p => p.Events, new List<TnTEvent>())
+        var cut = Render<NTScheduler<NTEvent>>(parameters => parameters
+            .Add(p => p.Events, new List<NTEvent>())
             .Add(p => p.Date, new DateTimeOffset(2024, 6, 12, 12, 0, 0, TimeSpan.Zero))
             .Add(p => p.View, view)
             .Add(p => p.HideDateControls, true)

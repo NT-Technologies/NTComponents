@@ -38,7 +38,7 @@ public class NTDivider_Tests : BunitContext {
     [Fact]
     public void Direction_Vertical_Adds_Vertical_Class_And_Aria_Orientation() {
         // Act
-        var cut = Render<NTDivider>(p => p.Add(c => c.Direction, LayoutDirection.Vertical));
+        var cut = Render<NTDivider>(p => p.Add(c => c.Direction, NTLayoutDirection.Vertical));
         var divider = cut.Find("div.nt-divider");
 
         // Assert

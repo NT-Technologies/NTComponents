@@ -7,7 +7,7 @@ namespace NTComponents;
 /// <summary>
 /// MaterialIcon component for displaying Material Design icons.
 /// </summary>
-public sealed partial class MaterialIcon : TnTIcon {
+public sealed partial class MaterialIcon : NTIcon {
 
     /// <inheritdoc />
     public override string? ElementClass => CssClassBuilder.Create()

@@ -115,7 +115,7 @@
             <label>
                 Direction
                 <select @bind="SelectedDirection">
-                    @foreach (var direction in Enum.GetValues<LayoutDirection>()) {
+                    @foreach (var direction in Enum.GetValues<NTLayoutDirection>()) {
                         <option value="@direction">@direction</option>
                     }
                 </select>
@@ -138,12 +138,12 @@
                         <h3>Overview</h3>
                         <p class="muted">Open work items and weekly status.</p>
                     </div>
-                    <NTDivider Direction="LayoutDirection.Vertical" Color="@SelectedColor" />
+                    <NTDivider Direction="NTLayoutDirection.Vertical" Color="@SelectedColor" />
                     <div class="pane">
                         <h3>Activity</h3>
                         <p class="muted">Recent changes, approvals, and notes.</p>
                     </div>
-                    <NTDivider Direction="LayoutDirection.Vertical" Color="@SelectedColor" />
+                    <NTDivider Direction="NTLayoutDirection.Vertical" Color="@SelectedColor" />
                     <div class="pane">
                         <h3>Metrics</h3>
                         <p class="muted">Throughput, cycle time, and risk.</p>
@@ -208,9 +208,9 @@
 
     private NTColor SelectedColor { get; set; } = NTColor.OutlineVariant;
 
-    private LayoutDirection SelectedDirection { get; set; } = LayoutDirection.Horizontal;
+    private NTLayoutDirection SelectedDirection { get; set; } = NTLayoutDirection.Horizontal;
 
     private NTDividerVariant SelectedVariant { get; set; } = NTDividerVariant.FullWidth;
 
-    private bool IsVertical => SelectedDirection == LayoutDirection.Vertical;
+    private bool IsVertical => SelectedDirection == NTLayoutDirection.Vertical;
 }

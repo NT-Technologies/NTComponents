@@ -30,7 +30,7 @@ namespace NTComponents;
     RenderCompatibility = NTComponentRenderCompatibility.SsrCompatible,
     CompatibilitySummary = "Renders progress markup and CSS-only animation without JavaScript.",
     CompatibilityDetails = "Static SSR emits the progress role, ARIA values, SVG or track markup, and CSS variables. Later progress changes require a new render or external script updates.")]
-public partial class NTProgress : TnTDisposableComponentBase {
+public partial class NTProgress : NTDisposableComponentBase {
 
     /// <summary>
     ///     Whether CSS progress motion is active.

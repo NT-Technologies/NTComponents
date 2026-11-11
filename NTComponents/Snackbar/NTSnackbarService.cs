@@ -103,7 +103,7 @@ internal sealed class NTSnackbarService(IJSRuntime _jsRuntime) : INTSnackbarServ
         var materializedActions = actions.ToArray();
         var hasAction = materializedActions.Length > 0;
         var snackbar = new NTSnackbarImplementation() {
-            Id = TnTComponentIdentifier.NewId(),
+            Id = NTComponentIdentifier.NewId(),
             Message = message,
             Actions = materializedActions,
             Timeout = timeout ?? (hasAction ? 0 : 4),

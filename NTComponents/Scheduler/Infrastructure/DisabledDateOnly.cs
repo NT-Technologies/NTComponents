@@ -12,7 +12,7 @@ namespace NTComponents.Scheduler.Infrastructure;
 /// </summary>
 /// <param name="_date">The date to be disabled.</param>
 [ExcludeFromCodeCoverage]
-internal class DisabledDateOnly(DateOnly _date) : TnTDisabledDateTime {
+internal class DisabledDateOnly(DateOnly _date) : NTDisabledDateTime {
 
     /// <summary>
     ///     Determines if the specified DateTimeOffset is disabled.

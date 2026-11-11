@@ -21,13 +21,6 @@ public sealed class CssClassBuilder {
     public static CssClassBuilder Create(string defaultClass = "tnt-components") => new CssClassBuilder().AddClass(defaultClass);
 
     /// <summary>
-    ///     Adds a CSS class for background color.
-    /// </summary>
-    /// <param name="color">The color to use.</param>
-    /// <returns>The current instance of <see cref="CssClassBuilder" />.</returns>
-    public CssClassBuilder AddBackgroundColor(TnTColor? color) => color is null or TnTColor.None ? this : AddClass("tnt-bg-color-" + color.Value.ToCssClassName());
-
-    /// <summary>
     ///     Adds a CSS class if the specified condition is met.
     /// </summary>
     /// <param name="className">The CSS class to add.</param>
@@ -86,25 +79,11 @@ public sealed class CssClassBuilder {
     public CssClassBuilder AddFilled(bool enabled = true) => AddClass("tnt-filled", enabled);
 
     /// <summary>
-    ///     Adds a CSS class for foreground color.
-    /// </summary>
-    /// <param name="color">The color to use.</param>
-    /// <returns>The current instance of <see cref="CssClassBuilder" />.</returns>
-    public CssClassBuilder AddForegroundColor(TnTColor? color) => color is null or TnTColor.None ? this : AddClass("tnt-fg-color-" + color.Value.ToCssClassName());
-
-    /// <summary>
     ///     Adds CSS classes from additional attributes.
     /// </summary>
     /// <param name="additionalAttributes">The additional attributes.</param>
     /// <returns>The current instance of <see cref="CssClassBuilder" />.</returns>
     public CssClassBuilder AddFromAdditionalAttributes(IReadOnlyDictionary<string, object>? additionalAttributes) => additionalAttributes?.TryGetValue("class", out var @class) == true && @class is not null ? AddClass(@class.ToString()) : this;
-
-    /// <summary>
-    ///     Adds a CSS class for on-tint color.
-    /// </summary>
-    /// <param name="color">The color to use.</param>
-    /// <returns>The current instance of <see cref="CssClassBuilder" />.</returns>
-    public CssClassBuilder AddOnTintColor(TnTColor? color) => color is null or TnTColor.None ? this : AddClass("tnt-on-tint-color-" + color.Value.ToCssClassName());
 
     /// <summary>
     ///     Adds a CSS class for ripple effect.
@@ -118,36 +97,24 @@ public sealed class CssClassBuilder {
     /// </summary>
     /// <param name="size">The size to use.</param>
     /// <returns>The current instance of <see cref="CssClassBuilder" />.</returns>
-    public CssClassBuilder AddSize(Size? size) {
+    public CssClassBuilder AddSize(NTSize? size) {
         return size switch {
             null => this,
-            Size.Smallest => AddClass("tnt-size-xs"),
-            Size.Small => AddClass("tnt-size-s"),
-            Size.Medium => AddClass("tnt-size-m"),
-            Size.Large => AddClass("tnt-size-l"),
-            Size.Largest => AddClass("tnt-size-xl"),
+            NTSize.Smallest => AddClass("tnt-size-xs"),
+            NTSize.Small => AddClass("tnt-size-s"),
+            NTSize.Medium => AddClass("tnt-size-m"),
+            NTSize.Large => AddClass("tnt-size-l"),
+            NTSize.Largest => AddClass("tnt-size-xl"),
             _ => AddClass("tnt-size-")
         };
     }
-
-    /// <summary>Adds a CSS class for an NT size.</summary>
-    /// <param name="size">The size to use.</param>
-    /// <returns>The current instance of <see cref="CssClassBuilder" />.</returns>
-    public CssClassBuilder AddSize(NTSize size) => AddSize((Size?)size);
 
     /// <summary>
     ///     Adds a CSS class for text alignment.
     /// </summary>
     /// <param name="textAlign">The text alignment to use.</param>
     /// <returns>The current instance of <see cref="CssClassBuilder" />.</returns>
-    public CssClassBuilder AddTextAlign(TextAlign? textAlign) => textAlign is null ? this : AddClass("tnt-text-align-" + textAlign.ToCssString());
-
-    /// <summary>
-    ///     Adds a CSS class for tint color.
-    /// </summary>
-    /// <param name="color">The color to use.</param>
-    /// <returns>The current instance of <see cref="CssClassBuilder" />.</returns>
-    public CssClassBuilder AddTintColor(TnTColor? color) => color is null or TnTColor.None ? this : AddClass("tnt-tint-color-" + color.Value.ToCssClassName());
+    public CssClassBuilder AddTextAlign(NTTextAlign? textAlign) => textAlign is null ? this : AddClass("tnt-text-align-" + textAlign.Value.ToString().ToLowerInvariant());
 
     /// <summary>
     ///     Builds the CSS class string.

@@ -14,8 +14,8 @@
 @code {
     private static readonly string[] Contacts = ["Ada Lovelace", "Grace Hopper", "Alan Turing", "Katherine Johnson", "Margaret Hamilton", "Dennis Ritchie", "Barbara Liskov", "Edsger Dijkstra"];
 
-    private static ValueTask<TnTItemsProviderResult<string>> LoadContactsAsync(NTVirtualizeItemsProviderRequest<string> request) {
+    private static ValueTask<NTVirtualizeItemsProviderResult<string>> LoadContactsAsync(NTVirtualizeItemsProviderRequest<string> request) {
         var count = request.Count ?? 20;
-        return ValueTask.FromResult(new TnTItemsProviderResult<string>(Contacts.Skip(request.StartIndex).Take(count).ToArray(), Contacts.Length));
+        return ValueTask.FromResult(new NTVirtualizeItemsProviderResult<string>(Contacts.Skip(request.StartIndex).Take(count).ToArray(), Contacts.Length));
     }
 }

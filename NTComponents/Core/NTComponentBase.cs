@@ -22,7 +22,7 @@ public abstract class NTComponentBase : ComponentBase, INTComponentBase {
     /// <summary>
     ///     Unique identifier for the component.
     /// </summary>
-    public string ComponentIdentifier { get; } = TnTComponentIdentifier.NewId();
+    public string ComponentIdentifier { get; } = NTComponentIdentifier.NewId();
 
     /// <inheritdoc />
     public ElementReference Element { get; protected set; }
@@ -64,9 +64,3 @@ public abstract class NTComponentBase : ComponentBase, INTComponentBase {
             : new Dictionary<string, object>(AdditionalAttributes) { [_tnTCustomIdentifierAttribute] = ComponentIdentifier };
     }
 }
-
-/// <summary>
-///     Obsolete compatibility alias for <see cref="NTComponentBase" />.
-/// </summary>
-[Obsolete("TnTComponentBase is obsolete. Use NTComponentBase instead.")]
-public abstract class TnTComponentBase : NTComponentBase, ITnTComponentBase;

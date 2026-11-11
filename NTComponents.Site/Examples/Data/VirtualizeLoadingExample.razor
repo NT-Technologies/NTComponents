@@ -12,10 +12,10 @@
 </div>
 
 @code {
-    private static async ValueTask<TnTItemsProviderResult<string>> LoadOrdersAsync(NTVirtualizeItemsProviderRequest<string> request) {
+    private static async ValueTask<NTVirtualizeItemsProviderResult<string>> LoadOrdersAsync(NTVirtualizeItemsProviderRequest<string> request) {
         await Task.Delay(300, request.CancellationToken);
         var count = request.Count ?? 20;
         var orders = Enumerable.Range(request.StartIndex, count).Where(index => index < 200).Select(index => $"Order #{1000 + index}").ToArray();
-        return new TnTItemsProviderResult<string>(orders, 200);
+        return new NTVirtualizeItemsProviderResult<string>(orders, 200);
     }
 }

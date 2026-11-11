@@ -50,7 +50,7 @@ public partial class NTInputColor {
     /// <inheritdoc />
     protected override int? NativeMaxLength => 9;
 
-    private readonly string _instanceId = TnTComponentIdentifier.NewId();
+    private readonly string _instanceId = NTComponentIdentifier.NewId();
     private string? _popoverId;
     private string? _rootStyle;
     private RenderFragment? _swatchFragment;

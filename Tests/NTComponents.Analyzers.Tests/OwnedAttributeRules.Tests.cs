@@ -38,7 +38,7 @@ public sealed class OwnedAttributeRules_Tests {
     [Theory]
     [InlineData("NTTooltip", "class=\"x\" | data-x=\"1\" | style=\"color: red\"")]
     [InlineData("NTWindow", "data-x=\"1\" | Title=\"x\"")]
-    [InlineData("NTDivider", "class=\"x\" | Direction=LayoutDirection.Vertical")]
+    [InlineData("NTDivider", "class=\"x\" | Direction=NTLayoutDirection.Vertical")]
     [InlineData("NTNavigationRail", "AriaLabel=\"Main\" | id=\"rail\"")]
     [InlineData("NTNavigationRailItem", "Label=\"Home\" | id=\"home\" | title=\"t\" | lang=\"en\" | class=\"x\" | data-x=\"1\"")]
     [InlineData("NTLayout", "ElementId=\"x\" | class=\"x\" | data-x=\"1\"")]

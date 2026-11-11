@@ -1,4 +1,3 @@
-#if NET10_0_OR_GREATER
 using NTComponents.Site.Documentation;
 using NTComponents.Site.Layout;
 
@@ -30,4 +29,3 @@ public class NavigationIcons_Tests {
         families.Should().OnlyContain(name => NavigationIcons.Contains(name), "reference families use their family icon in the rail");
     }
 }
-#endif

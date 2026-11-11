@@ -14,8 +14,8 @@
 @code {
     private static readonly string[] Items = Enumerable.Range(1, 100).Select(index => $"Item {index}").ToArray();
 
-    private static ValueTask<TnTItemsProviderResult<string>> LoadItemsAsync(NTVirtualizeItemsProviderRequest<string> request) {
+    private static ValueTask<NTVirtualizeItemsProviderResult<string>> LoadItemsAsync(NTVirtualizeItemsProviderRequest<string> request) {
         var count = request.Count ?? 20;
-        return ValueTask.FromResult(new TnTItemsProviderResult<string>(Items.Skip(request.StartIndex).Take(count).ToArray(), Items.Length));
+        return ValueTask.FromResult(new NTVirtualizeItemsProviderResult<string>(Items.Skip(request.StartIndex).Take(count).ToArray(), Items.Length));
     }
 }

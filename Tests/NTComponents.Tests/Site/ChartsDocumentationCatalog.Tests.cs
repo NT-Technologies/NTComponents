@@ -1,4 +1,3 @@
-#if NET10_0_OR_GREATER
 using NTComponents.Site.Documentation;
 
 namespace NTComponents.Tests.Site;
@@ -53,4 +52,3 @@ public class ChartsDocumentationCatalog_Tests {
         charts.Should().OnlyContain(reference => reference.Type.FullName.StartsWith("NTComponents.Charts.", StringComparison.Ordinal));
     }
 }
-#endif

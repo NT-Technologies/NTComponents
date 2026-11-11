@@ -6,22 +6,7 @@
   },
   "include": [
     "NTComponents.Site/wwwroot/js/docs.ts",
-    "NTComponents/Accordion/TnTAccordion.razor.ts",
-    "NTComponents/Animation/TnTAnimation.razor.ts",
-    "NTComponents/Core/TnTExternalClickHandler.razor.ts",
-    "NTComponents/Core/TnTRippleEffect.razor.ts",
-    "NTComponents/Editors/TnTMarkdownEditor.razor.ts",
-    "NTComponents/Form/NTInputFile.razor.ts",
-    "NTComponents/Form/NTInputSelect.razor.ts",
-    "NTComponents/Form/TnTInputFile.razor.ts",
-    "NTComponents/Grid/TnTDataGrid.razor.ts",
-    "NTComponents/LazyLoader/TnTLazyLoad.razor.ts",
-    "NTComponents/TabView/TnTTabView.razor.ts",
-    "NTComponents/Theming/TnTThemeToggle.razor.ts",
     "NTComponents/Tooltip/NTTooltip.razor.ts",
-    "NTComponents/Tooltip/TnTTooltip.razor.ts",
-    "NTComponents/Typeahead/TnTTypeahead.razor.ts",
-    "NTComponents/Virtualization/TnTVirtualize.razor.ts",
     "NTComponents/wwwroot/NTComponents.lib.module.ts"
   ],
   "exclude": [

@@ -11,7 +11,7 @@ namespace NTComponents.Scheduler.Infrastructure;
 ///     Represents a range of dates that are disabled.
 /// </summary>
 [ExcludeFromCodeCoverage]
-internal class DisabledDateRange(DateTimeOffset disabledStart, DateTimeOffset disabledEnd) : TnTDisabledDateTime {
+internal class DisabledDateRange(DateTimeOffset disabledStart, DateTimeOffset disabledEnd) : NTDisabledDateTime {
 
     /// <summary>
     ///     Determines whether the specified date and time is within the disabled range.

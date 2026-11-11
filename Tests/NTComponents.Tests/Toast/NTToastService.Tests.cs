@@ -35,9 +35,9 @@ public class NTToastService_Tests : BunitContext {
     }
 
     [Fact]
-    public void AddTnTServices_RegistersToastService() {
+    public void AddNTServices_RegistersToastService() {
         // Arrange & Act
-        Services.AddTnTServices();
+        Services.AddNTServices();
 
         // Assert
         Services.GetRequiredService<INTToastService>().Should().BeAssignableTo<INTToastService>();

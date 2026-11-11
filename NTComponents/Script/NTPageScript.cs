@@ -26,9 +26,3 @@ public class NTPageScript : ComponentBase {
         builder.CloseElement();
     }
 }
-
-/// <summary>
-///     Obsolete compatibility alias for <see cref="NTPageScript" />.
-/// </summary>
-[Obsolete("TnTPageScript is obsolete. Use NTPageScript instead.")]
-public class TnTPageScript : NTPageScript;

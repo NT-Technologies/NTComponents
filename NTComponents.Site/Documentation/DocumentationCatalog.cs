@@ -20,7 +20,6 @@ public sealed partial class DocumentationCatalog {
         ["NTFooter"] = "NTLayout",
         ["NTHeader"] = "NTLayout",
         ["NTInputRadio"] = "NTInputRadioGroup",
-        ["NTInputSelectOption"] = "NTInputSelect",
         ["NTMenuAnchorItem"] = "NTMenu",
         ["NTMenuButtonItem"] = "NTMenu",
         ["NTMenuDividerItem"] = "NTMenu",

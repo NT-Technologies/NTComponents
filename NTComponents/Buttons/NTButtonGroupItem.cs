@@ -52,13 +52,6 @@ public sealed partial class NTButtonGroupItem<TObjectType> : Microsoft.AspNetCor
     /// <summary>
     ///     Optional icon rendered before the label.
     /// </summary>
-    [Obsolete("Start icons are not supported by Material 3 button groups use Icon instead. Note: This just wraps Icon.")]
-    [Parameter]
-    public NTIcon? StartIcon { get => Icon; set => Icon = value; }
-
-    /// <summary>
-    ///     Optional icon rendered before the label.
-    /// </summary>
     [Parameter]
     public NTIcon? Icon { get; set; }
 
@@ -67,13 +60,6 @@ public sealed partial class NTButtonGroupItem<TObjectType> : Microsoft.AspNetCor
     /// </summary>
     [Parameter]
     public bool Disabled { get; set; }
-
-    /// <summary>
-    ///     Deprecated. End icons are not supported by Material 3 button groups and are no longer rendered.
-    /// </summary>
-    [Obsolete("End icons are not supported by Material 3 button groups and are no longer rendered.")]
-    [Parameter]
-    public NTIcon? EndIcon { get; set; }
 
     /// <summary>
     ///     Indicates whether this item should be selected by default when no other selection exists.

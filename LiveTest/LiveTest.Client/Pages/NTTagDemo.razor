@@ -151,7 +151,7 @@
             <label>
                 Text alignment
                 <select @bind="SelectedTextAlignment">
-                    @foreach (var alignment in Enum.GetValues<TextAlign>()) {
+                    @foreach (var alignment in Enum.GetValues<NTTextAlign>()) {
                         <option value="@alignment">@alignment</option>
                     }
                 </select>
@@ -225,7 +225,7 @@
 
     private string SelectedColorName { get; set; } = ColorOptions[0].Name;
 
-    private TextAlign SelectedTextAlignment { get; set; } = TextAlign.Center;
+    private NTTextAlign SelectedTextAlignment { get; set; } = NTTextAlign.Center;
 
     private string EffectivePlaygroundLabel => string.IsNullOrWhiteSpace(PlaygroundLabel) ? "Tag" : PlaygroundLabel.Trim();
 

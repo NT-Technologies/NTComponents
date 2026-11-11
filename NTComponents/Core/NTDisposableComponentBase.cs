@@ -10,7 +10,7 @@ namespace NTComponents.Core;
 ///     cref="DisposeAsyncCore" /> for asynchronous cleanup. In Blazor, avoid touching UI or JS interop from continuations that used <c>ConfigureAwait(false)</c>; marshal back using <c>InvokeAsync</c>
 ///     if needed.
 /// </remarks>
-public abstract class NTDisposableComponentBase : TnTComponentBase, IAsyncDisposable, IDisposable {
+public abstract class NTDisposableComponentBase : NTComponentBase, IAsyncDisposable, IDisposable {
 
     private readonly NTDisposalState _disposalState = new();
 
@@ -71,6 +71,3 @@ internal sealed class NTDisposalState {
 
     internal bool TryBegin() => Interlocked.Exchange(ref _started, 1) == 0;
 }
-
-/// <inheritdoc />
-public abstract class TnTDisposableComponentBase : NTDisposableComponentBase;

@@ -23,7 +23,7 @@ public class NTRichTextEditor_Tests : BunitContext {
         _module.SetupVoid("onUpdate", _ => true).SetVoidResult();
         _module.SetupVoid("onDispose", _ => true).SetVoidResult();
         _module.SetupVoid("focusEditor", _ => true).SetVoidResult();
-        var tooltipModule = JSInterop.SetupModule("./_content/NTComponents/Tooltip/TnTTooltip.razor.js");
+        var tooltipModule = JSInterop.SetupModule("./_content/NTComponents/Tooltip/NTTooltip.razor.js");
         tooltipModule.SetupVoid("onLoad", _ => true).SetVoidResult();
         tooltipModule.SetupVoid("onUpdate", _ => true).SetVoidResult();
         tooltipModule.SetupVoid("onDispose", _ => true).SetVoidResult();

@@ -14,7 +14,7 @@ public class SessionStorageService_Tests : BunitContext {
         // Register the internal SessionStorageService through DI
         Services.AddSingleton<ISessionStorageService>(provider => {
             var jsRuntime = provider.GetRequiredService<IJSRuntime>();
-            var storageServiceType = typeof(TnTSkeleton).Assembly.GetType("NTComponents.Storage.SessionStorageService")!;
+            var storageServiceType = typeof(NTSkeleton).Assembly.GetType("NTComponents.Storage.SessionStorageService")!;
             return (ISessionStorageService)Activator.CreateInstance(storageServiceType, jsRuntime)!;
         });
 

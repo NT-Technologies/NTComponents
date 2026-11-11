@@ -13,7 +13,7 @@ namespace NTComponents;
 ///     </para>
 ///     <para>
 ///         Best practices: keep the label short and self-describing, choose semantic container/on-container color pairs with sufficient contrast, and do not rely on color alone to communicate meaning.
-///         Use <see cref="TnTChip" /> or another interactive control when the item needs selection, filtering, removal, navigation, or click behavior.
+///         Use <see cref="NTChip" /> or another interactive control when the item needs selection, filtering, removal, navigation, or click behavior.
 ///     </para>
 /// </remarks>
 [NTDocumentation(
@@ -69,7 +69,7 @@ public partial class NTTag {
     ///     Gets or sets the text alignment within the tag.
     /// </summary>
     [Parameter]
-    public TextAlign? TextAlignment { get; set; } = TextAlign.Center;
+    public NTTextAlign? TextAlignment { get; set; } = NTTextAlign.Center;
 
     /// <summary>
     ///     Gets or sets the tag text color.

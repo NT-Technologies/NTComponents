@@ -306,7 +306,7 @@ public partial class NTNavigationRail {
         }
 
         return index == 0
-            ? TnTComponentIdentifier.NewId()
+            ? NTComponentIdentifier.NewId()
             : $"nt-navigation-rail-{buffer[..index]}";
     }
 }

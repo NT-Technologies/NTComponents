@@ -22,10 +22,10 @@
                 Appearance="NTDataGridAppearance.Striped"
                 QueryParameterPrefix="direct-page"
                 TotalItemCountChanged="count => _directTotal = count">
-        <NTPropertyColumn TItem="DataGridItem" TValue="int" Title="Id" Property="item => item.Id" Width="96px" TextAlign="TextAlign.Right" HeaderTextAlign="TextAlign.Right" />
+        <NTPropertyColumn TItem="DataGridItem" TValue="int" Title="Id" Property="item => item.Id" Width="96px" TextAlign="NTTextAlign.Right" HeaderTextAlign="NTTextAlign.Right" />
         <NTPropertyColumn TItem="DataGridItem" TValue="string" Title="Customer" Property="item => item.Customer" MinWidth="220px" />
         <NTPropertyColumn TItem="DataGridItem" TValue="DateTime" Title="Created" Property="item => item.Created" Format="MMM d, yyyy" MinWidth="160px" />
-        <NTPropertyColumn TItem="DataGridItem" TValue="decimal" Title="Amount" Property="item => item.Amount" Format="C" TextAlign="TextAlign.Right" HeaderTextAlign="TextAlign.Right" />
+        <NTPropertyColumn TItem="DataGridItem" TValue="decimal" Title="Amount" Property="item => item.Amount" Format="C" TextAlign="NTTextAlign.Right" HeaderTextAlign="NTTextAlign.Right" />
     </NTDataGrid>
 
     <p>Direct total: @_directTotal</p>
@@ -39,10 +39,10 @@
                 Density="NTDataGridDensity.Compact"
                 QueryParameterPrefix="provider-page"
                 TotalItemCountChanged="count => _providerTotal = count">
-        <NTPropertyColumn TItem="DataGridItem" TValue="int" Title="Id" Property="item => item.Id" Width="96px" TextAlign="TextAlign.Right" HeaderTextAlign="TextAlign.Right" />
+        <NTPropertyColumn TItem="DataGridItem" TValue="int" Title="Id" Property="item => item.Id" Width="96px" TextAlign="NTTextAlign.Right" HeaderTextAlign="NTTextAlign.Right" />
         <NTPropertyColumn TItem="DataGridItem" TValue="string" Title="Customer" Property="item => item.Customer" MinWidth="220px" InitialSortDirection="SortDirection.Ascending" />
         <NTPropertyColumn TItem="DataGridItem" TValue="DateTime" Title="Created" Property="item => item.Created" Format="MMM d, yyyy" MinWidth="160px" />
-        <NTPropertyColumn TItem="DataGridItem" TValue="decimal" Title="Amount" Property="item => item.Amount" Format="C" TextAlign="TextAlign.Right" HeaderTextAlign="TextAlign.Right" />
+        <NTPropertyColumn TItem="DataGridItem" TValue="decimal" Title="Amount" Property="item => item.Amount" Format="C" TextAlign="NTTextAlign.Right" HeaderTextAlign="NTTextAlign.Right" />
     </NTDataGrid>
 
     <p>Provider total: @_providerTotal</p>

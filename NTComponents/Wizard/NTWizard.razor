@@ -10,7 +10,7 @@
             @Title
         </h1>
     }
-    <ol class="nt-wizard-steps" role="tablist" aria-orientation="@(LayoutDirection == LayoutDirection.Horizontal ? "horizontal" : "vertical")">
+    <ol class="nt-wizard-steps" role="tablist" aria-orientation="@(LayoutDirection == NTLayoutDirection.Horizontal ? "horizontal" : "vertical")">
         @for (var i = 0; i < _steps.Count; i++) {
             var index = i;
             var step = _steps[i];

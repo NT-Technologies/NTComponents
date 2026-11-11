@@ -1,4 +1,3 @@
-#if NET10_0_OR_GREATER
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Hosting;
@@ -1067,4 +1066,3 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
 
     private sealed record BrowserDiagnostic(string Route, string Kind, string Message);
 }
-#endif

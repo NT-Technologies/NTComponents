@@ -31,7 +31,7 @@ Follow `.editorconfig`:
 - Private fields/properties use `_camelCase`.
 - Public types/methods/properties use `PascalCase`; interfaces start with `I`.
 
-Keep related component files co-located and consistently named (example: `TnTButton.razor`, `TnTButton.razor.cs`, `TnTButton.razor.scss`).
+Keep related component files co-located and consistently named (example: `NTButton.razor`, `NTButton.razor.cs`, `NTButton.razor.scss`).
 For component SCSS, do not use `__`/BEM-style CSS class names. Prefer nested classes under the component root and normal SCSS nesting best practices instead.
 
 ## Testing Guidelines

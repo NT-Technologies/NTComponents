@@ -166,7 +166,7 @@ public class Details_Tests {
         reference.Should().NotBeNull();
         reference!.Kind.Should().Be("Helper");
         reference.Scope.Should().Be("LibraryApi");
-        reference.Properties.Should().Contain(property => property.Name == "DefaultFormAppearance" && property.Accessibility == "Public");
+        reference.Properties.Should().Contain(property => property.Name == "RichTextEditorMaxValueBytes" && property.Accessibility == "Public");
     }
 
     /// <summary>Behavior source: get_nt_reference_type promises public enum/helper members, so catalog projection must never expose non-consumer accessibility from generated metadata.</summary>

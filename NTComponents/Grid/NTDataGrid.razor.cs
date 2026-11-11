@@ -807,13 +807,13 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
         }
     }
 
-    private async ValueTask<TnTItemsProviderResult<TItem>> ProvideVirtualizedItemsAsync(NTVirtualizeItemsProviderRequest<TItem> request) {
+    private async ValueTask<NTVirtualizeItemsProviderResult<TItem>> ProvideVirtualizedItemsAsync(NTVirtualizeItemsProviderRequest<TItem> request) {
         InitializeSorts();
         var requestedCount = request.Count > 0 ? request.Count : VirtualizationInitialItemCount;
         var result = await ResolveItemsAsync(request.StartIndex, requestedCount, request.CancellationToken);
         request.CancellationToken.ThrowIfCancellationRequested();
         if (_disposed) {
-            return new TnTItemsProviderResult<TItem>([], 0);
+            return new NTVirtualizeItemsProviderResult<TItem>([], 0);
         }
         RegisterRowIndices(request.StartIndex, result.Items);
         TrimVirtualizedRowIndices(request.StartIndex, result.Items.Count);
@@ -822,7 +822,7 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
         if (totalChanged && !_disposed) {
             await InvokeAsync(StateHasChanged);
         }
-        return new TnTItemsProviderResult<TItem>(result.Items, result.TotalItemCount);
+        return new NTVirtualizeItemsProviderResult<TItem>(result.Items, result.TotalItemCount);
     }
 
     private async ValueTask<NTItemsProviderResult<TItem>> ResolveItemsAsync(int startIndex, int? count, CancellationToken cancellationToken) {

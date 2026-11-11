@@ -18,7 +18,7 @@ namespace NTComponents;
     RenderCompatibility = NTComponentRenderCompatibility.ProgressivelyEnhanced,
     CompatibilitySummary = "Renders scheduler markup in static SSR and enhances navigation, callbacks, event dragging, resizing, and time-range selection interactively.",
     CompatibilityDetails = "Static SSR emits the selected calendar view and its events. Date and view navigation, event and slot callbacks, drag-and-drop, resizing, and time-range selection require an interactive render mode or browser enhancement.")]
-public partial class NTScheduler<TEventType> where TEventType : TnTEvent {
+public partial class NTScheduler<TEventType> where TEventType : NTEvent {
     /// <summary>
     ///     Gets the isolated JavaScript module path for <see cref="NTScheduler{TEventType}" />.
     /// </summary>
@@ -71,7 +71,7 @@ public partial class NTScheduler<TEventType> where TEventType : TnTEvent {
     public bool AllowDraggingEvents { get; set; } = true;
 
     /// <summary>
-    ///     Gets or sets whether dropped events should be moved by mutating their <see cref="TnTEvent.EventStart" /> and <see cref="TnTEvent.EventEnd" /> values.
+    ///     Gets or sets whether dropped events should be moved by mutating their <see cref="NTEvent.EventStart" /> and <see cref="NTEvent.EventEnd" /> values.
     /// </summary>
     [Parameter]
     public bool AutoUpdateEventsOnDrop { get; set; } = true;

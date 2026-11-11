@@ -9,8 +9,7 @@ namespace NTComponents;
 /// <remarks>
 /// This service uses Blazor JavaScript interop and requires an interactive render context. For static SSR-only markup,
 /// place <see cref="NTToast" /> at the route or layout level and call <c> window.NTToast?.queueToast({ title: 'Saved'
-/// })</c> from browser JavaScript. Use this service with <see cref="NTToast" />; the legacy <c> ITnTToastService</c> is
-/// paired with the legacy <c> TnTToast</c> host. Prefer the semantic extension methods for normal app feedback. Use
+/// })</c> from browser JavaScript. Use this service with <see cref="NTToast" />. Prefer the semantic extension methods for normal app feedback. Use
 /// direct <see cref="ShowAsync" /> only when the toast needs a custom variant, icon, timeout, or color override.
 /// </remarks>
 public interface INTToastService {

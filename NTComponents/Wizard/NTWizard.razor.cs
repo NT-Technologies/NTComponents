@@ -38,7 +38,7 @@ public partial class NTWizard : NTComponentBase, IDisposable {
     public override string? ElementClass => CssClassBuilder.Create()
         .AddFromAdditionalAttributes(AdditionalAttributes)
         .AddClass("nt-wizard")
-        .AddClass("nt-wizard-layout-horizontal", LayoutDirection == LayoutDirection.Horizontal)
+        .AddClass("nt-wizard-layout-horizontal", LayoutDirection == NTLayoutDirection.Horizontal)
         .AddClass("nt-wizard-vertical-on-small-screens", VerticalOnSmallScreens)
         .AddClass("nt-wizard-buttons-on-bottom", PushNavigationToBottom)
         .Build();
@@ -52,7 +52,7 @@ public partial class NTWizard : NTComponentBase, IDisposable {
     ///     The visual layout style of the wizard component.
     /// </summary>
     [Parameter]
-    public LayoutDirection LayoutDirection { get; set; } = LayoutDirection.Vertical;
+    public NTLayoutDirection LayoutDirection { get; set; } = NTLayoutDirection.Vertical;
 
     /// <summary>
     ///     Determines whether the wizard should remain vertical when viewed on smaller screens.

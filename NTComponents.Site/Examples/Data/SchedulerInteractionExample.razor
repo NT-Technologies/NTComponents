@@ -3,7 +3,7 @@
 
 <p>Last click: <output>@_clicked</output></p>
 <p>Last move: <output>@_moved</output></p>
-<NTScheduler TEventType="TnTEvent"
+<NTScheduler TEventType="NTEvent"
              Events="_events"
              View="NTSchedulerView.Week"
              EventClicked="OnEventClicked"
@@ -16,19 +16,19 @@
 @code {
     private string _clicked = "none";
     private string _moved = "none";
-    private readonly List<TnTEvent> _events = CreateEvents();
+    private readonly List<NTEvent> _events = CreateEvents();
 
-    private void OnEventClicked(TnTEvent evt) => _clicked = evt.Title;
+    private void OnEventClicked(NTEvent evt) => _clicked = evt.Title;
 
-    private void OnEventDropped(NTSchedulerEventDropArgs<TnTEvent> args) => _moved = $"{args.Event.Title} to {args.NewStart:ddd h:mm tt}";
+    private void OnEventDropped(NTSchedulerEventDropArgs<NTEvent> args) => _moved = $"{args.Event.Title} to {args.NewStart:ddd h:mm tt}";
 
-    private static List<TnTEvent> CreateEvents() {
+    private static List<NTEvent> CreateEvents() {
         var today = DateTime.Today;
         DateTimeOffset At(int day, int hour) => new(today.AddDays(day).AddHours(hour));
         return [
-            new TnTEvent { Title = "Board room: Finance", EventStart = At(0, 9), EventEnd = At(0, 11) },
-            new TnTEvent { Title = "Board room: Hiring panel", EventStart = At(1, 13), EventEnd = At(1, 15) },
-            new TnTEvent { Title = "Board room: All hands", EventStart = At(2, 16), EventEnd = At(2, 17) }
+            new NTEvent { Title = "Board room: Finance", EventStart = At(0, 9), EventEnd = At(0, 11) },
+            new NTEvent { Title = "Board room: Hiring panel", EventStart = At(1, 13), EventEnd = At(1, 15) },
+            new NTEvent { Title = "Board room: All hands", EventStart = At(2, 16), EventEnd = At(2, 17) }
         ];
     }
 }

@@ -30,7 +30,7 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
     public override string? ElementStyle => throw new NotSupportedException();
 
     /// <summary>
-    ///     Gets or sets the content to show when the <see cref="TnTItemsProviderResult{TItem}.TotalItemCount" /> is zero.
+    ///     Gets or sets the content to show when the <see cref="NTVirtualizeItemsProviderResult{TItem}.TotalItemCount" /> is zero.
     /// </summary>
     [Parameter]
     public RenderFragment? EmptyTemplate { get; set; }
@@ -464,7 +464,7 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
     }
 
     private RenderFragment DefaultPlaceholder(PlaceholderContext context) => (builder) => {
-        builder.OpenComponent<TnTSkeleton>(0);
+        builder.OpenComponent<NTSkeleton>(0);
         builder.AddAttribute(1, "data-nt-virtualize-size", context.Size.ToString(CultureInfo.InvariantCulture));
         builder.CloseComponent();
     };
@@ -804,24 +804,6 @@ public struct NTVirtualizeItemsProviderRequest<TItem>() {
     public int StartIndex { get; init; }
 
     /// <summary>
-    ///     Implicitly converts a <see cref="TnTItemsProviderRequest" /> to a <see cref="NTVirtualizeItemsProviderRequest{TItem}" />.
-    /// </summary>
-    /// <param name="request">The items provider request to convert.</param>
-    /// <returns>A new <see cref="NTVirtualizeItemsProviderRequest{TItem}" /> with properties copied from the source request.</returns>
-    /// <remarks>
-    ///     This conversion allows a general-purpose items provider request to be used in virtualization contexts. Note that the <see cref="CancellationToken" /> is set to the default value since it's
-    ///     not available in the source request.
-    /// </remarks>
-    public static implicit operator NTVirtualizeItemsProviderRequest<TItem>(TnTItemsProviderRequest request) {
-        return new NTVirtualizeItemsProviderRequest<TItem> {
-            Count = request.Count,
-            SortOnProperties = [.. request.SortOnProperties],
-            StartIndex = request.StartIndex,
-            CancellationToken = default
-        };
-    }
-
-    /// <summary>
     ///     Implicitly converts an <see cref="NTItemsProviderRequest" /> to a <see cref="NTVirtualizeItemsProviderRequest{TItem}" />.
     /// </summary>
     /// <param name="request">The items provider request to convert.</param>
@@ -836,20 +818,6 @@ public struct NTVirtualizeItemsProviderRequest<TItem>() {
             SortOnProperties = request.SortOnProperties,
             StartIndex = request.StartIndex,
             CancellationToken = default
-        };
-    }
-
-    /// <summary>
-    ///     Implicitly converts a <see cref="NTVirtualizeItemsProviderRequest{TItem}" /> to a <see cref="TnTItemsProviderRequest" />.
-    /// </summary>
-    /// <param name="request">The virtualize items provider request to convert.</param>
-    /// <returns>A new <see cref="TnTItemsProviderRequest" /> with properties copied from the source request.</returns>
-    /// <remarks>This conversion enables interoperability between the virtualization-specific request type and the general-purpose items provider request type.</remarks>
-    public static implicit operator TnTItemsProviderRequest(NTVirtualizeItemsProviderRequest<TItem> request) {
-        return new TnTItemsProviderRequest {
-            StartIndex = request.StartIndex,
-            SortOnProperties = request.SortOnProperties,
-            Count = request.Count
         };
     }
 
@@ -878,4 +846,4 @@ public struct NTVirtualizeItemsProviderRequest<TItem>() {
 /// <typeparam name="TItem">The type of items to be retrieved and provided by the items provider.</typeparam>
 /// <param name="request">An object containing parameters that specify how items should be retrieved, such as the range or filtering criteria.</param>
 /// <returns>A task that, when completed, provides a result containing the requested items and any associated metadata.</returns>
-public delegate ValueTask<TnTItemsProviderResult<TItem>> NTVirtualizeItemsProvider<TItem>(NTVirtualizeItemsProviderRequest<TItem> request);
+public delegate ValueTask<NTVirtualizeItemsProviderResult<TItem>> NTVirtualizeItemsProvider<TItem>(NTVirtualizeItemsProviderRequest<TItem> request);

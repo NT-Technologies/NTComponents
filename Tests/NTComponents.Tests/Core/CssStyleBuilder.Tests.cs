@@ -381,38 +381,38 @@ public class CssStyleBuilder_Tests {
         // Act
         var result = builder
             .AddVariable("color1", "#ff0000")
-            .AddVariable("color2", TnTColor.Secondary)
+            .AddVariable("color2", NTColor.Secondary)
             .AddVariable("size", "10px")
             .Build();
 
         // Assert
         result.Should().Contain("--color1:#ff0000;");
-        result.Should().Contain("--color2:var(--tnt-color-secondary);");
+        result.Should().Contain("--color2:var(--nt-color-secondary);");
         result.Should().Contain("--size:10px;");
     }
 
     [Fact]
-    public void AddVariable_WithTnTColorAndEnabledFalse_DoesNotAddVariable() {
+    public void AddVariable_WithNTColorAndEnabledFalse_DoesNotAddVariable() {
         // Arrange
         var builder = CssStyleBuilder.Create();
 
         // Act
-        var result = builder.AddVariable("theme-color", TnTColor.Primary, false).Build();
+        var result = builder.AddVariable("theme-color", NTColor.Primary, false).Build();
 
         // Assert
         result.Should().BeNull();
     }
 
     [Fact]
-    public void AddVariable_WithTnTColorOverload_AddsColorVariable() {
+    public void AddVariable_WithNTColorOverload_AddsColorVariable() {
         // Arrange
         var builder = CssStyleBuilder.Create();
 
         // Act
-        var result = builder.AddVariable("theme-color", TnTColor.Primary).Build();
+        var result = builder.AddVariable("theme-color", NTColor.Primary).Build();
 
         // Assert
-        result.Should().Be("--theme-color:var(--tnt-color-primary);");
+        result.Should().Be("--theme-color:var(--nt-color-primary);");
     }
 
     [Fact]
@@ -509,7 +509,7 @@ public class CssStyleBuilder_Tests {
         var result = CssStyleBuilder.Create()
             .Add("padding: 5px")
             .AddStyle("color", "red")
-            .AddVariable("theme-color", TnTColor.Primary)
+            .AddVariable("theme-color", NTColor.Primary)
             .AddVariable("custom-size", "20px")
             .AddFromAdditionalAttributes(attributes)
             .Build();
@@ -517,7 +517,7 @@ public class CssStyleBuilder_Tests {
         // Assert
         result.Should().Contain("padding: 5px;");
         result.Should().Contain("color:red;");
-        result.Should().Contain("--theme-color:var(--tnt-color-primary);");
+        result.Should().Contain("--theme-color:var(--nt-color-primary);");
         result.Should().Contain("--custom-size:20px;");
         result.Should().Contain("margin: 10px;");
     }
@@ -529,7 +529,7 @@ public class CssStyleBuilder_Tests {
             .Add("display: flex; align-items: center")
             .AddStyle("padding", "10px 20px")
             .AddStyle("border-radius", "4px")
-            .AddVariable("primary-color", TnTColor.Primary)
+            .AddVariable("primary-color", NTColor.Primary)
             .AddVariable("spacing", "8px")
             .AddVariable("elevation", "2")
             .Build();
@@ -538,7 +538,7 @@ public class CssStyleBuilder_Tests {
         result.Should().Contain("display: flex; align-items: center;");
         result.Should().Contain("padding:10px 20px;");
         result.Should().Contain("border-radius:4px;");
-        result.Should().Contain("--primary-color:var(--tnt-color-primary);");
+        result.Should().Contain("--primary-color:var(--nt-color-primary);");
         result.Should().Contain("--spacing:8px;");
         result.Should().Contain("--elevation:2;");
     }
