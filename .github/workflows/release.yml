@@ -13,8 +13,14 @@ env:
   NuGetAudit: false
 
 jobs:
+  tests:
+    uses: ./.github/workflows/build-template.yml
+    with:
+      configuration: Release
+
   publish-release:
-    runs-on: ubuntu-24.04 # Playwright does not support Ubuntu 26.04 yet
+    needs: tests
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       issues: write
@@ -56,15 +62,6 @@ jobs:
 
       - name: Build
         run: dotnet build NTComponents.slnx --no-restore --configuration Release
-
-      - name: Ensure browsers are installed
-        run: pwsh Tests/NTComponents.IntegrationTests/bin/Release/net10.0/playwright.ps1 install chromium
-
-      - name: Run .NET tests
-        run: dotnet test NTComponents.slnx --no-restore --configuration Release --results-directory ./TestResults -v minimal
-
-      - name: Run node tests
-        run: npm test
 
       - name: Check if commit has a stable release tag
         id: check-tags
