@@ -83,7 +83,6 @@ using Microsoft.AspNetCore.Components.Rendering;
 using NTComponents;
 
 public static class ButtonFactory {
-    public static object LegacyColor => TnTColor.Primary;
     public static void Build(RenderTreeBuilder builder) {
         builder.OpenComponent<NTButton>(0);
         builder.CloseComponent();
@@ -136,11 +135,13 @@ public static class ButtonFactory {
     if ($buildText -notmatch '\bNTC1008\b') {
         throw "Analyzer package consumer build did not report NTC1008:`n$buildText"
     }
-    if ($buildText -notmatch '\bNTC1077\b') {
+    # TnTColor no longer ships in NTComponents, so only the stub consumer of the standalone analyzer package can trigger NTC1077.
+    $expectsMigration = $packageId -eq 'NTComponents.Analyzers'
+    if ($expectsMigration -and $buildText -notmatch '\bNTC1077\b') {
         throw "Analyzer package consumer build did not report NTC1077:`n$buildText"
     }
 
-    Write-Host "Verified $packageId $packageVersion, packaged code fixes, and observed NTC1008 and NTC1077 in a consumer build."
+    Write-Host "Verified $packageId $packageVersion, packaged code fixes, and observed $(if ($expectsMigration) { 'NTC1008 and NTC1077' } else { 'NTC1008' }) in a consumer build."
 }
 finally {
     if (Test-Path -LiteralPath $temporaryDirectory) {
