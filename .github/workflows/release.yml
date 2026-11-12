@@ -130,6 +130,7 @@ jobs:
           user: ${{ secrets.NUGET_USER }}
 
       - name: Publish NuGet packages
+        id: publish-packages
         if: steps.check-tags.outputs.is_tagged == 'false'
         env:
           NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
@@ -137,6 +138,8 @@ jobs:
           dotnet nuget push ./artifacts/nuget/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Unlist older prerelease packages
+        # Cleanup only: the release is already on NuGet, and a rate-limited run leaves the rest for the next release.
+        continue-on-error: true
         if: steps.check-tags.outputs.is_tagged == 'false'
         env:
           NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
@@ -168,10 +171,14 @@ jobs:
                   return False
               return core_parts <= release
 
+          # The search service returns only listed versions, so versions unlisted by earlier releases are not deleted again.
+          with urllib.request.urlopen("https://api.nuget.org/v3/index.json") as response:
+              search = next(r["@id"] for r in json.load(response)["resources"] if r["@type"] == "SearchQueryService")
           for package in packages:
-              url = f"https://api.nuget.org/v3-flatcontainer/{package.lower()}/index.json"
+              url = f"{search}?q=packageid:{package}&prerelease=true&semVerLevel=2.0.0&take=1"
               with urllib.request.urlopen(url) as response:
-                  versions = json.load(response)["versions"]
+                  matches = [d for d in json.load(response)["data"] if d["id"].lower() == package.lower()]
+              versions = [v["version"] for v in matches[0]["versions"]] if matches else []
               for version in versions:
                   if prerelease_is_lower(version):
                       print(f"{package} {version}")
@@ -186,7 +193,8 @@ jobs:
           done < prerelease-versions-to-unlist.txt
 
       - name: Delete stable tag on failure
-        if: failure() && steps.check-tags.outputs.is_tagged == 'false'
+        # Once the packages are on NuGet the version is spent, so keep its tag and release.
+        if: failure() && steps.check-tags.outputs.is_tagged == 'false' && steps.publish-packages.outcome != 'success'
         run: |
           set -euo pipefail
           git fetch --tags
