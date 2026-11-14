@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { onLoad, onUpdate } from '../../../NTComponents/Buttons/NTFabMenu.razor.js';
+import { onLoad, onUpdate, setOpen } from '../../../NTComponents/Buttons/NTFabMenu.razor.js';
 
 function createDotNetRef() {
    return {
@@ -67,17 +67,78 @@ describe('NTFabMenu custom element', () => {
       expect(button.getAttribute('aria-expanded')).toBe('true');
    });
 
-   test('dotnet-applied expanded state does not echo a notification back to dotnet', () => {
+   test('rendered expanded class does not open the menu', () => {
+      const { host, button, panel } = createFabMenu();
+      const dotNetRef = createDotNetRef();
+      onLoad(host, dotNetRef);
+
+      host.classList.add('nt-fab-menu-expanded');
+      button.setAttribute('aria-expanded', 'true');
+      onUpdate(host, dotNetRef);
+
+      expect(panel.showPopover).not.toHaveBeenCalled();
+      expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalled();
+      expect(host.classList.contains('nt-fab-menu-expanded')).toBe(false);
+      expect(button.getAttribute('aria-expanded')).toBe('false');
+   });
+
+   test('update before a pending toggle event still notifies dotnet of the close', () => {
       const { host, panel } = createFabMenu();
       const dotNetRef = createDotNetRef();
       onLoad(host, dotNetRef);
+      panel.showPopover();
       dotNetRef.invokeMethodAsync.mockClear();
+      panel.matches = jest.fn(() => false);
 
-      host.classList.add('nt-fab-menu-expanded');
-      host.update(dotNetRef);
+      onUpdate(host, dotNetRef);
+      panel.dispatchEvent(new Event('toggle'));
+
+      expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledTimes(1);
+      expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('NotifyFabMenuExpandedChanged', false);
+   });
+
+   test('update restores the expanded class a re-render removed from an open menu', () => {
+      const { host, panel } = createFabMenu();
+      onLoad(host, createDotNetRef());
+      panel.showPopover();
+
+      host.classList.remove('nt-fab-menu-expanded');
+      onUpdate(host, createDotNetRef());
+
+      expect(host.classList.contains('nt-fab-menu-expanded')).toBe(true);
+   });
+
+   test('setOpen opens through the native popover and reports it to dotnet', () => {
+      const { host, panel } = createFabMenu();
+      const dotNetRef = createDotNetRef();
+      onLoad(host, dotNetRef);
+
+      setOpen(host, true);
 
       expect(panel.showPopover).toHaveBeenCalledTimes(1);
-      expect(dotNetRef.invokeMethodAsync).not.toHaveBeenCalled();
+      expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('NotifyFabMenuExpandedChanged', true);
+   });
+
+   test('setOpen closes an open menu through the native popover and reports it to dotnet', () => {
+      const { host, panel } = createFabMenu();
+      const dotNetRef = createDotNetRef();
+      onLoad(host, dotNetRef);
+      panel.showPopover();
+      dotNetRef.invokeMethodAsync.mockClear();
+
+      setOpen(host, false);
+
+      expect(panel.hidePopover).toHaveBeenCalledTimes(1);
+      expect(dotNetRef.invokeMethodAsync).toHaveBeenCalledWith('NotifyFabMenuExpandedChanged', false);
+   });
+
+   test('setOpen to the current state does nothing', () => {
+      const { host, panel } = createFabMenu();
+      onLoad(host, createDotNetRef());
+
+      setOpen(host, false);
+
+      expect(panel.hidePopover).not.toHaveBeenCalled();
    });
 
    test('enabled item click closes the popover', () => {
@@ -163,16 +224,5 @@ describe('NTFabMenu custom element', () => {
 
       expect(document.activeElement).toBe(item);
       expect(document.activeElement).not.toBe(button);
-   });
-
-   test('missing popover methods do not leave requested expanded state applied', () => {
-      const { host, button, panel } = createFabMenu();
-      panel.showPopover = undefined;
-      host.classList.add('nt-fab-menu-expanded');
-
-      onLoad(host, createDotNetRef());
-
-      expect(host.classList.contains('nt-fab-menu-expanded')).toBe(false);
-      expect(button.getAttribute('aria-expanded')).toBe('false');
    });
 });

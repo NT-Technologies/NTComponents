@@ -41,14 +41,13 @@ export class NTFabMenu extends HTMLElement {
     private interactionsRegistered = false;
     private items: Element[] = [];
     private panel: HTMLDivElement | null = null;
-    private suppressNextToggleNotification = false;
 
     private readonly onPanelClick = (event: MouseEvent): void => {
         this.handlePanelClick(event);
     };
 
     private readonly onToggle = (): void => {
-        this.syncOpenState();
+        this.updateOpenState(this.panel?.matches(':popover-open') ?? false);
     };
 
     public connectedCallback(): void {
@@ -68,44 +67,28 @@ export class NTFabMenu extends HTMLElement {
         this.panel = null;
     }
 
-    public setExpanded(expanded: Maybe<boolean>): void {
-        this.updateElements();
-        this.applyExpanded(expanded);
+    // Goes through the native popover so the toggle event reports the change like any user action.
+    public setOpen(open: boolean): void {
+        const panel = this.panel;
+        if (!panel || panel.matches(':popover-open') === open) {
+            return;
+        }
+
+        if (open) {
+            panel.showPopover?.();
+        } else {
+            panel.hidePopover?.();
+        }
     }
 
     public update(dotNetRef: Maybe<DotNetFabMenuRef> = null): void {
         this.setDotNetRef(dotNetRef);
         this.updateElements();
-        this.applyExpanded(this.classList.contains('nt-fab-menu-expanded'));
-    }
 
-    private applyExpanded(expanded: Maybe<boolean>): void {
-        const panel = this.panel;
-        if (!panel || expanded == null) {
-            return;
+        // A Blazor re-render rewrites the class attribute, so restore the open-state decorations from the browser.
+        if (this.panel) {
+            this.renderOpenState(this.panel.matches(':popover-open'));
         }
-
-        const isOpen = panel.matches(':popover-open');
-        if (expanded === isOpen) {
-            this.updateOpenState(isOpen, false);
-            return;
-        }
-
-        const togglePopover = expanded ? panel.showPopover : panel.hidePopover;
-        if (!togglePopover) {
-            this.suppressNextToggleNotification = false;
-            this.updateOpenState(isOpen, false);
-            return;
-        }
-
-        this.suppressNextToggleNotification = true;
-        try {
-            togglePopover.call(panel);
-        } catch {
-            this.suppressNextToggleNotification = false;
-        }
-
-        this.updateOpenState(panel.matches(':popover-open'), false);
     }
 
     private handlePanelClick(event: MouseEvent): void {
@@ -149,12 +132,6 @@ export class NTFabMenu extends HTMLElement {
         }
     }
 
-    private syncOpenState(): void {
-        const isOpen = this.panel?.matches(':popover-open') ?? false;
-        this.updateOpenState(isOpen, !this.suppressNextToggleNotification);
-        this.suppressNextToggleNotification = false;
-    }
-
     private updateElements(): void {
         const panel = this.querySelector<HTMLDivElement>(':scope .nt-fab-menu-panel');
         const button = this.querySelector<HTMLButtonElement>(':scope .nt-fab-menu-button');
@@ -187,7 +164,13 @@ export class NTFabMenu extends HTMLElement {
         }
     }
 
-    private updateOpenState(isOpen: boolean, notifyDotNet: boolean): void {
+    // Writes only the DOM decorations. The tracked state changes only on toggle events, so each change reaches .NET exactly once.
+    private renderOpenState(isOpen: boolean): void {
+        this.classList.toggle('nt-fab-menu-expanded', isOpen);
+        this.button?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    }
+
+    private updateOpenState(isOpen: boolean): void {
         const panel = this.panel;
         const button = this.button;
         if (!panel || !button) {
@@ -198,8 +181,7 @@ export class NTFabMenu extends HTMLElement {
         const stateChanged = this.expanded !== isOpen;
         const focusWasInsidePanel = stateChanged && !isOpen && wasOpen && document.activeElement instanceof Node && panel.contains(document.activeElement);
 
-        this.classList.toggle('nt-fab-menu-expanded', isOpen);
-        button.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        this.renderOpenState(isOpen);
 
         if (!stateChanged) {
             return;
@@ -211,7 +193,7 @@ export class NTFabMenu extends HTMLElement {
             button.focus({ preventScroll: true });
         }
 
-        if (notifyDotNet && isDotNetObjectReference(this.dotNetRef)) {
+        if (isDotNetObjectReference(this.dotNetRef)) {
             Promise.resolve(this.dotNetRef.invokeMethodAsync('NotifyFabMenuExpandedChanged', isOpen)).catch(() => {
                 // Ignore late/disconnected interop failures from native popover notifications.
             });
@@ -241,6 +223,12 @@ export function onUpdate(element: Maybe<HTMLElement> = null, dotNetRef: Maybe<Do
     updateAllFabMenus();
 }
 
+export function setOpen(element: Maybe<HTMLElement>, open: boolean): void {
+    if (isFabMenuElement(element)) {
+        element.setOpen(open);
+    }
+}
+
 export function onDispose(element: Maybe<HTMLElement> = null): void {
     if (isFabMenuElement(element)) {
         element.removeElementListeners();
@@ -252,10 +240,4 @@ export function onDispose(element: Maybe<HTMLElement> = null): void {
             fabMenu.removeElementListeners();
         }
     });
-}
-
-export function setExpanded(element: Maybe<HTMLElement>, expanded: Maybe<boolean>): void {
-    if (isFabMenuElement(element)) {
-        element.setExpanded(expanded);
-    }
 }
