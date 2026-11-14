@@ -6,6 +6,7 @@
 <div style="display: flex; min-block-size: 720px;">
     <NTNavigationRail AriaLabel="E2E primary navigation"
                       Compact="@CompactMode"
+                      ExpandedMaxWidth="@MaxWidth"
                       LimitToOneExpanded="true"
                       ShowDivider="true"
                       Variant="NTNavigationRailVariant.Square"
@@ -24,6 +25,12 @@
                               Href="/reference"
                               Icon="MaterialIcon.Article"
                               data-testid="nav-rail-reference-item" />
+        @if (ExtraLabel is not null) {
+            <NTNavigationRailItem Label="@ExtraLabel"
+                                  Href="/extra"
+                                  Icon="MaterialIcon.Label"
+                                  data-testid="nav-rail-extra-item" />
+        }
         <NTNavigationRailSectionHeader Label="Workspace sections"
                                        data-testid="nav-rail-workspace-section" />
         <NTNavigationRailGroup Label="Workspace"
@@ -60,4 +67,10 @@
 
     [SupplyParameterFromQuery]
     public bool FullWidth { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? ExtraLabel { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? MaxWidth { get; set; }
 }

@@ -21,7 +21,8 @@ $nt-navigation-rail-collapsed-indicator-margin-inline: 20px;
 $nt-navigation-rail-icon-label-gap: 4px;
 $nt-navigation-rail-horizontal-icon-label-gap: 8px;
 $nt-navigation-rail-collapsed-label-max-width: 72px;
-$nt-navigation-rail-expanded-label-max-width: 256px;
+// Leaves room for the item padding, icon, and gap inside the expanded rail maximum.
+$nt-navigation-rail-expanded-label-max-width: calc(var(--nt-navigation-rail-expanded-max-width, 360px) - 104px);
 
 .nt-navigation-rail-item {
     align-items: stretch;
