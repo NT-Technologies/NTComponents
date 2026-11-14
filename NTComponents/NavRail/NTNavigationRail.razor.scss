@@ -9,8 +9,9 @@
 
 $nt-navigation-rail-collapsed-width: 96px;
 $nt-navigation-rail-expanded-min-width: 220px;
-$nt-navigation-rail-expanded-max-width: 360px;
-$nt-navigation-rail-expanded-width: clamp($nt-navigation-rail-expanded-min-width, 20vw, $nt-navigation-rail-expanded-max-width);
+$nt-navigation-rail-expanded-max-width: var(--nt-navigation-rail-expanded-max-width, 360px);
+// The browser module measures the widest destination or header, clamped between 220px and the expanded maximum, and sets this property.
+$nt-navigation-rail-expanded-width: var(--nt-navigation-rail-expanded-width, #{$nt-navigation-rail-expanded-min-width});
 $nt-navigation-rail-item-gap: 4px;
 $nt-navigation-rail-menu-button-size: 48px;
 $nt-navigation-rail-menu-button-block-inset: calc((#{measurements.$nt-header-height} - #{$nt-navigation-rail-menu-button-size}) / 2);
@@ -155,6 +156,20 @@ $nt-navigation-rail-modal-width: min($nt-navigation-rail-expanded-width, 88vw);
 
     &.nt-navigation-rail-expanded {
         inline-size: $nt-navigation-rail-expanded-width;
+    }
+
+    // Hidden copy that the browser module measures to size the expanded rail. It must beat every state and modal rule, hence !important.
+    &.nt-navigation-rail-measuring {
+        animation: none !important;
+        inline-size: max-content !important;
+        inset-block-start: 0 !important;
+        inset-inline-start: 0 !important;
+        max-inline-size: $nt-navigation-rail-expanded-max-width !important;
+        min-inline-size: $nt-navigation-rail-expanded-min-width !important;
+        pointer-events: none !important;
+        position: fixed !important;
+        transition: none !important;
+        visibility: hidden !important;
     }
 
     &.nt-navigation-rail-expanding:not(.nt-navigation-rail-responsive-modal):not(.nt-navigation-rail-hide-when-collapsed) {

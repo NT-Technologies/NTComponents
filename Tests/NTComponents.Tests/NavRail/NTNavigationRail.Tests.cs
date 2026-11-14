@@ -349,6 +349,25 @@ public class NTNavigationRail_Tests : BunitContext {
         style.Should().Contain("--nt-navigation-rail-state-layer-color:var(--nt-color-tertiary)");
     }
 
+    [Theory]
+    [InlineData("24rem", "--nt-navigation-rail-expanded-max-width:24rem")]
+    [InlineData(null, null)]
+    [InlineData(" ", null)]
+    public void Rail_ExpandedMaxWidth_Renders_Override_Variable_Only_When_Set(string? expandedMaxWidth, string? expectedDeclaration) {
+        var cut = Render<NTNavigationRail>(parameters => parameters
+            .Add(x => x.AriaLabel, "Primary")
+            .Add(x => x.ExpandedMaxWidth, expandedMaxWidth));
+
+        var style = cut.Find("nav.nt-navigation-rail").GetAttribute("style") ?? string.Empty;
+
+        if (expectedDeclaration is null) {
+            style.Should().NotContain("--nt-navigation-rail-expanded-max-width");
+        }
+        else {
+            style.Should().Contain(expectedDeclaration);
+        }
+    }
+
     [Fact]
     public void Rail_Renders_Item_State() {
         var cut = Render<NTNavigationRail>(parameters => parameters

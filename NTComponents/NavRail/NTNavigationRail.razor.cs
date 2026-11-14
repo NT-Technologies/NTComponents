@@ -71,6 +71,16 @@ public partial class NTNavigationRail {
     [Parameter]
     public NTElevation? Elevation { get; set; }
 
+    /// <summary>
+    ///     Optional maximum width of the expanded rail as a CSS length, such as <c>480px</c> or <c>24rem</c>. Defaults to the Material 3 maximum of <c>360px</c>.
+    /// </summary>
+    /// <remarks>
+    ///     The expanded rail sizes itself to its widest destination, group, or header between <c>220px</c> and this maximum. Use a value of at least <c>220px</c>; smaller values still shrink labels and the modal rail. Consumers can
+    ///     also set the <c>--nt-navigation-rail-expanded-max-width</c> CSS custom property.
+    /// </remarks>
+    [Parameter]
+    public string? ExpandedMaxWidth { get; set; }
+
     /// <inheritdoc />
     public override string? ElementClass => _elementClass;
 
@@ -273,6 +283,7 @@ public partial class NTNavigationRail {
         .AddVariable("nt-navigation-rail-active-color", ActiveColor.ToCssNTColorVariable(), ActiveColor.HasValue)
         .AddVariable("nt-navigation-rail-scrim-color", ScrimColor.ToCssNTColorVariable(), ScrimColor.HasValue)
         .AddVariable("nt-navigation-rail-state-layer-color", StateLayerColor.ToCssNTColorVariable(), StateLayerColor.HasValue)
+        .AddVariable("nt-navigation-rail-expanded-max-width", ExpandedMaxWidth ?? string.Empty, !string.IsNullOrWhiteSpace(ExpandedMaxWidth))
         .Build();
 
     private string? TryGetStringAttribute(string attributeName) {
