@@ -94,6 +94,56 @@ describe('NTNavigationRail module', () => {
     expect(icon.textContent).toBe('menu');
   });
 
+  test('expanding sizes the rail to its measured content within the expanded bounds', () => {
+    document.body.innerHTML = `
+      <nav class="nt-navigation-rail nt-navigation-rail-collapsed" id="rail">
+        <button class="nt-navigation-rail-menu-button" type="button" aria-expanded="false">Menu</button>
+        <a class="nt-navigation-rail-item" id="home" href="/">Home</a>
+        <nt-page-script></nt-page-script>
+      </nav>`;
+    const probes = [];
+    const measure = jest.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function () {
+      const measuring = this.classList?.contains('nt-navigation-rail-measuring');
+      if (measuring) {
+        probes.push(this);
+      }
+
+      return { top: 0, left: 0, right: 0, bottom: 0, width: measuring ? 287.2 : 0, height: 0 };
+    });
+
+    module.onLoad();
+    const rail = document.querySelector('.nt-navigation-rail');
+    expect(rail.style.getPropertyValue('--nt-navigation-rail-expanded-width')).toBe('');
+
+    document.querySelector('.nt-navigation-rail-menu-button').click();
+    measure.mockRestore();
+
+    expect(rail.style.getPropertyValue('--nt-navigation-rail-expanded-width')).toBe('288px');
+    expect(probes).toHaveLength(1);
+    const [probe] = probes;
+    expect(probe).not.toBe(rail);
+    expect(probe.classList.contains('nt-navigation-rail-measuring')).toBe(true);
+    expect(probe.isConnected).toBe(false);
+    expect(probe.querySelector('.nt-navigation-rail-item').classList.contains('nt-navigation-rail-item-expanded')).toBe(true);
+    expect(probe.querySelector('[id], nt-page-script')).toBeNull();
+    expect(document.querySelectorAll('.nt-navigation-rail')).toHaveLength(1);
+  });
+
+  test('expanding an unrendered rail keeps the CSS minimum instead of a zero width', () => {
+    document.body.innerHTML = `
+      <nav class="nt-navigation-rail nt-navigation-rail-collapsed">
+        <button class="nt-navigation-rail-menu-button" type="button" aria-expanded="false">Menu</button>
+        <a class="nt-navigation-rail-item" href="/">Home</a>
+      </nav>`;
+
+    module.onLoad();
+    document.querySelector('.nt-navigation-rail-menu-button').click();
+
+    const rail = document.querySelector('.nt-navigation-rail');
+    expect(rail.classList.contains('nt-navigation-rail-expanded')).toBe(true);
+    expect(rail.style.getPropertyValue('--nt-navigation-rail-expanded-width')).toBe('');
+  });
+
   test('repeated module loads do not register duplicate menu button handlers', () => {
     document.body.innerHTML = `
       <nav class="nt-navigation-rail nt-navigation-rail-collapsed">
@@ -1232,13 +1282,20 @@ describe('NTNavigationRail module', () => {
     expect(document.querySelector('.nt-navigation-rail-modal-dialog')).toBeNull();
     expect(main.inert).not.toBe(true);
 
+    const measure = jest.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function () {
+      const width = this.classList?.contains('nt-navigation-rail-measuring') ? 264 : 0;
+      return { top: 0, left: 0, right: width, bottom: 0, width, height: 0 };
+    });
     menuButton.focus();
     menuButton.click();
+    measure.mockRestore();
 
     const dialog = document.querySelector('.nt-navigation-rail-modal-dialog');
     expect(dialog).not.toBeNull();
     expect(dialog.open).toBe(true);
     expect(dialog.contains(rail)).toBe(true);
+    expect(rail.style.getPropertyValue('--nt-navigation-rail-expanded-width')).toBe('264px');
+    expect(dialog.style.getPropertyValue('--nt-navigation-rail-expanded-width')).toBe('264px');
     expect(document.querySelector('.nt-navigation-rail-modal-placeholder')).not.toBeNull();
     expect(rail.classList.contains('nt-navigation-rail-expanded')).toBe(true);
     expect(main.inert).toBe(true);

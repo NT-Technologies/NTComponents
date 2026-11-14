@@ -387,6 +387,141 @@ public class NTNavigationRail_IntegrationTests : IAsyncLifetime {
             "a visible collapsed rail in the medium range should retain the full collapsed label geometry");
     }
 
+    [Fact]
+    public async Task Rail_Expanded_FitsEveryRowOnOneLine() {
+        await NavigateToRailTestPageAsync();
+
+        var width = await ExpandAndGetSettledRailWidthAsync();
+        var overflowingRows = await GetRail().EvaluateAsync<string[]>(
+            """
+            rail => {
+                const railRight = rail.getBoundingClientRect().right;
+                return [...rail.querySelectorAll('.nt-navigation-rail-item, .nt-navigation-rail-section-header')]
+                    .filter(row => {
+                        const label = row.querySelector('.nt-navigation-rail-item-label, .nt-navigation-rail-section-header-label');
+                        const lineHeight = Number.parseFloat(getComputedStyle(label).lineHeight);
+                        const content = row.querySelector('.nt-navigation-rail-item-content') ?? label;
+                        return label.getBoundingClientRect().height >= lineHeight * 1.5
+                            || label.scrollWidth > label.clientWidth
+                            || content.getBoundingClientRect().right > railRight;
+                    })
+                    .map(row => row.textContent.trim());
+            }
+            """);
+
+        width.Should().BeInRange(220, 360);
+        overflowingRows.Should().BeEmpty("the expanded rail is sized to its widest destination, group, or section header");
+    }
+
+    [Fact]
+    public async Task Rail_ExpandedWidth_DoesNotDependOnViewportWidth() {
+        ArgumentNullException.ThrowIfNull(_page);
+        await _page.SetViewportSizeAsync(1280, 800);
+        await NavigateToRailTestPageAsync();
+        var narrowViewportWidth = await ExpandAndGetSettledRailWidthAsync();
+
+        await _page.SetViewportSizeAsync(1800, 800);
+        await NavigateToRailTestPageAsync();
+        var wideViewportWidth = await ExpandAndGetSettledRailWidthAsync();
+
+        wideViewportWidth.Should().BeApproximately(narrowViewportWidth, 0.5, "the expanded width comes from the rail content, not the viewport");
+    }
+
+    [Fact]
+    public async Task Rail_ExpandedWithLongerLabel_GrowsToFitIt() {
+        await NavigateToRailTestPageAsync();
+        var baselineWidth = await ExpandAndGetSettledRailWidthAsync();
+
+        await NavigateToRailTestPageAsync(extraLabel: "Quarterly revenue forecasting");
+        var width = await ExpandAndGetSettledRailWidthAsync();
+        var labelFits = await GetRail().GetByTestId("nav-rail-extra-item").EvaluateAsync<bool>(
+            """
+            item => {
+                const label = item.querySelector('.nt-navigation-rail-item-label');
+                return label.getBoundingClientRect().height < Number.parseFloat(getComputedStyle(label).lineHeight) * 1.5
+                    && label.scrollWidth <= label.clientWidth
+                    && label.getBoundingClientRect().right <= item.closest('.nt-navigation-rail').getBoundingClientRect().right;
+            }
+            """);
+
+        width.Should().BeGreaterThan(baselineWidth).And.BeLessThan(360);
+        labelFits.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Rail_ExpandedWithVeryLongLabel_StopsAtMaximumWidth() {
+        await NavigateToRailTestPageAsync(extraLabel: "Consolidated quarterly revenue forecasting and variance reporting");
+
+        var width = await ExpandAndGetSettledRailWidthAsync();
+
+        width.Should().BeApproximately(360, 0.5, "Material 3 expanded rails never grow beyond 360dp");
+    }
+
+    [Fact]
+    public async Task Rail_ExpandedMaxWidthBelowMaterialMaximum_CapsLongLabel() {
+        await NavigateToRailTestPageAsync(extraLabel: "Consolidated quarterly revenue forecasting and variance reporting", maxWidth: "280px");
+
+        var width = await ExpandAndGetSettledRailWidthAsync();
+
+        width.Should().BeApproximately(280, 0.5);
+    }
+
+    [Fact]
+    public async Task Rail_ExpandedMaxWidthAboveMaterialMaximum_FitsLabelBeyond360() {
+        await NavigateToRailTestPageAsync(extraLabel: "Consolidated quarterly revenue forecasting", maxWidth: "30rem");
+
+        var width = await ExpandAndGetSettledRailWidthAsync();
+        var labelFits = await GetRail().GetByTestId("nav-rail-extra-item").EvaluateAsync<bool>(
+            """
+            item => {
+                const label = item.querySelector('.nt-navigation-rail-item-label');
+                return label.getBoundingClientRect().height < Number.parseFloat(getComputedStyle(label).lineHeight) * 1.5
+                    && label.scrollWidth <= label.clientWidth
+                    && label.getBoundingClientRect().right <= item.closest('.nt-navigation-rail').getBoundingClientRect().right;
+            }
+            """);
+
+        width.Should().BeGreaterThan(360).And.BeLessThanOrEqualTo(480);
+        labelFits.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Rail_Expand_AnimatesFromCollapsedToMeasuredWidth() {
+        await NavigateToRailTestPageAsync(extraLabel: "Quarterly revenue forecasting");
+
+        var widths = await GetRail().EvaluateAsync<double[]>(
+            """
+            async rail => {
+                const widths = [];
+                rail.querySelector('.nt-navigation-rail-menu-button').click();
+                const start = performance.now();
+                while (performance.now() - start < 800) {
+                    widths.push(rail.getBoundingClientRect().width);
+                    await new Promise(resolve => requestAnimationFrame(resolve));
+                }
+                return widths;
+            }
+            """);
+        var finalWidth = widths[^1];
+
+        finalWidth.Should().BeGreaterThan(220);
+        widths.Should().Contain(width => width > 100 && width < finalWidth - 4, "the width should transition rather than jump");
+        widths.Zip(widths.Skip(1)).Should().OnlyContain(pair => pair.Second >= pair.First - 0.5, "the rail should only grow while expanding");
+    }
+
+    [Fact]
+    public async Task Rail_ModalExpansionBelowMedium_UsesMeasuredWidth() {
+        ArgumentNullException.ThrowIfNull(_page);
+        await _page.SetViewportSizeAsync(800, 600);
+        await NavigateToRailTestPageAsync(extraLabel: "Quarterly revenue forecasting");
+
+        var railWidth = await ExpandAndGetSettledRailWidthAsync();
+        var dialogWidth = await GetRail().EvaluateAsync<double>("rail => rail.closest('dialog.nt-navigation-rail-modal-dialog')?.getBoundingClientRect().width ?? -1");
+
+        railWidth.Should().BeGreaterThan(220);
+        dialogWidth.Should().BeApproximately(railWidth, 0.5);
+    }
+
     [Theory]
     [InlineData(700, 900, true)]
     [InlineData(900, 700, false)]
@@ -517,10 +652,37 @@ public class NTNavigationRail_IntegrationTests : IAsyncLifetime {
         return _page.GetByRole(AriaRole.Link, new PageGetByRoleOptions { Name = "Reference" });
     }
 
-    private async Task NavigateToRailTestPageAsync(bool compact = false, bool fullWidth = false) {
+    private async Task<double> ExpandAndGetSettledRailWidthAsync() {
         ArgumentNullException.ThrowIfNull(_page);
 
-        await _page.GotoAsync($"{AppBaseUrl}/nav-rail-e2e-test{(compact ? "/true" : string.Empty)}{(fullWidth ? "?fullWidth=true" : string.Empty)}", new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
+        await GetExpandButton().ClickAsync();
+        await WaitForMenuStateAsync(expanded: true);
+        await _page.WaitForFunctionAsync(
+            """
+            () => {
+                const rail = document.querySelector('[data-testid="nav-rail-under-test"]');
+                return rail !== null
+                    && !rail.classList.contains('nt-navigation-rail-expanding')
+                    && rail.getAnimations().length === 0
+                    && !rail.parentElement?.classList.contains('nt-navigation-rail-modal-dialog-entering');
+            }
+            """,
+            null,
+            new PageWaitForFunctionOptions { Timeout = 5000 });
+
+        return await GetRail().EvaluateAsync<double>("rail => rail.getBoundingClientRect().width");
+    }
+
+    private async Task NavigateToRailTestPageAsync(bool compact = false, bool fullWidth = false, string? extraLabel = null, string? maxWidth = null) {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        string?[] parameters = [
+            fullWidth ? "fullWidth=true" : null,
+            extraLabel is null ? null : $"extraLabel={Uri.EscapeDataString(extraLabel)}",
+            maxWidth is null ? null : $"maxWidth={Uri.EscapeDataString(maxWidth)}"
+        ];
+        var query = string.Join('&', parameters.OfType<string>()) is { Length: > 0 } joined ? $"?{joined}" : string.Empty;
+        await _page.GotoAsync($"{AppBaseUrl}/nav-rail-e2e-test{(compact ? "/true" : string.Empty)}{query}", new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
         await _page.WaitForLoadStateAsync(LoadState.NetworkIdle);
         await GetRail().WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Visible, Timeout = 5000 });
         await GetExpandButton().WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Visible, Timeout = 5000 });
