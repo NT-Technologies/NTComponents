@@ -1,10 +1,11 @@
 <div class="docs-row">
-    <NTButton Label="@(_expanded ? "Close menu" : "Open menu")" Variant="NTButtonVariant.Outlined" OnClickCallback="@(() => _expanded = !_expanded)" />
+    <NTButton Label="Open menu" Variant="NTButtonVariant.Outlined" OnClickCallback="@(() => _menu!.OpenAsync())" />
 </div>
-<NTFabMenu Icon="MaterialIcon.Share"
+<NTFabMenu @ref="_menu"
+           Icon="MaterialIcon.Share"
            AriaLabel="Share this page"
            Placement="NTFabButtonPlacement.Inline"
-           @bind-Expanded="_expanded">
+           OnExpandedChanged="@(open => _expanded = open)">
     <NTFabMenuButtonItem Label="Email" Icon="MaterialIcon.Mail" />
     <NTFabMenuButtonItem Label="Message" Icon="MaterialIcon.Chat" />
     <NTFabMenuAnchorItem Label="Open in new tab"
@@ -16,4 +17,5 @@
 
 @code {
     private bool _expanded;
+    private NTFabMenu? _menu;
 }

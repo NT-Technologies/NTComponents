@@ -7,11 +7,14 @@ namespace NTComponents.Tests.Buttons;
 public class NTFabMenu_Tests : BunitContext {
     private static NTIcon SampleIcon => MaterialIcon.Add;
 
+    private readonly BunitJSModuleInterop _fabMenuModule;
+
     public NTFabMenu_Tests() {
-        var fabMenuModule = JSInterop.SetupModule("./_content/NTComponents/Buttons/NTFabMenu.razor.js");
-        fabMenuModule.SetupVoid("onLoad", _ => true).SetVoidResult();
-        fabMenuModule.SetupVoid("onUpdate", _ => true).SetVoidResult();
-        fabMenuModule.SetupVoid("onDispose", _ => true).SetVoidResult();
+        _fabMenuModule = JSInterop.SetupModule("./_content/NTComponents/Buttons/NTFabMenu.razor.js");
+        _fabMenuModule.SetupVoid("onLoad", _ => true).SetVoidResult();
+        _fabMenuModule.SetupVoid("onUpdate", _ => true).SetVoidResult();
+        _fabMenuModule.SetupVoid("onDispose", _ => true).SetVoidResult();
+        _fabMenuModule.SetupVoid("setOpen", _ => true).SetVoidResult();
     }
 
     [Fact]
@@ -257,12 +260,11 @@ public class NTFabMenu_Tests : BunitContext {
     }
 
     [Fact]
-    public void Expanded_Disabled_Menu_With_Custom_Id_Renders_Its_State_Contract() {
+    public void Disabled_Menu_With_Custom_Id_Renders_Its_State_Contract() {
         var cut = Render<NTFabMenu>(parameters => parameters
             .Add(x => x.ElementId, "create-menu")
             .Add(x => x.Icon, SampleIcon)
             .Add(x => x.AriaLabel, "  Create options  ")
-            .Add(x => x.Expanded, true)
             .Add(x => x.Disabled, true)
             .Add(x => x.CloseOnMenuContentClick, false)
             .AddChildContent<NTFabMenuButtonItem>(item => item.Add(x => x.Label, "Draft"))
@@ -271,9 +273,7 @@ public class NTFabMenu_Tests : BunitContext {
         var button = cut.Find(".nt-fab-menu-button");
         var panel = cut.Find(".nt-fab-menu-panel");
 
-        cut.Find("nt-fab-menu").ClassList.Should().Contain("nt-fab-menu-expanded");
         button.GetAttribute("aria-label").Should().Be("Create options");
-        button.GetAttribute("aria-expanded").Should().Be("true");
         button.HasAttribute("popovertarget").Should().BeFalse();
         panel.Id.Should().Be("create-menu-menu");
         panel.GetAttribute("data-close-on-item-click").Should().Be("false");
@@ -360,20 +360,81 @@ public class NTFabMenu_Tests : BunitContext {
     }
 
     [Fact]
-    public async Task NotifyFabMenuExpandedChanged_Only_Notifies_When_State_Changes() {
+    public async Task NotifyFabMenuExpandedChanged_Reports_Each_Browser_Change() {
         var changes = new List<bool>();
         var cut = Render<NTFabMenu>(parameters => parameters
             .Add(x => x.Icon, SampleIcon)
             .Add(x => x.AriaLabel, "Create options")
-            .Add(x => x.ExpandedChanged, EventCallback.Factory.Create<bool>(this, changes.Add))
+            .Add(x => x.OnExpandedChanged, EventCallback.Factory.Create<bool>(this, changes.Add))
             .AddChildContent<NTFabMenuButtonItem>(item => item.Add(x => x.Label, "Draft"))
             .AddChildContent<NTFabMenuButtonItem>(item => item.Add(x => x.Label, "Import")));
 
-        await cut.InvokeAsync(() => cut.Instance.NotifyFabMenuExpandedChanged(false));
         await cut.InvokeAsync(() => cut.Instance.NotifyFabMenuExpandedChanged(true));
+        await cut.InvokeAsync(() => cut.Instance.NotifyFabMenuExpandedChanged(false));
 
-        changes.Should().Equal(true);
-        cut.Instance.Expanded.Should().BeTrue();
+        changes.Should().Equal(true, false);
+    }
+
+    [Fact]
+    public async Task OpenAsync_And_CloseAsync_Send_Open_State_To_The_Browser() {
+        var cut = Render<ValidFabMenu>();
+        var menu = cut.FindComponent<NTFabMenu>().Instance;
+
+        await cut.InvokeAsync(menu.OpenAsync);
+        await cut.InvokeAsync(menu.CloseAsync);
+
+        _fabMenuModule.Invocations["setOpen"].Select(x => x.Arguments[1]).Should().Equal(true, false);
+    }
+
+    [Fact]
+    public async Task Disabled_OpenAsync_Does_Not_Open() {
+        var cut = Render<NTFabMenu>(parameters => parameters
+            .Add(x => x.Icon, SampleIcon)
+            .Add(x => x.AriaLabel, "Create options")
+            .Add(x => x.Disabled, true)
+            .AddChildContent<NTFabMenuButtonItem>(item => item.Add(x => x.Label, "Draft"))
+            .AddChildContent<NTFabMenuButtonItem>(item => item.Add(x => x.Label, "Import")));
+
+        await cut.InvokeAsync(cut.Instance.OpenAsync);
+
+        _fabMenuModule.Invocations["setOpen"].Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Open_Menu_Rerendered_By_Parent_Never_Renders_Open_State() {
+        var cut = Render<BusyFabMenu>();
+        await cut.InvokeAsync(() => cut.FindComponent<NTFabMenu>().Instance.NotifyFabMenuExpandedChanged(true));
+
+        cut.Find(".nt-fab-menu-item").Click();
+
+        cut.Find("nt-fab-menu").ClassList.Should().Contain("nt-disabled").And.NotContain("nt-fab-menu-expanded");
+        cut.Find(".nt-fab-menu-button").GetAttribute("aria-expanded").Should().Be("false");
+        cut.Instance.Changes.Should().Equal(true);
+    }
+
+    private sealed class BusyFabMenu : ComponentBase {
+        private bool _busy;
+
+        public List<bool> Changes { get; } = [];
+
+        protected override void BuildRenderTree(RenderTreeBuilder builder) {
+            builder.OpenComponent<NTFabMenu>(0);
+            builder.AddAttribute(1, nameof(NTFabMenu.Icon), (object)(NTIcon)MaterialIcon.Add);
+            builder.AddAttribute(2, nameof(NTFabMenu.AriaLabel), "Create options");
+            builder.AddAttribute(3, nameof(NTFabMenu.Disabled), _busy);
+            builder.AddAttribute(4, nameof(NTFabMenu.OnExpandedChanged), EventCallback.Factory.Create<bool>(this, Changes.Add));
+            builder.AddAttribute(5, nameof(NTFabMenu.ChildContent), (RenderFragment)(childBuilder => {
+                childBuilder.OpenComponent<NTFabMenuButtonItem>(0);
+                childBuilder.AddAttribute(1, nameof(NTFabMenuButtonItem.Label), "Save");
+                childBuilder.AddAttribute(2, nameof(NTFabMenuButtonItem.OnClickCallback), EventCallback.Factory.Create<MouseEventArgs>(this, () => _busy = true));
+                childBuilder.CloseComponent();
+
+                childBuilder.OpenComponent<NTFabMenuButtonItem>(10);
+                childBuilder.AddAttribute(11, nameof(NTFabMenuButtonItem.Label), "Archive");
+                childBuilder.CloseComponent();
+            }));
+            builder.CloseComponent();
+        }
     }
 
     private sealed class RefreshableFabMenu : ComponentBase {

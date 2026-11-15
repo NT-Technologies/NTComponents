@@ -16,14 +16,14 @@ namespace NTComponents;
 ///         FAB menus should be used for a small set of closely related, prominent actions. They open from a FAB and should not be used with extended FABs or unrelated overflow actions.
 ///     </para>
 ///     <para>
-///         The trigger uses native popover attributes so it can open and close in static SSR. The isolated script enhances focus, ripple registration, item-click closing, and Blazor state sync when an
-///         interactive runtime is available.
+///         The trigger uses native popover attributes so it can open and close in static SSR. The browser owns the open state. The isolated script enhances focus, ripple registration, item-click
+///         closing, and reports open-state changes through <see cref="OnExpandedChanged" /> when an interactive runtime is available.
 ///     </para>
 /// </remarks>
 [NTDocumentation(
     RenderCompatibility = NTComponentRenderCompatibility.ProgressivelyEnhanced,
     CompatibilitySummary = "Renders a native popover-backed FAB menu and enhances state sync with JavaScript.",
-    CompatibilityDetails = "Static SSR emits the FAB trigger and popover panel. The browser module adds focus handling, item-click closing, ripple registration, and Blazor expanded-state synchronization.")]
+    CompatibilityDetails = "Static SSR emits the FAB trigger and popover panel. The browser module adds focus handling, item-click closing, ripple registration, and open-state change notifications to Blazor.")]
 public partial class NTFabMenu {
 
     /// <summary>
@@ -70,7 +70,6 @@ public partial class NTFabMenu {
     /// <inheritdoc />
     public override string? ElementClass => CssClassBuilder.Create("nt-fab-menu")
         .AddFromAdditionalAttributes(AdditionalAttributes)
-        .AddClass("nt-fab-menu-expanded", Expanded)
         .AddClass(Placement switch {
             NTFabButtonPlacement.Inline => "nt-fab-menu-placement-inline",
             NTFabButtonPlacement.LowerRight => "nt-fab-menu-placement-lower-right",
@@ -82,6 +81,15 @@ public partial class NTFabMenu {
         .AddSize(EffectiveButtonSize)
         .AddDisabled(Disabled)
         .Build();
+
+    /// <summary>
+    ///     Gets or sets the callback invoked after the menu opens (<see langword="true" />) or closes (<see langword="false" />).
+    /// </summary>
+    /// <remarks>
+    ///     The open state lives in the browser popover. This reports every change, whether it comes from the user or from <see cref="OpenAsync" /> and <see cref="CloseAsync" />.
+    /// </remarks>
+    [Parameter]
+    public EventCallback<bool> OnExpandedChanged { get; set; }
 
     /// <summary>
     ///     Gets or sets the optional native name attribute for the FAB toggle button.
@@ -105,18 +113,6 @@ public partial class NTFabMenu {
     /// </summary>
     [Parameter]
     public NTElevation Elevation { get; set; } = NTElevation.Medium;
-
-    /// <summary>
-    ///     Gets or sets whether the menu is expanded.
-    /// </summary>
-    [Parameter]
-    public bool Expanded { get; set; }
-
-    /// <summary>
-    ///     Gets or sets the callback invoked when <see cref="Expanded" /> changes.
-    /// </summary>
-    [Parameter]
-    public EventCallback<bool> ExpandedChanged { get; set; }
 
     /// <summary>
     ///     Gets or sets whether ripple effects should render.
@@ -208,7 +204,6 @@ public partial class NTFabMenu {
 
     private string CloseOnMenuContentClickAttribute => CloseOnMenuContentClick ? "true" : "false";
     private string EffectiveAriaLabel => AriaLabel?.Trim() ?? string.Empty;
-    private string ExpandedAttribute => Expanded ? "true" : "false";
     private string MenuAnchorName => $"--{StableElementId}-anchor";
     private string MenuButtonId => $"{StableElementId}-button";
     internal string MenuId => $"{StableElementId}-menu";
@@ -288,16 +283,32 @@ public partial class NTFabMenu {
     public Task RefreshAsync() => InvokeAsync(StateHasChanged);
 
     /// <summary>
+    ///     Opens the menu. Does nothing while the menu is disabled or before it is interactive.
+    /// </summary>
+    public Task OpenAsync() => Disabled ? Task.CompletedTask : SetOpenAsync(true);
+
+    /// <summary>
+    ///     Closes the menu. Does nothing before the menu is interactive.
+    /// </summary>
+    public Task CloseAsync() => SetOpenAsync(false);
+
+    /// <summary>
     ///     Receives native popover state changes from the browser.
     /// </summary>
     [JSInvokable]
     public async Task NotifyFabMenuExpandedChanged(bool expanded) {
-        if (Expanded == expanded) {
-            return;
-        }
+        await OnExpandedChanged.InvokeAsync(expanded);
+    }
 
-        Expanded = expanded;
-        await ExpandedChanged.InvokeAsync(expanded);
+    private async Task SetOpenAsync(bool open) {
+        if (TryGetInteropReferences(out var module, out _)) {
+            try {
+                await module.InvokeVoidAsync("setOpen", Element, open);
+            }
+            catch (JSDisconnectedException) {
+                // JS runtime was disconnected, safe to ignore.
+            }
+        }
     }
 
     /// <summary>

@@ -1,0 +1,37 @@
+@page "/fab-menu-state"
+@rendermode InteractiveWebAssembly
+@using NTComponents
+
+<h1>FAB menu state checks</h1>
+
+<NTButton Label="Re-render parent" OnClickCallback="@(() => _outsideClicks++)" />
+<NTButton Label="Open from code" OnClickCallback="@(() => _menu!.OpenAsync())" />
+<p>Outside clicks: <output data-testid="outside-clicks">@_outsideClicks</output></p>
+<p>Saved: <output data-testid="saved-count">@_saved</output></p>
+<p>Menu is <output data-testid="menu-state">@(_expanded ? "open" : "closed")</output></p>
+
+<div style="margin-top: 320px;">
+    <NTFabMenu @ref="_menu" Icon="MaterialIcon.Menu" AriaLabel="Actions" Placement="NTFabButtonPlacement.Inline" Disabled="@_busy" OnExpandedChanged="@(open => _expanded = open)">
+        <NTFabMenuButtonItem Label="Save" Icon="MaterialIcon.Edit" OnClickCallback="SaveAsync" />
+        <NTFabMenuButtonItem Label="Archive" Icon="MaterialIcon.Upload" />
+    </NTFabMenu>
+</div>
+
+@if (RendererInfo.IsInteractive) {
+    <output data-testid="interactive-renderer">@RendererInfo.Name</output>
+}
+
+@code {
+    private bool _busy;
+    private bool _expanded;
+    private NTFabMenu? _menu;
+    private int _outsideClicks;
+    private int _saved;
+
+    private async Task SaveAsync() {
+        _busy = true;
+        await Task.Delay(500);
+        _busy = false;
+        _saved++;
+    }
+}
