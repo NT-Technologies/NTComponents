@@ -21,6 +21,7 @@
 	<ItemGroup>
 	  <Content Remove="compilerconfig.json" />
 	  <Content Remove="wwwroot\**\*.ts" />
+	  <Content Remove="wwwroot\**\*.scss" />
 	  <None Update="**\*.ts" Pack="false" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
 	</ItemGroup>
 
