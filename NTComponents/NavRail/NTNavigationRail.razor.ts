@@ -69,6 +69,8 @@ const responsiveModalClass = 'nt-navigation-rail-responsive-modal';
 const selectedItemClass = 'nt-navigation-rail-item-selected';
 const deselectingItemClass = 'nt-navigation-rail-item-deselecting';
 const indicatorExitAnimationName = 'nt-navigation-rail-indicator-exit';
+const expandedWidthProperty = '--nt-navigation-rail-expanded-width';
+const measuringClass = 'nt-navigation-rail-measuring';
 const expandedStateByRailId = new Map<string, boolean>();
 
 declare global {
@@ -597,6 +599,7 @@ function watchSmallScreen(rail: NavigationRailElement, state: NavigationRailStat
     state.smallScreenMediaQuery = query;
     state.onSmallScreenChange = () => {
         applyExpandedState(rail, getExpanded(rail));
+        syncExpandedWidth(rail);
         syncModalState(rail, getExpanded(rail));
     };
 
@@ -630,6 +633,7 @@ function syncModalDialogStyle(rail: NavigationRailElement, dialog: HTMLDialogEle
     dialog.classList.toggle('nt-navigation-rail-modal-dialog-hide-on-xs', rail.classList.contains('nt-navigation-rail-hide-on-xs'));
     dialog.classList.toggle('nt-navigation-rail-modal-dialog-hide-when-collapsed', alwaysHiddenCollapsedModal);
     dialog.classList.toggle('nt-navigation-rail-modal-dialog-nested', usesNestedBounds);
+    dialog.style.setProperty(expandedWidthProperty, rail.style.getPropertyValue(expandedWidthProperty));
 
     if (scrimColor) {
         dialog.style.setProperty('--nt-navigation-rail-scrim-color', scrimColor);
@@ -996,6 +1000,35 @@ function applyExpandedState(rail: NavigationRailElement, expanded: boolean): voi
     syncGroupSelection(rail);
 }
 
+// Material 3 sizes the expanded rail to its widest destination or header, within the expanded bounds. A hidden copy is measured at
+// max-content so the real rail keeps its current width and can still transition to the measured value. The measuring class in the
+// stylesheet applies the bounds, so the maximum accepts any CSS length. Closed inline groups are collapsed by height only, so their
+// destinations count and opening a group does not resize the rail.
+function syncExpandedWidth(rail: NavigationRailElement): void {
+    if (!rail.isConnected || !getExpanded(rail)) {
+        return;
+    }
+
+    const probe = rail.cloneNode(true) as HTMLElement;
+
+    probe.querySelectorAll('nt-page-script').forEach(element => element.remove());
+    probe.querySelectorAll('[id]').forEach(element => element.removeAttribute('id'));
+    probe.removeAttribute('id');
+    probe.setAttribute('aria-hidden', 'true');
+    probe.inert = true;
+    probe.classList.add(measuringClass);
+    rail.after(probe);
+
+    const width = Math.ceil(probe.getBoundingClientRect().width);
+    probe.remove();
+
+    // A rail under an unrendered ancestor measures 0. Keep the previous width, or the CSS minimum, so it is not 0px wide once shown.
+    if (width > 0) {
+        rail.style.setProperty(expandedWidthProperty, `${width}px`);
+        rail.__ntNavigationRailState?.modalDialog?.style.setProperty(expandedWidthProperty, `${width}px`);
+    }
+}
+
 function animateExpandedState(rail: NavigationRailElement, expanded: boolean): void {
     const state = rail.__ntNavigationRailState;
 
@@ -1026,6 +1059,8 @@ function setExpanded(rail: NavigationRailElement, expanded: boolean, animate = f
 
         applyExpandedState(rail, expanded);
     }
+
+    syncExpandedWidth(rail);
 
     buttons.forEach(button => {
         const expandedLabel = button.dataset.ntNavigationRailExpandedLabel;
@@ -1673,6 +1708,13 @@ function updateRail(rail: NavigationRailElement): void {
         ? defaultExpanded
         : getExpanded(rail);
     setExpanded(rail, getStoredExpanded(rail) ?? initialExpanded);
+
+    // Label widths change once web fonts load, so remeasure without rerunning the update, which would cancel a running transition.
+    document.fonts?.ready.then(() => {
+        if (rail.__ntNavigationRailState === state) {
+            syncExpandedWidth(rail);
+        }
+    });
 }
 
 function disposeRail(rail: Maybe<NavigationRailElement>): void {

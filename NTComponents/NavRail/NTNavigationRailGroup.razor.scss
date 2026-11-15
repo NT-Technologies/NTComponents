@@ -17,7 +17,8 @@ $nt-navigation-rail-collapsed-indicator-margin-inline: 20px;
 $nt-navigation-rail-icon-label-gap: 4px;
 $nt-navigation-rail-horizontal-icon-label-gap: 8px;
 $nt-navigation-rail-collapsed-label-max-width: 72px;
-$nt-navigation-rail-expanded-label-max-width: 224px;
+// Leaves room for the trigger padding, icon, chevron, and gaps inside the expanded rail maximum.
+$nt-navigation-rail-expanded-label-max-width: calc(var(--nt-navigation-rail-expanded-max-width, 360px) - 136px);
 $nt-navigation-rail-group-chevron-edge-offset: -6px;
 $nt-navigation-rail-group-panel-min-width: 192px;
 $nt-navigation-rail-group-panel-max-width: 320px;
