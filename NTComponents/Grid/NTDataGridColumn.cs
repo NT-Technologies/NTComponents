@@ -5,81 +5,48 @@ using System.Linq.Expressions;
 using NTComponents.CodeDocumentation;
 namespace NTComponents;
 
-/// <summary>
-///     Base type for columns rendered by <see cref="NTDataGrid{TItem}" />.
-/// </summary>
+/// <summary>    Base type for columns rendered by <see cref="NTDataGrid{TItem}" />.</summary>
 [NTDocumentation(
     RenderCompatibility = NTComponentRenderCompatibility.ProgressivelyEnhanced,
     CompatibilitySummary = "Participates in parent component rendering and inherits the parent interaction model.",
     CompatibilityDetails = "Column definitions participate in parent grid rendering without their own browser APIs. User-driven sort, row, paging, or virtualization behavior depends on the parent grid render mode.")]
 public abstract class NTDataGridColumn<TItem> : ComponentBase, IDisposable where TItem : class {
-    private RenderFragment<TItem>? _previousCellTemplate;
-    private string? _previousHeaderTitle;
-    private string? _previousMaxWidth;
-    private string? _previousMinWidth;
-    private string? _previousStateSignature;
-    private string? _previousSortPropertyName;
-    private string? _previousSortStateSignature;
-    private string? _previousTitle;
-    private string? _previousWidth;
-    private SortDirection? _previousInitialSortDirection;
-    private NTTextAlign? _previousHeaderTextAlign;
-    private NTTextAlign? _previousTextAlign;
-    private NTBreakpoint? _previousHideBelow;
-    private bool _hasParameterState;
-    private bool _previousSortable;
+    private object? _previousSortState;
+    private object? _previousDisplayState;
     private bool _registered;
 
-    /// <summary>
-    ///     Gets or sets the header title.
-    /// </summary>
+    /// <summary>    Gets or sets the header title.</summary>
     [Parameter]
     public string? Title { get; set; }
 
-    /// <summary>
-    ///     Gets or sets whether the column can be sorted.
-    /// </summary>
+    /// <summary>    Gets or sets whether the column can be sorted.</summary>
     public virtual bool Sortable { get; set; }
 
-    /// <summary>
-    ///     Gets or sets the initial sort direction.
-    /// </summary>
+    /// <summary>    Gets or sets the initial sort direction.</summary>
     [Parameter]
     public SortDirection? InitialSortDirection { get; set; }
 
-    /// <summary>
-    ///     Gets or sets the body cell text alignment.
-    /// </summary>
+    /// <summary>    Gets or sets the body cell text alignment.</summary>
     [Parameter]
     public NTTextAlign? TextAlign { get; set; }
 
-    /// <summary>
-    ///     Gets or sets the header cell text alignment.
-    /// </summary>
+    /// <summary>    Gets or sets the header cell text alignment.</summary>
     [Parameter]
     public NTTextAlign? HeaderTextAlign { get; set; }
 
-    /// <summary>
-    ///     Gets or sets the preferred column width.
-    /// </summary>
+    /// <summary>    Gets or sets the preferred column width.</summary>
     [Parameter]
     public string? Width { get; set; }
 
-    /// <summary>
-    ///     Gets or sets the minimum column width.
-    /// </summary>
+    /// <summary>    Gets or sets the minimum column width.</summary>
     [Parameter]
     public string? MinWidth { get; set; }
 
-    /// <summary>
-    ///     Gets or sets the maximum column width.
-    /// </summary>
+    /// <summary>    Gets or sets the maximum column width.</summary>
     [Parameter]
     public string? MaxWidth { get; set; }
 
-    /// <summary>
-    ///     Gets or sets the viewport breakpoint below which the column is hidden.
-    /// </summary>
+    /// <summary>    Gets or sets the viewport breakpoint below which the column is hidden.</summary>
     /// <remarks>
     ///     Use it on low-priority columns so narrow screens show the columns that matter instead of scrolling sideways.
     ///     The column's header and cells are removed from the layout and the accessibility tree, so show values users still
@@ -88,9 +55,7 @@ public abstract class NTDataGridColumn<TItem> : ComponentBase, IDisposable where
     [Parameter]
     public NTBreakpoint? HideBelow { get; set; }
 
-    /// <summary>
-    ///     Gets or sets a custom cell template.
-    /// </summary>
+    /// <summary>    Gets or sets a custom cell template.</summary>
     [Parameter]
     public RenderFragment<TItem>? CellTemplate { get; set; }
 
@@ -141,52 +106,20 @@ public abstract class NTDataGridColumn<TItem> : ComponentBase, IDisposable where
 
     /// <inheritdoc />
     protected override void OnParametersSet() {
-        var headerTitle = HeaderTitle;
-        var sortPropertyName = SortPropertyName;
-        var stateSignature = GetStateSignature();
-        var sortStateSignature = GetSortStateSignature();
-        var sortStateChanged = !_hasParameterState
-            || _previousSortable != Sortable
-            || _previousInitialSortDirection != InitialSortDirection
-            || !string.Equals(_previousSortPropertyName, sortPropertyName, StringComparison.Ordinal)
-            || !string.Equals(_previousSortStateSignature, sortStateSignature, StringComparison.Ordinal)
-            || HasAdditionalSortStateChanged();
-        var stateChanged = sortStateChanged
-            || !string.Equals(_previousTitle, Title, StringComparison.Ordinal)
-            || _previousTextAlign != TextAlign
-            || _previousHeaderTextAlign != HeaderTextAlign
-            || !string.Equals(_previousWidth, Width, StringComparison.Ordinal)
-            || !string.Equals(_previousMinWidth, MinWidth, StringComparison.Ordinal)
-            || !string.Equals(_previousMaxWidth, MaxWidth, StringComparison.Ordinal)
-            || _previousHideBelow != HideBelow
-            || !Equals(_previousCellTemplate, CellTemplate)
-            || !string.Equals(_previousHeaderTitle, headerTitle, StringComparison.Ordinal)
-            || !string.Equals(_previousStateSignature, stateSignature, StringComparison.Ordinal)
-            || HasAdditionalStateChanged();
+        // Value tuples compare their elements with Equals, so strings compare by value and delegates by target.
+        var sortState = (Sortable, InitialSortDirection, SortPropertyName, GetSortStateSignature(), AdditionalSortState);
+        var displayState = (Title, TextAlign, HeaderTextAlign, Width, MinWidth, MaxWidth, HideBelow, CellTemplate, HeaderTitle, GetStateSignature(), AdditionalState);
+        var sortStateChanged = !sortState.Equals(_previousSortState);
+        var stateChanged = sortStateChanged || !displayState.Equals(_previousDisplayState);
         if (stateChanged) {
             UpdateCellClasses();
+            if (_registered) {
+                Owner?.NotifyColumnChanged(this, sortStateChanged);
+            }
         }
 
-        if (_registered && stateChanged) {
-            Owner?.NotifyColumnChanged(this, sortStateChanged);
-        }
-
-        _hasParameterState = true;
-        _previousTitle = Title;
-        _previousSortable = Sortable;
-        _previousInitialSortDirection = InitialSortDirection;
-        _previousTextAlign = TextAlign;
-        _previousHeaderTextAlign = HeaderTextAlign;
-        _previousWidth = Width;
-        _previousMinWidth = MinWidth;
-        _previousMaxWidth = MaxWidth;
-        _previousHideBelow = HideBelow;
-        _previousCellTemplate = CellTemplate;
-        _previousHeaderTitle = headerTitle;
-        _previousSortPropertyName = sortPropertyName;
-        _previousStateSignature = stateSignature;
-        _previousSortStateSignature = sortStateSignature;
-        CaptureAdditionalState();
+        _previousSortState = sortState;
+        _previousDisplayState = displayState;
     }
 
     /// <inheritdoc />
@@ -196,32 +129,16 @@ public abstract class NTDataGridColumn<TItem> : ComponentBase, IDisposable where
         }
     }
 
-    /// <summary>
-    /// Determines whether derived column state affecting rendered data has changed.
-    /// </summary>
-    /// <returns><see langword="true" /> when derived state has changed; otherwise, <see langword="false" />.</returns>
-    private protected virtual bool HasAdditionalStateChanged() => false;
+    // Derived state compared by value across parameter updates: data-affecting, and sort-affecting.
+    private protected virtual object? AdditionalState => null;
 
-    /// <summary>
-    /// Determines whether derived column state affecting sorting has changed.
-    /// </summary>
-    /// <returns><see langword="true" /> when derived sort state has changed; otherwise, <see langword="false" />.</returns>
-    private protected virtual bool HasAdditionalSortStateChanged() => false;
+    private protected virtual object? AdditionalSortState => null;
 
-    /// <summary>
-    /// Captures derived column state after parameter changes have been processed.
-    /// </summary>
-    private protected virtual void CaptureAdditionalState() { }
-
-    /// <summary>
-    /// Gets derived column state that should notify the owning grid when it changes.
-    /// </summary>
+    /// <summary>Gets derived column state that should notify the owning grid when it changes.</summary>
     /// <returns>A stable signature for derived data-affecting state.</returns>
     protected virtual string GetStateSignature() => string.Empty;
 
-    /// <summary>
-    /// Gets derived column state that should reset the owning grid sort state when it changes.
-    /// </summary>
+    /// <summary>Gets derived column state that should reset the owning grid sort state when it changes.</summary>
     /// <returns>A stable signature for derived sort-affecting state.</returns>
     protected virtual string GetSortStateSignature() => string.Empty;
 
@@ -249,15 +166,9 @@ public abstract class NTDataGridColumn<TItem> : ComponentBase, IDisposable where
 
     private static string AddTextAlignment(string className, NTTextAlign? textAlign) => textAlign is null ? className : $"{className} nt-data-grid-align-{textAlign.Value.ToString().ToLowerInvariant()}";
 
-    internal static string GetMemberName<TValue>(Expression<Func<TItem, TValue>>? expression) {
-        if (expression?.Body is MemberExpression memberExpression) {
-            return memberExpression.Member.Name;
-        }
-
-        if (expression?.Body is UnaryExpression { Operand: MemberExpression unaryMemberExpression }) {
-            return unaryMemberExpression.Member.Name;
-        }
-
-        return string.Empty;
-    }
+    internal static string GetMemberName<TValue>(Expression<Func<TItem, TValue>>? expression) => expression?.Body switch {
+        MemberExpression member => member.Member.Name,
+        UnaryExpression { Operand: MemberExpression operand } => operand.Member.Name,
+        _ => string.Empty
+    };
 }

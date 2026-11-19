@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Primitives;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
@@ -40,7 +39,7 @@ public sealed record NTItemsProviderRequest : IValidatableObject {
     /// </summary>
     [IgnoreDataMember]
     [JsonIgnore]
-    public IReadOnlyList<KeyValuePair<string, SortDirection>> SortOnProperties => ParseSorts(Sorts);
+    public IReadOnlyList<KeyValuePair<string, SortDirection>> SortOnProperties => [.. Sorts?.Where(sort => !string.IsNullOrWhiteSpace(sort)).SelectMany(sort => ParseSort(sort.Replace("[", string.Empty, StringComparison.Ordinal).Replace("]", string.Empty, StringComparison.Ordinal))) ?? []];
 
     IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext) {
         if (!_startIndex.HasValue) {
@@ -53,99 +52,28 @@ public sealed record NTItemsProviderRequest : IValidatableObject {
     /// </summary>
     public static ValueTask<NTItemsProviderRequest?> BindAsync(HttpContext context) {
         var query = context.Request.Query;
-        if (!query.TryGetValue(nameof(StartIndex), out var startIndexes) || string.IsNullOrWhiteSpace(startIndexes.FirstOrDefault()) || !int.TryParse(startIndexes.FirstOrDefault(), out var startIndex)) {
+        if (!int.TryParse(query[nameof(StartIndex)].FirstOrDefault(), out var startIndex)) {
             return ValueTask.FromResult((NTItemsProviderRequest?)null);
         }
 
-        int? count = null;
-        var countValues = query[nameof(Count)];
-        if (!string.IsNullOrWhiteSpace(countValues.FirstOrDefault()) && int.TryParse(countValues.FirstOrDefault(), out var countResult)) {
-            count = countResult;
-        }
-
         var sorts = GetQueryValues(query, nameof(Sorts));
-        if (sorts.Length == 0) {
-            sorts = GetQueryValues(query, nameof(SortOnProperties));
-        }
-
         return ValueTask.FromResult<NTItemsProviderRequest?>(new NTItemsProviderRequest {
             StartIndex = startIndex,
-            Count = count,
-            Sorts = sorts
+            Count = int.TryParse(query[nameof(Count)].FirstOrDefault(), out var count) ? count : null,
+            Sorts = sorts.Length == 0 ? GetQueryValues(query, nameof(SortOnProperties)) : sorts
         });
     }
 
-    internal static string[] FormatSorts(IEnumerable<KeyValuePair<string, SortDirection>>? sortOnProperties) {
-        if (sortOnProperties is null) {
-            return [];
-        }
+    internal static string[] FormatSorts(IEnumerable<KeyValuePair<string, SortDirection>>? sortOnProperties) =>
+        [.. sortOnProperties?.Where(sort => !string.IsNullOrWhiteSpace(sort.Key)).Select(sort => $"{sort.Key},{sort.Value}") ?? []];
 
-        var sorts = new List<string>();
-        foreach (var sort in sortOnProperties) {
-            if (!string.IsNullOrWhiteSpace(sort.Key)) {
-                sorts.Add($"{sort.Key},{sort.Value}");
-            }
-        }
-
-        return [.. sorts];
-    }
-
-    private static IReadOnlyList<KeyValuePair<string, SortDirection>> ParseSorts(string[]? sorts) {
-        if (sorts is not { Length: > 0 }) {
-            return [];
-        }
-
-        var sortOnProperties = new List<KeyValuePair<string, SortDirection>>();
-        foreach (var sort in sorts) {
-            if (string.IsNullOrWhiteSpace(sort)) {
-                continue;
-            }
-
-            AddSorts(sortOnProperties, sort.Replace("[", string.Empty, StringComparison.Ordinal).Replace("]", string.Empty, StringComparison.Ordinal));
-        }
-
-        return sortOnProperties;
-    }
-
-    private static void AddSorts(List<KeyValuePair<string, SortDirection>> sortOnProperties, string sort) {
+    private static IEnumerable<KeyValuePair<string, SortDirection>> ParseSort(string sort) {
         var sortParts = sort.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         for (var i = 0; i < sortParts.Length; i += 2) {
-            var direction = i + 1 < sortParts.Length && Enum.TryParse<SortDirection>(sortParts[i + 1], true, out var parsedDirection)
-                ? parsedDirection
-                : SortDirection.Ascending;
-            sortOnProperties.Add(new KeyValuePair<string, SortDirection>(sortParts[i], direction));
+            yield return new(sortParts[i], i + 1 < sortParts.Length && Enum.TryParse<SortDirection>(sortParts[i + 1], true, out var direction) ? direction : SortDirection.Ascending);
         }
     }
 
-    private static string[] GetQueryValues(IQueryCollection query, string key) {
-        if (!query.TryGetValue(key, out var values) || values.Count == 0) {
-            return [];
-        }
-
-        var count = CountNonEmptyValues(values);
-        if (count == 0) {
-            return [];
-        }
-
-        var queryValues = new string[count];
-        var index = 0;
-        foreach (var value in values) {
-            if (!string.IsNullOrWhiteSpace(value)) {
-                queryValues[index++] = value;
-            }
-        }
-
-        return queryValues;
-    }
-
-    private static int CountNonEmptyValues(StringValues values) {
-        var count = 0;
-        foreach (var value in values) {
-            if (!string.IsNullOrWhiteSpace(value)) {
-                count++;
-            }
-        }
-
-        return count;
-    }
+    private static string[] GetQueryValues(IQueryCollection query, string key) =>
+        query.TryGetValue(key, out var values) ? [.. values.OfType<string>().Where(value => !string.IsNullOrWhiteSpace(value))] : [];
 }

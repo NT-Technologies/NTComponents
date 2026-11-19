@@ -4,55 +4,33 @@
 @use '../Styles/_Variables/_screen-width.scss' as screen-width;
 @use '../Styles/_Variables/_typescale.scss' as typescale;
 
-$nt-data-grid-row-size: 36px;
-$nt-data-grid-compact-row-size: 28px;
-$nt-data-grid-pagination-min-block-size: 48px;
-$nt-data-grid-page-size-select-min-block-size: 32px;
-$nt-data-grid-page-button-size: 24px;
-$nt-data-grid-touch-target-size: 48px;
-$nt-data-grid-scroll-fade-size: 24px;
-$nt-data-grid-sort-order-min-inline-size: 16px;
-$nt-data-grid-sort-indicator-size: 18px;
-$nt-data-grid-page-button-font-size: 12px;
-$nt-data-grid-border-size: 1px;
-$nt-data-grid-grid-shape: corners.$nt-corner-radius-small;
-$nt-data-grid-select-shape: corners.$nt-corner-radius-extra-small;
-$nt-data-grid-spacing-xs: 2px;
-$nt-data-grid-spacing-sm: 4px;
-$nt-data-grid-spacing-md: 8px;
-$nt-data-grid-spacing-lg: 12px;
-$nt-data-grid-spacing-xl: 16px;
-$nt-data-grid-content-padding: 8px;
-$nt-data-grid-sort-title-sorted-padding: 36px;
-$nt-data-grid-sort-title-multi-sorted-padding: 56px;
-$nt-data-grid-select-trailing-padding: 28px;
-$nt-data-grid-sticky-header-z-index: 3;
-$nt-data-grid-hover-state-opacity: 8%;
-$nt-data-grid-row-stripe-opacity: 5%;
-$nt-data-grid-row-focus-opacity: 8%;
-$nt-data-grid-striped-hover-state-opacity: 10%;
-$nt-data-grid-disabled-content-opacity: 38%;
-$nt-data-grid-disabled-container-opacity: 12%;
-$nt-data-grid-row-background-transition: motion.$nt-motion-duration-short_2 motion.$nt-motion-easing-standard;
-$nt-data-grid-focus-outline-offset: 2px;
-$nt-data-grid-spacer-border-offset: 1px;
-$nt-data-grid-zero: 0;
-$nt-data-grid-percent-zero: 0%;
-$nt-data-grid-full-size: 100%;
-$nt-data-grid-spacer-highlight-position: 50%;
-$nt-data-grid-spacer-animation-distance: 100%;
-$nt-data-grid-spacer-animation-size: 200%;
-$nt-data-grid-spacer-animation-duration: motion.$nt-motion-duration-extra_long_2 + motion.$nt-motion-duration-extra_long_1;
+$scroll-fade-size: 24px;
+$page-button-size: 24px;
+$touch-target-size: 48px;
+$icon-size: 18px;
+$spacing-xs: 2px;
+$spacing-md: 8px;
+$spacing-xl: 16px;
+$focus-size: 2px;
+$state-opacity: 8%;
+$stripe-opacity: 5%;
+$border: 1px solid colors.$nt-color-outline-variant;
+$placeholder-size: var(--nt-data-grid-placeholder-row-height, var(--nt-data-grid-row-size));
+$fade-stops: transparent, #000 var(--nt-data-grid-fade-start), #000 calc(100% - var(--nt-data-grid-fade-end)), transparent;
+
+@function on-surface-mix($opacity, $base: transparent) {
+    @return color-mix(in srgb, #{colors.$nt-color-on-surface} #{$opacity}, #{$base});
+}
 
 .nt-data-grid {
     @include typescale.nt-body-medium;
 
-    --nt-data-grid-row-size: #{$nt-data-grid-row-size};
+    --nt-data-grid-row-size: 36px;
 
     color: colors.$nt-color-on-surface;
     background: colors.$nt-color-surface;
-    border: $nt-data-grid-border-size solid colors.$nt-color-outline-variant;
-    border-radius: $nt-data-grid-grid-shape;
+    border: $border;
+    border-radius: corners.$nt-corner-radius-small;
     overflow: hidden;
 }
 
@@ -75,13 +53,13 @@ $nt-data-grid-spacer-animation-duration: motion.$nt-motion-duration-extra_long_2
     // then; browsers without scroll-driven animations skip the fade entirely.
     &[data-nt-drag-scroll] {
         @supports (animation-timeline: scroll()) {
-            mask-image: linear-gradient(to right, transparent, #000 var(--nt-data-grid-fade-start), #000 calc(100% - var(--nt-data-grid-fade-end)), transparent);
+            mask-image: linear-gradient(to right, $fade-stops);
             animation: nt-data-grid-fade-start linear both, nt-data-grid-fade-end linear both;
             animation-timeline: scroll(self inline);
-            animation-range: $nt-data-grid-zero $nt-data-grid-scroll-fade-size, calc(100% - #{$nt-data-grid-scroll-fade-size}) 100%;
+            animation-range: 0 $scroll-fade-size, calc(100% - #{$scroll-fade-size}) 100%;
 
             &:dir(rtl) {
-                mask-image: linear-gradient(to left, transparent, #000 var(--nt-data-grid-fade-start), #000 calc(100% - var(--nt-data-grid-fade-end)), transparent);
+                mask-image: linear-gradient(to left, $fade-stops);
             }
         }
     }
@@ -95,12 +73,12 @@ $nt-data-grid-spacer-animation-duration: motion.$nt-motion-duration-extra_long_2
     flex-direction: column;
     box-sizing: border-box;
     block-size: 100%;
-    min-block-size: $nt-data-grid-zero;
+    min-block-size: 0;
     max-block-size: 100dvh;
 
     > .nt-data-grid-scroll {
         flex: 1 1 auto;
-        min-block-size: $nt-data-grid-zero;
+        min-block-size: 0;
     }
 }
 
@@ -125,13 +103,13 @@ $nt-data-grid-spacer-animation-duration: motion.$nt-motion-duration-extra_long_2
     }
 
     to {
-        --nt-data-grid-fade-start: #{$nt-data-grid-scroll-fade-size};
+        --nt-data-grid-fade-start: #{$scroll-fade-size};
     }
 }
 
 @keyframes nt-data-grid-fade-end {
     from {
-        --nt-data-grid-fade-end: #{$nt-data-grid-scroll-fade-size};
+        --nt-data-grid-fade-end: #{$scroll-fade-size};
     }
 
     to {
@@ -140,22 +118,15 @@ $nt-data-grid-spacer-animation-duration: motion.$nt-motion-duration-extra_long_2
 }
 
 .nt-data-grid-table {
-    inline-size: $nt-data-grid-full-size;
-    min-inline-size: $nt-data-grid-full-size;
+    inline-size: 100%;
+    min-inline-size: 100%;
     border-collapse: collapse;
-    table-layout: auto;
-    background: colors.$nt-color-surface;
-
-    > thead th {
-        z-index: $nt-data-grid-sticky-header-z-index;
-    }
 
     caption {
         @include typescale.nt-title-medium;
 
-        padding: $nt-data-grid-spacing-xl;
+        padding: $spacing-xl;
         text-align: start;
-        color: colors.$nt-color-on-surface;
         background: colors.$nt-color-surface-container-low;
     }
 }
@@ -163,48 +134,49 @@ $nt-data-grid-spacer-animation-duration: motion.$nt-motion-duration-extra_long_2
 .nt-data-grid-header-cell,
 .nt-data-grid ::deep .nt-data-grid-cell {
     box-sizing: border-box;
+    block-size: var(--nt-data-grid-row-size);
     text-align: start;
     vertical-align: middle;
-    border-block-end: $nt-data-grid-border-size solid colors.$nt-color-outline-variant;
+    border-block-end: $border;
 }
 
 .nt-data-grid-header-cell {
     @include typescale.nt-label-large;
 
     position: sticky;
-    inset-block-start: $nt-data-grid-zero;
-    block-size: $nt-data-grid-row-size;
+    inset-block-start: 0;
+    z-index: 3;
     color: colors.$nt-color-on-surface-variant;
     background: colors.$nt-color-surface-container-low;
     font-weight: 600;
     white-space: nowrap;
 
     &[aria-sort] {
-        background: color-mix(in srgb, #{colors.$nt-color-on-surface} #{$nt-data-grid-hover-state-opacity}, #{colors.$nt-color-surface-container-low});
+        background: on-surface-mix($state-opacity, colors.$nt-color-surface-container-low);
     }
 
     &:not(:last-child) {
-        border-inline-end: $nt-data-grid-border-size solid colors.$nt-color-outline-variant;
+        border-inline-end: $border;
     }
 }
 
 .nt-data-grid ::deep .nt-data-grid-cell {
-    block-size: $nt-data-grid-row-size;
-    color: colors.$nt-color-on-surface;
-    background: var(--nt-data-grid-row-background, #{colors.$nt-color-surface});
-    transition: background-color $nt-data-grid-row-background-transition;
+    background: var(--nt-data-grid-row-background);
+    transition: background-color motion.$nt-motion-duration-short_2 motion.$nt-motion-easing-standard;
 }
 
 .nt-data-grid.nt-data-grid-cell-dividers > .nt-data-grid-scroll > .nt-data-grid-table > tbody ::deep > .nt-data-grid-row > .nt-data-grid-cell:not(:last-child) {
-    border-inline-end: $nt-data-grid-border-size solid colors.$nt-color-outline-variant;
+    border-inline-end: $border;
 }
 
 .nt-data-grid ::deep .nt-data-grid-row {
     --nt-data-grid-row-background: #{colors.$nt-color-surface};
 }
 
-.nt-data-grid.nt-data-grid-striped > .nt-data-grid-scroll > .nt-data-grid-table > tbody ::deep > .nt-data-grid-row-striped-even {
-    --nt-data-grid-row-background: color-mix(in srgb, #{colors.$nt-color-on-surface} #{$nt-data-grid-row-stripe-opacity}, #{colors.$nt-color-surface});
+// Only striped grids emit the striped row classes, so this needs no grid-level qualifier. Keeping it at the base row's
+// specificity lets the hover and focus states below win on even rows.
+.nt-data-grid ::deep .nt-data-grid-row-striped-even {
+    --nt-data-grid-row-background: #{on-surface-mix($stripe-opacity, colors.$nt-color-surface)};
 }
 
 .nt-data-grid ::deep .nt-data-grid-row-clickable {
@@ -212,125 +184,114 @@ $nt-data-grid-spacer-animation-duration: motion.$nt-motion-duration-extra_long_2
     outline: none;
 
     &:hover {
-        --nt-data-grid-row-background: color-mix(in srgb, #{colors.$nt-color-on-surface} #{$nt-data-grid-hover-state-opacity}, #{colors.$nt-color-surface});
+        --nt-data-grid-row-background: #{on-surface-mix($state-opacity, colors.$nt-color-surface)};
     }
 
     &:focus-visible {
-        --nt-data-grid-row-background: color-mix(in srgb, #{colors.$nt-color-primary} #{$nt-data-grid-row-focus-opacity}, #{colors.$nt-color-surface});
+        --nt-data-grid-row-background: #{color-mix(in srgb, colors.$nt-color-primary $state-opacity, colors.$nt-color-surface)};
     }
 
     &:focus-visible .nt-data-grid-cell {
-        box-shadow: inset $nt-data-grid-zero $nt-data-grid-zero $nt-data-grid-zero $nt-data-grid-focus-outline-offset colors.$nt-color-primary;
+        box-shadow: inset 0 0 0 $focus-size colors.$nt-color-primary;
     }
 }
 
 .nt-data-grid.nt-data-grid-striped ::deep .nt-data-grid-row-clickable:hover {
-    --nt-data-grid-row-background: color-mix(in srgb, #{colors.$nt-color-on-surface} #{$nt-data-grid-striped-hover-state-opacity}, #{colors.$nt-color-surface});
+    --nt-data-grid-row-background: #{on-surface-mix(10%, colors.$nt-color-surface)};
 }
 
+// Rows, headers and empty/placeholder cells size from --nt-data-grid-row-size. Compact keeps its own sort-link height so the
+// touch-target minimum below does not grow it.
 .nt-data-grid-compact {
-    --nt-data-grid-row-size: #{$nt-data-grid-compact-row-size};
+    --nt-data-grid-row-size: 28px;
 
-    > .nt-data-grid-scroll > .nt-data-grid-table > thead > tr > .nt-data-grid-header-cell {
-        block-size: $nt-data-grid-compact-row-size;
-    }
-
-    > .nt-data-grid-scroll > .nt-data-grid-table > tbody ::deep > .nt-data-grid-row > .nt-data-grid-cell {
-        block-size: $nt-data-grid-compact-row-size;
-    }
-
-    > .nt-data-grid-scroll > .nt-data-grid-table > thead > tr > th > .nt-data-grid-sort-link,
-    > .nt-data-grid-scroll > .nt-data-grid-table > thead > tr > th > .nt-data-grid-header-label {
-        min-block-size: $nt-data-grid-compact-row-size;
+    > .nt-data-grid-scroll > .nt-data-grid-table > thead > tr > th > .nt-data-grid-sort-link {
+        min-block-size: var(--nt-data-grid-row-size);
     }
 }
 
 .nt-data-grid-sort-link,
 .nt-data-grid-header-label {
     display: inline-flex;
-    inline-size: $nt-data-grid-full-size;
-    min-block-size: $nt-data-grid-row-size;
+    min-block-size: var(--nt-data-grid-row-size);
     align-items: center;
-    gap: $nt-data-grid-spacing-md;
-    color: inherit;
-    text-decoration: none;
-    text-align: inherit;
-}
-
-.nt-data-grid-sort-link {
-    position: relative;
-    box-sizing: border-box;
-    padding: $nt-data-grid-zero;
-    border: $nt-data-grid-zero;
-    border-radius: corners.$nt-corner-radius-none;
-    appearance: none;
-    background: transparent;
-    font: inherit;
-    cursor: pointer;
-    outline: none;
-
-    &:hover {
-        background: color-mix(in srgb, #{colors.$nt-color-on-surface} #{$nt-data-grid-hover-state-opacity}, transparent);
-    }
-
-    &:focus-visible {
-        outline: $nt-data-grid-focus-outline-offset solid colors.$nt-color-primary;
-        outline-offset: $nt-data-grid-focus-outline-offset;
-    }
-}
-
-.nt-data-grid-header-title {
-    flex: 1 1 auto;
-    min-inline-size: $nt-data-grid-zero;
-    overflow: hidden;
-    padding-inline: $nt-data-grid-content-padding;
-    text-align: inherit;
-    text-overflow: ellipsis;
-}
-
-.nt-data-grid-sort-link-sorted .nt-data-grid-header-title {
-    padding-inline-end: $nt-data-grid-sort-title-sorted-padding;
-}
-
-.nt-data-grid-sort-link-multi-sorted .nt-data-grid-header-title {
-    padding-inline-end: $nt-data-grid-sort-title-multi-sorted-padding;
+    gap: $spacing-md;
 }
 
 .nt-data-grid-header-label,
 .nt-data-grid ::deep .nt-data-grid-cell-content {
     box-sizing: border-box;
-    inline-size: $nt-data-grid-full-size;
-    padding-inline: $nt-data-grid-content-padding;
+    inline-size: 100%;
+    padding-inline: $spacing-md;
+}
+
+.nt-data-grid-sort-link {
+    position: relative;
+    box-sizing: border-box;
+    inline-size: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: corners.$nt-corner-radius-none;
+    appearance: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
     text-align: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    outline: none;
+
+    &:hover {
+        background: on-surface-mix($state-opacity);
+    }
+
+    &:focus-visible {
+        outline: $focus-size solid colors.$nt-color-primary;
+        outline-offset: $focus-size;
+    }
+}
+
+.nt-data-grid-header-title {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    overflow: hidden;
+    padding-inline: $spacing-md;
+    text-overflow: ellipsis;
+}
+
+.nt-data-grid-sort-link-sorted .nt-data-grid-header-title {
+    padding-inline-end: 36px;
+}
+
+.nt-data-grid-sort-link-multi-sorted .nt-data-grid-header-title {
+    padding-inline-end: 56px;
 }
 
 .nt-data-grid-sort-state {
     position: absolute;
-    inset-inline-end: $nt-data-grid-zero;
+    inset-inline-end: 0;
     display: inline-flex;
     align-items: center;
-    gap: $nt-data-grid-spacing-xs;
+    gap: $spacing-xs;
 }
 
 .nt-data-grid-sort-order {
     @include typescale.nt-label-small;
 
-    min-inline-size: $nt-data-grid-sort-order-min-inline-size;
+    min-inline-size: 16px;
     text-align: center;
-    color: inherit;
 }
 
 .nt-data-grid-sort-state ::deep .nt-data-grid-sort-indicator {
     display: inline-flex;
-    block-size: $nt-data-grid-sort-indicator-size;
-    inline-size: $nt-data-grid-sort-indicator-size;
+    block-size: $icon-size;
+    inline-size: $icon-size;
     align-items: center;
     justify-content: center;
-    font-size: $nt-data-grid-sort-indicator-size;
+    font-size: $icon-size;
     line-height: 1;
     color: inherit;
     pointer-events: none;
-    transform-origin: center;
     transition: transform motion.$nt-motion-duration-short_2 motion.$nt-motion-easing-standard;
 
     &-ascending {
@@ -342,138 +303,58 @@ $nt-data-grid-spacer-animation-duration: motion.$nt-motion-duration-extra_long_2
     }
 }
 
-.nt-data-grid-header-cell {
-    &.nt-data-grid-align-left {
-        .nt-data-grid-sort-link,
-        .nt-data-grid-header-label {
-            justify-content: flex-start;
-        }
-    }
-
-    &.nt-data-grid-align-center {
-        .nt-data-grid-sort-link,
-        .nt-data-grid-header-label {
-            justify-content: center;
-        }
-    }
-
-    &.nt-data-grid-align-right {
-        .nt-data-grid-sort-link,
-        .nt-data-grid-header-label {
-            justify-content: flex-end;
-        }
-    }
-
-    &.nt-data-grid-align-justify {
-        .nt-data-grid-sort-link,
-        .nt-data-grid-header-label {
-            justify-content: space-between;
-        }
-    }
-}
-
-.nt-data-grid ::deep .nt-data-grid-row-empty {
-    td {
-        @include typescale.nt-body-medium;
-
-        block-size: $nt-data-grid-row-size;
-        padding: $nt-data-grid-spacing-xl;
-        text-align: center;
-        color: colors.$nt-color-on-surface-variant;
-        border-block-end: $nt-data-grid-border-size solid colors.$nt-color-outline-variant;
-        background: colors.$nt-color-surface;
-    }
-}
-
-.nt-data-grid ::deep .nt-data-grid-row-placeholder {
-    block-size: var(--nt-data-grid-placeholder-row-height, var(--nt-data-grid-row-size));
-
-    td {
-        @include typescale.nt-body-medium;
-
-        block-size: var(--nt-data-grid-placeholder-row-height, var(--nt-data-grid-row-size));
-        box-sizing: border-box;
-        padding-block: $nt-data-grid-zero;
-        padding-inline: $nt-data-grid-spacing-xs;
-        text-align: center;
-        color: colors.$nt-color-on-surface-variant;
-        border-block-end: $nt-data-grid-border-size solid colors.$nt-color-outline-variant;
-        background: colors.$nt-color-surface;
-    }
-}
-
-.nt-data-grid.nt-data-grid-compact {
-    ::deep .nt-data-grid-row-empty {
-        td {
-            block-size: $nt-data-grid-compact-row-size;
-        }
-    }
-
-    ::deep .nt-data-grid-row-placeholder {
-        block-size: var(--nt-data-grid-placeholder-row-height, var(--nt-data-grid-row-size));
-
-        td {
-            block-size: var(--nt-data-grid-placeholder-row-height, var(--nt-data-grid-row-size));
-        }
-    }
-}
-
-.nt-data-grid ::deep .nt-data-grid-cell-placeholder {
-    padding-block: $nt-data-grid-zero;
-    padding-inline: $nt-data-grid-spacing-xs;
-    block-size: var(--nt-data-grid-placeholder-row-height, var(--nt-data-grid-row-size));
+.nt-data-grid ::deep .nt-data-grid-row-empty td {
+    block-size: var(--nt-data-grid-row-size);
+    padding: $spacing-xl;
+    text-align: center;
+    color: colors.$nt-color-on-surface-variant;
+    border-block-end: $border;
+    background: colors.$nt-color-surface;
 }
 
 // The skeleton is out of flow, so the placeholder row is exactly its cell's block size, like a data row. An in-flow
 // skeleton sized to "row minus divider" grew the row whenever the divider was not exactly 1px (an ancestor's CSS zoom)
 // or the cell was content-box, which shifted the virtualizer's item positions.
-.nt-data-grid ::deep .nt-data-grid-cell-placeholder {
+.nt-data-grid ::deep .nt-data-grid-row-placeholder td {
     position: relative;
+    block-size: $placeholder-size;
+    padding: 0 $spacing-xs;
 }
 
 .nt-data-grid ::deep .nt-data-grid-row-skeleton {
     position: absolute;
-    inset-block: $nt-data-grid-zero;
-    inset-inline: $nt-data-grid-spacing-xs;
+    inset-block: 0;
+    inset-inline: $spacing-xs;
 }
 
 .nt-data-grid ::deep .nt-data-grid-row-skeleton .nt-skeleton {
-    display: block;
-    block-size: $nt-data-grid-full-size;
+    block-size: 100%;
 }
 
 .nt-data-grid-virtualized ::deep .nt-virtualize-spacer {
     background-color: colors.$nt-color-surface;
     background-image:
-        linear-gradient(
-            90deg,
-            transparent $nt-data-grid-percent-zero,
-            color-mix(in srgb, #{colors.$nt-color-on-surface} #{$nt-data-grid-row-stripe-opacity}, transparent) $nt-data-grid-spacer-highlight-position,
-            transparent $nt-data-grid-spacer-animation-distance
-        ),
+        linear-gradient(90deg, transparent 0%, #{on-surface-mix($stripe-opacity)} 50%, transparent 100%),
         repeating-linear-gradient(
             to bottom,
-            colors.$nt-color-surface-container-highest $nt-data-grid-zero calc(var(--nt-data-grid-row-size) - #{$nt-data-grid-spacer-border-offset}),
-            colors.$nt-color-outline-variant calc(var(--nt-data-grid-row-size) - #{$nt-data-grid-spacer-border-offset}) var(--nt-data-grid-row-size)
+            colors.$nt-color-surface-container-highest 0 calc(var(--nt-data-grid-row-size) - 1px),
+            colors.$nt-color-outline-variant calc(var(--nt-data-grid-row-size) - 1px) var(--nt-data-grid-row-size)
         );
-    background-position: -#{$nt-data-grid-spacer-animation-distance} $nt-data-grid-zero, $nt-data-grid-zero $nt-data-grid-zero;
-    background-size: $nt-data-grid-spacer-animation-size $nt-data-grid-spacer-animation-distance, $nt-data-grid-spacer-animation-distance var(--nt-data-grid-row-size);
-    animation: nt-data-grid-spacer-skeleton $nt-data-grid-spacer-animation-duration linear infinite;
+    background-position: -100% 0, 0 0;
+    background-size: 200% 100%, 100% var(--nt-data-grid-row-size);
+    animation: nt-data-grid-spacer-skeleton motion.$nt-motion-duration-extra_long_2 + motion.$nt-motion-duration-extra_long_1 linear infinite;
 
     .nt-data-grid-spacer-cell {
-        padding: $nt-data-grid-zero;
-        border: $nt-data-grid-zero;
+        padding: 0;
+        border: 0;
         background: inherit;
-        background-image: inherit;
-        background-position: inherit;
-        background-size: inherit;
         animation: inherit;
     }
 }
 
 @keyframes nt-data-grid-spacer-skeleton {
-    #{$nt-data-grid-spacer-animation-distance} {
-        background-position: $nt-data-grid-spacer-animation-distance $nt-data-grid-zero, $nt-data-grid-zero $nt-data-grid-zero;
+    to {
+        background-position: 100% 0, 0 0;
     }
 }
 
@@ -487,21 +368,21 @@ $nt-data-grid-spacer-animation-duration: motion.$nt-motion-duration-extra_long_2
     @include typescale.nt-label-large;
 
     display: flex;
-    min-block-size: $nt-data-grid-pagination-min-block-size;
+    min-block-size: 48px;
     flex-wrap: wrap;
     align-items: center;
     justify-content: flex-end;
-    gap: $nt-data-grid-spacing-md $nt-data-grid-spacing-lg;
-    padding: $nt-data-grid-spacing-md;
+    gap: $spacing-md 12px;
+    padding: $spacing-md;
     color: colors.$nt-color-on-surface-variant;
     background: colors.$nt-color-surface-container-low;
-    border-block-start: $nt-data-grid-border-size solid colors.$nt-color-outline-variant;
+    border-block-start: $border;
 }
 
 .nt-data-grid-page-size {
     display: inline-flex;
     align-items: center;
-    gap: $nt-data-grid-spacing-md;
+    gap: $spacing-md;
     margin-inline-end: auto;
 }
 
@@ -509,81 +390,71 @@ $nt-data-grid-spacer-animation-duration: motion.$nt-motion-duration-extra_long_2
 .nt-data-grid-page-jump select {
     @include typescale.nt-label-large;
 
-    min-block-size: $nt-data-grid-page-size-select-min-block-size;
-    padding-block: $nt-data-grid-spacing-sm;
-    padding-inline: $nt-data-grid-spacing-md $nt-data-grid-select-trailing-padding;
+    min-block-size: 32px;
+    padding-block: 4px;
+    padding-inline: $spacing-md 28px;
     color: colors.$nt-color-on-surface;
     background: colors.$nt-color-surface;
-    border: $nt-data-grid-border-size solid colors.$nt-color-outline;
-    border-radius: $nt-data-grid-select-shape;
+    border: 1px solid colors.$nt-color-outline;
+    border-radius: corners.$nt-corner-radius-extra-small;
 }
 
 .nt-data-grid-pagination-buttons {
     display: flex;
-    flex-direction: row;
     justify-content: end;
 
     .pagination-btn {
-        @include typescale.nt-label-large;
-
         display: inline-flex;
         // Keep icon-font fallback text inside its own hit target while fonts load.
         overflow: hidden;
-        block-size: $nt-data-grid-page-button-size;
-        inline-size: $nt-data-grid-page-button-size;
-        min-block-size: $nt-data-grid-page-button-size;
-        min-inline-size: $nt-data-grid-page-button-size;
+        block-size: $page-button-size;
+        inline-size: $page-button-size;
+        min-inline-size: $page-button-size;
         align-items: center;
         justify-content: center;
-        margin: $nt-data-grid-zero;
-        padding: $nt-data-grid-zero;
+        margin: 0;
+        padding: 0;
         color: colors.$nt-color-on-primary-container;
         background: colors.$nt-color-primary-container;
         border-radius: corners.$nt-corner-radius-none;
-        font-size: $nt-data-grid-page-button-font-size;
-        line-height: $nt-data-grid-page-button-size;
+        font-size: 12px;
+        line-height: $page-button-size;
         text-align: center;
         text-decoration: none;
         vertical-align: middle;
         outline: none;
 
         &:hover {
-            background: color-mix(in srgb, #{colors.$nt-color-on-primary-container} #{$nt-data-grid-hover-state-opacity}, #{colors.$nt-color-primary-container});
+            background: color-mix(in srgb, #{colors.$nt-color-on-primary-container} #{$state-opacity}, #{colors.$nt-color-primary-container});
         }
 
         &:focus-visible {
-            outline: $nt-data-grid-focus-outline-offset solid colors.$nt-color-primary;
-            outline-offset: $nt-data-grid-focus-outline-offset;
-        }
-
-        &:active,
-        &:focus {
-            border-radius: corners.$nt-corner-radius-none;
+            outline: $focus-size solid colors.$nt-color-primary;
+            outline-offset: $focus-size;
         }
 
         &.current-page {
             color: colors.$nt-color-on-primary;
             background: colors.$nt-color-primary;
-            opacity: 1;
             pointer-events: none;
         }
 
         &.nt-disabled {
-            color: color-mix(in srgb, #{colors.$nt-color-on-surface} #{$nt-data-grid-disabled-content-opacity}, transparent);
-            background: color-mix(in srgb, #{colors.$nt-color-on-surface} #{$nt-data-grid-disabled-container-opacity}, transparent);
+            color: on-surface-mix(38%);
+            background: on-surface-mix(12%);
             pointer-events: none;
         }
 
         .nt-icon {
-            font-size: $nt-data-grid-sort-indicator-size;
+            font-size: $icon-size;
         }
     }
 
     .nt-data-grid-page-jump {
         display: none;
         align-items: center;
-        gap: $nt-data-grid-spacing-md;
-        padding-inline: $nt-data-grid-spacing-md;
+        gap: $spacing-md;
+        padding-inline: $spacing-md;
         white-space: nowrap;
     }
 }
@@ -604,17 +475,16 @@ $nt-data-grid-spacer-animation-duration: motion.$nt-motion-duration-extra_long_2
 // Touch screens get Material 3's 48dp minimum target. Compact density keeps its more specific header sizing.
 @media (pointer: coarse) {
     .nt-data-grid-pagination-buttons .pagination-btn {
-        block-size: $nt-data-grid-touch-target-size;
-        inline-size: $nt-data-grid-touch-target-size;
-        min-block-size: $nt-data-grid-touch-target-size;
-        min-inline-size: $nt-data-grid-touch-target-size;
-        line-height: $nt-data-grid-touch-target-size;
+        block-size: $touch-target-size;
+        inline-size: $touch-target-size;
+        min-inline-size: $touch-target-size;
+        line-height: $touch-target-size;
     }
 
     .nt-data-grid-page-size select,
     .nt-data-grid-page-jump select,
     .nt-data-grid-sort-link {
-        min-block-size: $nt-data-grid-touch-target-size;
+        min-block-size: $touch-target-size;
     }
 }
 
@@ -627,26 +497,24 @@ $nt-data-grid-spacer-animation-duration: motion.$nt-motion-duration-extra_long_2
     }
 }
 
-.nt-data-grid ::deep .nt-data-grid-align-left {
-    text-align: left;
-}
+// Column alignment: body cells align their text; header cells also align their sort link or label.
+@each $name, $justify in (left: flex-start, center: center, right: flex-end, justify: space-between) {
+    .nt-data-grid ::deep .nt-data-grid-align-#{$name} {
+        text-align: $name;
+    }
 
-.nt-data-grid ::deep .nt-data-grid-align-center {
-    text-align: center;
-}
-
-.nt-data-grid ::deep .nt-data-grid-align-right {
-    text-align: right;
-}
-
-.nt-data-grid ::deep .nt-data-grid-align-justify {
-    text-align: justify;
+    .nt-data-grid-header-cell.nt-data-grid-align-#{$name} {
+        .nt-data-grid-sort-link,
+        .nt-data-grid-header-label {
+            justify-content: $justify;
+        }
+    }
 }
 
 .nt-data-grid {
     .nt-data-grid-expansion-toolbar {
-        padding: $nt-data-grid-spacing-md;
-        border-block-end: $nt-data-grid-border-size solid colors.$nt-color-outline-variant;
+        padding: $spacing-md;
+        border-block-end: $border;
     }
 
     .nt-data-grid-expansion-column {
@@ -658,13 +526,13 @@ $nt-data-grid-spacer-animation-duration: motion.$nt-motion-duration-extra_long_2
     }
 
     .nt-data-grid-detail-row > td {
-        padding: $nt-data-grid-zero;
-        border-block-end: $nt-data-grid-border-size solid colors.$nt-color-outline-variant;
+        padding: 0;
+        border-block-end: $border;
     }
 
     .nt-data-grid-detail-scroll {
         overflow: auto;
-        padding: $nt-data-grid-spacing-xl;
+        padding: $spacing-xl;
         box-sizing: border-box;
         background: colors.$nt-color-surface-container-low;
 
@@ -678,7 +546,7 @@ $nt-data-grid-spacer-animation-duration: motion.$nt-motion-duration-extra_long_2
             }
 
             > .nt-data-grid-scroll > table > thead th {
-                inset-block-start: -$nt-data-grid-spacing-xl;
+                inset-block-start: -$spacing-xl;
             }
         }
     }

@@ -20,8 +20,6 @@ namespace NTComponents;
     CompatibilityDetails = "Virtualization depends on JavaScript measurement, JSInvokable refresh callbacks, and ItemsProvider execution after render. Static SSR cannot provide the scrolling data window contract.")]
 public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<TItem>> {
     private readonly Dictionary<int, TItem> _itemCache = [];
-    private readonly List<int> _cacheIndexesToRemove = [];
-    private readonly List<int> _trimCandidateIndexes = [];
 
     /// <inheritdoc />
     public override string? ElementClass => throw new NotSupportedException();
@@ -184,8 +182,7 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
     private bool _initialized;
     private (float ItemSize, int OverscanCount, int MaxItemCount, string? ScrollRestorationKey)? _reportedOptions;
     private (int Count, int Loaded, int Placeholders, bool Measure, int Revision, bool Loading, int Start, int Capacity)? _reportedRenderState;
-    private NTVirtualizeAnchorSnapshot? _pendingAnchor;
-    private int _pendingAnchorIndex;
+    private (NTVirtualizeAnchorSnapshot Snapshot, int Index)? _pendingAnchor;
     private long _scrollOperationId;
     private int _measurementRevision;
     private int _previousItemSizeVersion;
@@ -200,33 +197,26 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
     /// <param name="count">           The number of items to request.</param>
     [JSInvokable]
     public void LoadItems(float spacerBeforeSize, float spacerAfterSize, int startIndex, int count) {
-        if (DisposalStarted) {
-            return;
-        }
-        var resolvedStartIndex = Math.Max(0, startIndex);
-        var resolvedCount = Math.Max(0, count);
-        if (_hasLoadedItems && (long)resolvedStartIndex + resolvedCount > _itemCount) {
-            resolvedStartIndex = Math.Max(0, _itemCount - resolvedCount);
-        }
+        if (!DisposalStarted) {
+            var start = Math.Max(0, startIndex);
+            var size = Math.Max(0, count);
+            if (_hasLoadedItems && (long)start + size > _itemCount) {
+                start = Math.Max(0, _itemCount - size);
+            }
 
-        var resolvedSpacerBeforeSize = Math.Max(0, spacerBeforeSize);
-        var resolvedSpacerAfterSize = Math.Max(0, spacerAfterSize);
+            var before = Math.Max(0, spacerBeforeSize);
+            var after = Math.Max(0, spacerAfterSize);
+            if (start != _itemsBefore || size != _visibleItemCapacity || !before.Equals(_spacerBeforeSize) || !after.Equals(_spacerAfterSize) || (!_loading && TryGetMissingRange(start, size, out _, out _))) {
+                _itemsBefore = start;
+                _visibleItemCapacity = size;
+                _spacerBeforeSize = before;
+                _spacerAfterSize = after;
+                _prefetchCts?.Cancel();
+                _revalidateCts?.Cancel();
 
-        if (resolvedStartIndex != _itemsBefore
-            || resolvedCount != _visibleItemCapacity
-            || !resolvedSpacerBeforeSize.Equals(_spacerBeforeSize)
-            || !resolvedSpacerAfterSize.Equals(_spacerAfterSize)
-            || (!_loading && TryGetMissingRange(resolvedStartIndex, _hasLoadedItems ? Math.Min(resolvedCount, Math.Max(0, _itemCount - resolvedStartIndex)) : resolvedCount, out _, out _))) {
-            _itemsBefore = resolvedStartIndex;
-            _visibleItemCapacity = resolvedCount;
-            _spacerBeforeSize = resolvedSpacerBeforeSize;
-            _spacerAfterSize = resolvedSpacerAfterSize;
-            _prefetchCts?.Cancel();
-            _revalidateCts?.Cancel();
-            var refreshTask = RefreshDataCoreAsync(renderOnSuccess: true, debounce: _hasLoadedItems);
-
-            if (!refreshTask.IsCompleted) {
-                _ = InvokeAsync(StateHasChanged);
+                if (!RefreshDataCoreAsync(debounce: _hasLoadedItems).IsCompleted) {
+                    _ = InvokeAsync(StateHasChanged);
+                }
             }
         }
     }
@@ -241,7 +231,7 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
     public async Task RefreshDataAsync(CancellationToken cancellationToken) {
         cancellationToken.ThrowIfCancellationRequested();
         if (!DisposalStarted) {
-            await RefreshDataCoreAsync(renderOnSuccess: true, forceRefresh: true, cancellationToken);
+            await RefreshDataCoreAsync(forceRefresh: true, cancellationToken: cancellationToken);
         }
     }
 
@@ -258,10 +248,7 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
         }
         finally {
             if (cancellationToken.IsCancellationRequested && !DisposalStarted) {
-                try {
-                    await module.InvokeVoidAsync("cancelScroll", dotNetRef, operationId);
-                }
-                catch (JSDisconnectedException) { }
+                await CancelScrollAsync(operationId);
             }
         }
     }
@@ -285,12 +272,10 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         await base.OnAfterRenderAsync(firstRender);
         try {
-            if (firstRender) {
-                if (TryGetInteropReferences(out var module, out var dotNetRef)) {
-                    await module.InvokeVoidAsync("init", dotNetRef, Element, _afterPlaceholder, _itemSize, OverscanCount, MaxItemCount, ScrollRestorationKey, 50, Math.Max(0, InitialItemIndex));
-                    _initialized = !DisposalStarted;
-                    _reportedOptions = (ItemSize, OverscanCount, MaxItemCount, ScrollRestorationKey);
-                }
+            if (firstRender && TryGetInteropReferences(out var module, out var dotNetRef)) {
+                await module.InvokeVoidAsync("init", dotNetRef, Element, _afterPlaceholder, _itemSize, OverscanCount, MaxItemCount, ScrollRestorationKey, 50, Math.Max(0, InitialItemIndex));
+                _initialized = !DisposalStarted;
+                _reportedOptions = (ItemSize, OverscanCount, MaxItemCount, ScrollRestorationKey);
             }
 
             if (TryGetInteropReferences(out var currentModule, out var currentRef)) {
@@ -301,10 +286,10 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
                     await currentModule.InvokeVoidAsync("updateOptions", currentRef, ItemSize, OverscanCount, MaxItemCount, ScrollRestorationKey);
                 }
 
-                if (_pendingAnchor is { } anchor) {
+                if (_pendingAnchor is (var snapshot, var anchorIndex)) {
                     _pendingAnchor = null;
                     _reportedRenderState = null;
-                    await currentModule.InvokeVoidAsync("restoreAnchor", currentRef, anchor, _pendingAnchorIndex, (int)AnchorMode);
+                    await currentModule.InvokeVoidAsync("restoreAnchor", currentRef, snapshot, anchorIndex, (int)AnchorMode);
                 }
             }
 
@@ -327,18 +312,16 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
             _previousItemSizeVersion = ItemSizeVersion;
             _measurementRevision++;
         }
+
         if (!float.IsFinite(ItemSize) || ItemSize <= 0) {
-            throw new InvalidOperationException(
-                $"{nameof(NTVirtualize<>)} requires a positive value for parameter '{nameof(ItemSize)}'.");
+            throw new InvalidOperationException($"{nameof(NTVirtualize<>)} requires a positive value for parameter '{nameof(ItemSize)}'.");
         }
 
-        if (_itemSize <= 0) {
-            _itemSize = ItemSize;
+        if (_itemSize > 0 && !ItemSize.Equals(_itemSize)) {
+            ClearCachedItems();
         }
-        else if (!ItemSize.Equals(_itemSize)) {
-            _itemSize = ItemSize;
-            ClearCachedItems(cancelForegroundRefresh: true);
-        }
+
+        _itemSize = ItemSize;
 
         if (ItemsProvider is null) {
             throw new InvalidOperationException($"{nameof(NTVirtualize<>)} requires the '{nameof(ItemsProvider)}' parameter to be specified and non-null.");
@@ -347,7 +330,7 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
         if (_lastItemsProvider is not null && ItemsProvider != _lastItemsProvider) {
             SetItemCount(0);
             _hasLoadedItems = false;
-            ClearCachedItems(cancelForegroundRefresh: true);
+            ClearCachedItems();
         }
 
         _lastItemsProvider = ItemsProvider;
@@ -356,47 +339,25 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
 
     private TimeSpan ScrollDebounceDelay => TimeSpan.FromMilliseconds(Math.Max(0, ScrollDebounceMilliseconds));
 
-    private float GetAdjustedSpacerAfterSize(int preloadedPlaceholderCount) =>
-        Math.Max(0, _spacerAfterSize - Math.Max(0, preloadedPlaceholderCount) * _itemSize);
+    private int GetPreloadedPlaceholderCount(int lastItemIndex) => GetWindowItemCount(lastItemIndex, PlaceholderPreloadWindowCount);
 
-    private int GetPreloadedPlaceholderCount(int lastItemIndex) {
-        if (_itemCount <= 0 || _visibleItemCapacity <= 0 || PlaceholderPreloadWindowCount <= 0) {
-            return 0;
-        }
-
-        var remainingItemCount = Math.Max(0, _itemCount - Math.Max(0, lastItemIndex));
-        var requestedPlaceholderCount = _visibleItemCapacity * PlaceholderPreloadWindowCount;
-        return Math.Min(remainingItemCount, requestedPlaceholderCount);
-    }
-
-    private int GetBackgroundPreloadCount(int lastItemIndex) {
-        if (_itemCount <= 0 || _visibleItemCapacity <= 0 || BackgroundPreloadWindowCount <= 0) {
-            return 0;
-        }
-
-        var remainingItemCount = Math.Max(0, _itemCount - Math.Max(0, lastItemIndex));
-        var requestedItemCount = _visibleItemCapacity * BackgroundPreloadWindowCount;
-        return Math.Min(remainingItemCount, requestedItemCount);
-    }
+    /// <summary>Counts the items covered by extra visible windows after <paramref name="lastItemIndex" />, capped at the remaining items.</summary>
+    private int GetWindowItemCount(int lastItemIndex, int windowCount) =>
+        _itemCount <= 0 || _visibleItemCapacity <= 0 || windowCount <= 0 ? 0 : Math.Min(Math.Max(0, _itemCount - Math.Max(0, lastItemIndex)), _visibleItemCapacity * windowCount);
 
     private bool TryGetMissingRange(int startIndex, int count, out int missingStartIndex, out int missingCount) {
         missingStartIndex = -1;
-        var missingEndIndex = -1;
-        var lastIndex = Math.Max(0, startIndex) + Math.Max(0, count);
+        missingCount = 0;
+        var first = Math.Max(0, startIndex);
+        var lastIndex = first + Math.Max(0, _hasLoadedItems ? Math.Min(count, _itemCount - first) : count);
 
-        for (var index = Math.Max(0, startIndex); index < lastIndex; index++) {
-            if (_itemCache.ContainsKey(index)) {
-                continue;
+        for (var index = first; index < lastIndex; index++) {
+            if (!_itemCache.ContainsKey(index)) {
+                missingStartIndex = missingStartIndex < 0 ? index : missingStartIndex;
+                missingCount = index - missingStartIndex + 1;
             }
-
-            if (missingStartIndex < 0) {
-                missingStartIndex = index;
-            }
-
-            missingEndIndex = index;
         }
 
-        missingCount = missingStartIndex < 0 ? 0 : missingEndIndex - missingStartIndex + 1;
         return missingCount > 0;
     }
 
@@ -411,56 +372,32 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
 
     private void SetItemCount(int totalItemCount) {
         _itemCount = Math.Max(0, totalItemCount);
-        _cacheIndexesToRemove.Clear();
-        foreach (var index in _itemCache.Keys) {
-            if (index >= _itemCount) {
-                _cacheIndexesToRemove.Add(index);
-            }
-        }
-
-        foreach (var index in _cacheIndexesToRemove) {
+        foreach (var index in _itemCache.Keys.Where(index => index >= _itemCount).ToList()) {
             _itemCache.Remove(index);
         }
     }
 
     private void TrimItemCache() {
-        var minimumCacheSize = Math.Max(1, _visibleItemCapacity * Math.Max(1, PlaceholderPreloadWindowCount + BackgroundPreloadWindowCount + 1));
-        var maxCachedItemCount = Math.Max(minimumCacheSize, MaxCachedItemCount);
-        if (_itemCache.Count <= maxCachedItemCount) {
-            return;
-        }
+        var maxCachedItemCount = Math.Max(Math.Max(1, _visibleItemCapacity * Math.Max(1, PlaceholderPreloadWindowCount + BackgroundPreloadWindowCount + 1)), MaxCachedItemCount);
+        if (_itemCache.Count > maxCachedItemCount) {
+            var activeEndIndex = _itemsBefore + _visibleItemCapacity;
+            activeEndIndex += GetPreloadedPlaceholderCount(activeEndIndex);
+            var activeCenterIndex = _itemsBefore + (activeEndIndex - _itemsBefore) / 2;
 
-        var activeStartIndex = Math.Max(0, _itemsBefore);
-        var activeEndIndex = activeStartIndex + Math.Max(0, _visibleItemCapacity) + GetPreloadedPlaceholderCount(activeStartIndex + Math.Max(0, _visibleItemCapacity));
-        var activeCenterIndex = activeStartIndex + Math.Max(0, activeEndIndex - activeStartIndex) / 2;
-        _trimCandidateIndexes.Clear();
-        foreach (var index in _itemCache.Keys) {
-            if (index < activeStartIndex || index >= activeEndIndex) {
-                _trimCandidateIndexes.Add(index);
+            foreach (var index in _itemCache.Keys.Where(index => index < _itemsBefore || index >= activeEndIndex).OrderByDescending(index => Math.Abs(index - activeCenterIndex)).ToList()) {
+                if (_itemCache.Count <= maxCachedItemCount) {
+                    return;
+                }
+
+                _itemCache.Remove(index);
             }
-        }
-
-        _trimCandidateIndexes.Sort((left, right) => Math.Abs(right - activeCenterIndex).CompareTo(Math.Abs(left - activeCenterIndex)));
-        foreach (var index in _trimCandidateIndexes) {
-            if (_itemCache.Count <= maxCachedItemCount) {
-                return;
-            }
-
-            _itemCache.Remove(index);
         }
     }
 
-    private void ClearCachedItems(bool cancelForegroundRefresh) {
+    private void ClearCachedItems() {
         _itemCache.Clear();
-        CancelAndDispose(ref _prefetchCts);
-        CancelAndDispose(ref _revalidateCts);
-        _revalidatingStartIndex = -1;
-        _revalidatingCount = 0;
-
-        if (cancelForegroundRefresh) {
-            CancelAndDispose(ref _refreshCts);
-            _loading = false;
-        }
+        CancelAllWork();
+        _loading = false;
     }
 
     private RenderFragment DefaultPlaceholder(PlaceholderContext context) => (builder) => {
@@ -469,7 +406,7 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
         builder.CloseComponent();
     };
 
-    private async ValueTask RefreshDataCoreAsync(bool renderOnSuccess, bool forceRefresh = false, CancellationToken cancellationToken = default, bool countChangeReload = false, bool debounce = false) {
+    private async ValueTask RefreshDataCoreAsync(bool forceRefresh = false, CancellationToken cancellationToken = default, bool countChangeReload = false, bool debounce = false) {
         CancelAndDispose(ref _refreshCts);
         _countChangeReloaded = countChangeReload;
 
@@ -478,141 +415,125 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
         var count = _visibleItemCapacity;
         var missingStartIndex = startIndex;
         var missingCount = count;
-        if (!forceRefresh && !TryGetMissingRange(startIndex, _hasLoadedItems ? Math.Min(count, Math.Max(0, _itemCount - startIndex)) : count, out missingStartIndex, out missingCount)) {
+        if (!forceRefresh && !TryGetMissingRange(startIndex, count, out missingStartIndex, out missingCount)) {
             _loading = false;
             // Scrolling through cached rows would otherwise start a background request on every window change.
             var backgroundDelay = debounce ? ScrollDebounceDelay : TimeSpan.Zero;
             StartBackgroundPreload(backgroundDelay);
-            StartBackgroundRevalidation(startIndex, count, backgroundDelay);
-            if (renderOnSuccess) {
-                await InvokeAsync(StateHasChanged);
-            }
-
-            return;
+            StartBackgroundRevalidation(backgroundDelay);
+            await InvokeAsync(StateHasChanged);
         }
+        else if (count > 0) { // Otherwise browser measurement owns the first request, including InitialItemIndex.
+            CancelAndDispose(ref _prefetchCts);
+            CancelAndDispose(ref _revalidateCts);
+            _pendingAnchor = null;
+            var refreshCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            _refreshCts = refreshCancellation;
+            var refreshToken = refreshCancellation.Token;
+            _loading = true;
 
-        if (count <= 0) {
-            return; // Browser measurement owns the first request, including InitialItemIndex.
-        }
+            try {
+                // Scroll-driven loads wait for the window to settle; the next window change cancels this wait.
+                if (debounce) {
+                    await Task.Delay(ScrollDebounceDelay, refreshToken);
+                }
 
-        CancelAndDispose(ref _prefetchCts);
-        CancelAndDispose(ref _revalidateCts);
-        _pendingAnchor = null;
-        var refreshCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _refreshCts = refreshCancellation;
-        var refreshToken = refreshCancellation.Token;
-        _loading = true;
+                NTVirtualizeAnchorSnapshot? anchor = null;
+                var anchorItem = default(TItem);
+                var hasAnchorItem = false;
+                var oldItemCount = _itemCount;
+                if (forceRefresh && AnchorMode != NTVirtualizeAnchorMode.None && TryGetInteropReferences(out var anchorModule, out var anchorRef)) {
+                    anchor = await anchorModule.InvokeAsync<NTVirtualizeAnchorSnapshot?>("captureAnchor", refreshToken, anchorRef);
+                    hasAnchorItem = anchor is not null && _itemCache.TryGetValue(anchor.Index, out anchorItem);
+                }
 
-        var request = new NTVirtualizeItemsProviderRequest<TItem> {
-            Count = missingCount,
-            StartIndex = missingStartIndex,
-            CancellationToken = refreshToken
-        };
+                var requestStart = missingStartIndex;
+                var result = await FetchAsync(requestStart, missingCount, refreshToken);
 
-        try {
-            // Scroll-driven loads wait for the window to settle; the next window change cancels this wait.
-            if (debounce) {
-                await Task.Delay(ScrollDebounceDelay, refreshToken);
-            }
+                // Providers can shrink while a window is loading, including an initial index beyond the end.
+                if (requestStart > 0 && requestStart >= result.TotalItemCount) {
+                    requestStart = Math.Min(requestStart, Math.Max(0, result.TotalItemCount - Math.Max(1, count)));
+                    result = await FetchAsync(requestStart, count, refreshToken);
+                }
 
-            NTVirtualizeAnchorSnapshot? anchor = null;
-            var anchorItem = default(TItem);
-            var hasAnchorItem = false;
-            var oldItemCount = _itemCount;
-            if (forceRefresh && AnchorMode != NTVirtualizeAnchorMode.None && TryGetInteropReferences(out var anchorModule, out var anchorRef)) {
-                anchor = await anchorModule.InvokeAsync<NTVirtualizeAnchorSnapshot?>("captureAnchor", refreshToken, anchorRef);
-                hasAnchorItem = anchor is not null && _itemCache.TryGetValue(anchor.Index, out anchorItem);
-            }
-
-            var result = await ItemsProvider!(request).AsTask().WaitAsync(refreshToken);
-            refreshToken.ThrowIfCancellationRequested();
-
-            // Providers can shrink while a window is loading, including an initial index beyond the end.
-            var clampedStart = Math.Min(request.StartIndex, Math.Max(0, result.TotalItemCount - Math.Max(1, count)));
-            if (request.StartIndex >= result.TotalItemCount && request.StartIndex > 0) {
-                request = new NTVirtualizeItemsProviderRequest<TItem> { StartIndex = clampedStart, Count = count, CancellationToken = refreshToken };
-                result = await ItemsProvider!(request).AsTask().WaitAsync(refreshToken);
-                refreshToken.ThrowIfCancellationRequested();
-            }
-
-            var anchorIndex = anchor?.Index ?? startIndex;
-            if (anchor is not null && hasAnchorItem) {
-                var match = FindAnchorIndex(result.Items, request.StartIndex, anchorItem!);
-                var countDelta = result.TotalItemCount - oldItemCount;
-                if (match < 0 && countDelta != 0) {
-                    // A prepend can move the old item beyond this window. Probe the count-shifted window,
-                    // accepting it only when stable identity confirms that the old item is actually there.
+                var anchorIndex = anchor?.Index ?? startIndex;
+                if (hasAnchorItem) {
+                    var match = FindAnchorIndex(result.Items, requestStart, anchorItem!);
+                    var countDelta = result.TotalItemCount - oldItemCount;
                     var shiftedStart = (int)Math.Clamp((long)startIndex + countDelta, 0, Math.Max(0, result.TotalItemCount - count));
-                    if (shiftedStart != request.StartIndex) {
-                        var shiftedRequest = new NTVirtualizeItemsProviderRequest<TItem> { StartIndex = shiftedStart, Count = count, CancellationToken = refreshToken };
-                        var shiftedResult = await ItemsProvider!(shiftedRequest).AsTask().WaitAsync(refreshToken);
-                        refreshToken.ThrowIfCancellationRequested();
+                    if (match < 0 && countDelta != 0 && shiftedStart != requestStart) {
+                        // A prepend can move the old item beyond this window. Probe the count-shifted window,
+                        // accepting it only when stable identity confirms that the old item is actually there.
+                        var shiftedResult = await FetchAsync(shiftedStart, count, refreshToken);
                         match = FindAnchorIndex(shiftedResult.Items, shiftedStart, anchorItem!);
                         if (match >= 0) {
-                            request = shiftedRequest;
+                            requestStart = shiftedStart;
                             result = shiftedResult;
                         }
                     }
+
+                    anchorIndex = match >= 0 ? match : anchorIndex;
                 }
 
-                if (match >= 0) {
-                    anchorIndex = match;
+                // Only apply result if the task was not canceled.
+                if (!refreshToken.IsCancellationRequested && !DisposalStarted) {
+                    if (forceRefresh) {
+                        _itemCache.Clear();
+                        _measurementRevision++;
+                        _preserveScrollOffset = AnchorMode == NTVirtualizeAnchorMode.None;
+                    }
+
+                    if (forceRefresh || requestStart != missingStartIndex) {
+                        _itemsBefore = requestStart;
+                        _spacerBeforeSize = _itemsBefore * _itemSize;
+                    }
+
+                    SetItemCount(result.TotalItemCount);
+                    _hasLoadedItems = true;
+                    UpdateSpacerAfterSizeFromItemCount();
+                    StoreItems(requestStart, result.Items);
+                    _loading = false;
+                    _pendingAnchor = anchor is null ? null : (anchor, Math.Clamp(anchorIndex, 0, Math.Max(0, _itemCount - 1)));
+
+                    await InvokeAsync(StateHasChanged);
+                    StartBackgroundPreload(TimeSpan.Zero);
                 }
             }
-
-            // Only apply result if the task was not canceled.
-            if (!refreshToken.IsCancellationRequested && !DisposalStarted) {
-                if (forceRefresh) {
-                    _itemCache.Clear();
-                    _measurementRevision++;
-                    _preserveScrollOffset = AnchorMode == NTVirtualizeAnchorMode.None;
-                }
-                if (forceRefresh || request.StartIndex != missingStartIndex) {
-                    _itemsBefore = request.StartIndex;
-                    _spacerBeforeSize = _itemsBefore * _itemSize;
-                }
-                SetItemCount(result.TotalItemCount);
-                _hasLoadedItems = true;
-                UpdateSpacerAfterSizeFromItemCount();
-                StoreItems(request.StartIndex, result.Items);
-                _loading = false;
-                _pendingAnchor = anchor;
-                _pendingAnchorIndex = Math.Clamp(anchorIndex, 0, Math.Max(0, _itemCount - 1));
-
-                if (renderOnSuccess) {
+            catch (OperationCanceledException) when (refreshToken.IsCancellationRequested) {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+            catch (Exception e) {
+                // A reload started by background work stays opportunistic: cached rows remain and the next foreground load surfaces the failure.
+                if (!refreshToken.IsCancellationRequested && !DisposalStarted && !countChangeReload) {
+                    // Cache this exception so the renderer can throw it, then re-render to throw it.
+                    _refreshException = e;
+                    await CancelScrollAsync(_scrollOperationId);
                     await InvokeAsync(StateHasChanged);
                 }
-
-                StartBackgroundPreload(TimeSpan.Zero);
             }
-        }
-        catch (OperationCanceledException) when (refreshToken.IsCancellationRequested) {
-            cancellationToken.ThrowIfCancellationRequested();
-        }
-        catch (Exception e) {
-            // A reload started by background work stays opportunistic: cached rows remain and the next foreground load surfaces the failure.
-            if (refreshToken.IsCancellationRequested || DisposalStarted || countChangeReload) {
-                return;
-            }
-            // Cache this exception so the renderer can throw it.
-            _refreshException = e;
-
-            if (TryGetInteropReferences(out var module, out var dotNetRef)) {
-                try {
-                    await module.InvokeVoidAsync("cancelScroll", dotNetRef, _scrollOperationId);
+            finally {
+                if (ReferenceEquals(_refreshCts, refreshCancellation)) {
+                    _refreshCts = null;
+                    _loading = false;
                 }
-                catch (JSDisconnectedException) { }
-            }
 
-            // Re-render the component to throw the exception.
-            await InvokeAsync(StateHasChanged);
-        }
-        finally {
-            if (ReferenceEquals(_refreshCts, refreshCancellation)) {
-                _refreshCts = null;
-                _loading = false;
+                refreshCancellation.Dispose();
             }
-            refreshCancellation.Dispose();
+        }
+    }
+
+    private async Task<NTVirtualizeItemsProviderResult<TItem>> FetchAsync(int startIndex, int count, CancellationToken cancellationToken) {
+        var result = await ItemsProvider!(new NTVirtualizeItemsProviderRequest<TItem> { Count = count, StartIndex = startIndex, CancellationToken = cancellationToken }).AsTask().WaitAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        return result;
+    }
+
+    private async Task CancelScrollAsync(long operationId) {
+        if (TryGetInteropReferences(out var module, out var dotNetRef)) {
+            try {
+                await module.InvokeVoidAsync("cancelScroll", dotNetRef, operationId);
+            }
+            catch (JSDisconnectedException) { }
         }
     }
 
@@ -623,115 +544,58 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
             if (ItemKey is not null ? Equals(key, ItemKey(item)) : comparer.Equals(anchorItem, item)) {
                 return startIndex;
             }
+
             startIndex++;
         }
+
         return -1;
     }
 
     private void StartBackgroundPreload(TimeSpan delay) {
-        if (_loading || ItemsProvider is null || _itemCount <= 0 || _visibleItemCapacity <= 0) {
-            return;
-        }
-
         var activeLastItemIndex = Math.Min(_itemsBefore + _visibleItemCapacity, _itemCount);
-        var preloadCount = GetBackgroundPreloadCount(activeLastItemIndex);
-        if (!TryGetMissingRange(activeLastItemIndex, preloadCount, out var missingStartIndex, out var missingCount)) {
-            return;
+        if (!_loading && TryGetMissingRange(activeLastItemIndex, GetWindowItemCount(activeLastItemIndex, BackgroundPreloadWindowCount), out var missingStartIndex, out var missingCount)) {
+            CancelAndDispose(ref _prefetchCts);
+            _prefetchCts = new CancellationTokenSource();
+            _ = InvokeAsync(() => LoadInBackgroundAsync(missingStartIndex, missingCount, delay, false, _prefetchCts.Token));
         }
-
-        CancelAndDispose(ref _prefetchCts);
-        _prefetchCts = new CancellationTokenSource();
-        _ = InvokeAsync(() => PreloadItemsAsync(missingStartIndex, missingCount, delay, _prefetchCts.Token));
     }
 
-    private async Task PreloadItemsAsync(int startIndex, int count, TimeSpan delay, CancellationToken cancellationToken) {
+    private void StartBackgroundRevalidation(TimeSpan delay) {
+        var startIndex = _itemsBefore;
+        var count = Math.Min(_visibleItemCapacity, _itemCount - startIndex);
+        if (RevalidateCachedItems && !_loading && count > 0 && (_revalidatingStartIndex != startIndex || _revalidatingCount != count)) {
+            CancelAndDispose(ref _revalidateCts);
+            _revalidateCts = new CancellationTokenSource();
+            _revalidatingStartIndex = startIndex;
+            _revalidatingCount = count;
+            _ = InvokeAsync(() => LoadInBackgroundAsync(startIndex, count, delay, true, _revalidateCts.Token));
+        }
+    }
+
+    // Preloads and revalidation are opportunistic: cached rows stay visible and the foreground load path surfaces provider failures when the range is actually requested.
+    private async Task LoadInBackgroundAsync(int startIndex, int count, TimeSpan delay, bool revalidate, CancellationToken cancellationToken) {
         try {
             await Task.Delay(delay, cancellationToken);
-            var result = await ItemsProvider!(new NTVirtualizeItemsProviderRequest<TItem> {
-                Count = count,
-                StartIndex = startIndex,
-                CancellationToken = cancellationToken
-            });
+            var result = await FetchAsync(startIndex, count, cancellationToken);
 
-            if (!cancellationToken.IsCancellationRequested) {
-                if (await ReloadIfItemCountChangedAsync(result.TotalItemCount)) {
-                    return;
-                }
-
+            if (result.TotalItemCount != _itemCount && !_countChangeReloaded) {
+                // A different total means rows were inserted, removed, or filtered, so no cached row can be trusted. Reload the active window like
+                // RefreshDataAsync: cached rows stay visible until the replacement arrives. Only one reload runs per foreground load, so a total
+                // that changes on every request adopts the new count instead of chaining reloads.
+                await RefreshDataCoreAsync(forceRefresh: true, countChangeReload: true);
+            }
+            else {
                 SetItemCount(result.TotalItemCount);
                 UpdateSpacerAfterSizeFromItemCount();
                 StoreItems(startIndex, result.Items);
-                if (RangeIntersectsCurrentRender(startIndex, count)) {
+                if (revalidate || RangeIntersectsCurrentRender(startIndex, count)) {
                     await InvokeAsync(StateHasChanged);
                 }
             }
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
-        catch {
-            // Background preloads are opportunistic. The foreground load path will surface provider failures when the range is actually requested.
-        }
-    }
-
-    // A different total means rows were inserted, removed, or filtered, so no cached row can be trusted. Reload the active window like
-    // RefreshDataAsync: cached rows stay visible until the replacement arrives. Only one reload runs per foreground load, so a total
-    // that changes on every request adopts the new count instead of chaining reloads.
-    private async Task<bool> ReloadIfItemCountChangedAsync(int totalItemCount) {
-        if (totalItemCount == _itemCount || _countChangeReloaded) {
-            return false;
-        }
-
-        await RefreshDataCoreAsync(renderOnSuccess: true, forceRefresh: true, countChangeReload: true);
-        return true;
-    }
-
-    private void StartBackgroundRevalidation(int startIndex, int count, TimeSpan delay) {
-        if (!RevalidateCachedItems || _loading || ItemsProvider is null || _itemCount <= 0 || count <= 0) {
-            return;
-        }
-
-        var resolvedStartIndex = Math.Max(0, startIndex);
-        var resolvedCount = Math.Min(Math.Max(0, count), Math.Max(0, _itemCount - resolvedStartIndex));
-        if (resolvedCount <= 0) {
-            return;
-        }
-
-        if (_revalidatingStartIndex == resolvedStartIndex && _revalidatingCount == resolvedCount) {
-            return;
-        }
-
-        CancelAndDispose(ref _revalidateCts);
-        _revalidateCts = new CancellationTokenSource();
-        _revalidatingStartIndex = resolvedStartIndex;
-        _revalidatingCount = resolvedCount;
-        _ = InvokeAsync(() => RevalidateItemsAsync(resolvedStartIndex, resolvedCount, delay, _revalidateCts.Token));
-    }
-
-    private async Task RevalidateItemsAsync(int startIndex, int count, TimeSpan delay, CancellationToken cancellationToken) {
-        try {
-            await Task.Delay(delay, cancellationToken);
-            var result = await ItemsProvider!(new NTVirtualizeItemsProviderRequest<TItem> {
-                Count = count,
-                StartIndex = startIndex,
-                CancellationToken = cancellationToken
-            });
-
-            if (!cancellationToken.IsCancellationRequested) {
-                if (await ReloadIfItemCountChangedAsync(result.TotalItemCount)) {
-                    return;
-                }
-
-                SetItemCount(result.TotalItemCount);
-                UpdateSpacerAfterSizeFromItemCount();
-                StoreItems(startIndex, result.Items);
-                await InvokeAsync(StateHasChanged);
-            }
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
-        catch {
-            // Revalidation is opportunistic. Cached rows stay visible and the foreground load path remains responsible for surfacing provider failures.
-        }
+        catch { }
         finally {
-            if (_revalidatingStartIndex == startIndex && _revalidatingCount == count) {
+            if (revalidate && _revalidatingStartIndex == startIndex && _revalidatingCount == count) {
                 _revalidatingStartIndex = -1;
                 _revalidatingCount = 0;
             }
@@ -741,25 +605,15 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
     private void UpdateSpacerAfterSizeFromItemCount() {
         if (_itemCount <= 0 || _visibleItemCapacity <= 0) {
             _spacerAfterSize = 0;
-            return;
         }
-
-        if (MeasureItemSize) {
-            return;
+        else if (!MeasureItemSize) {
+            _spacerAfterSize = Math.Max(0, _itemCount - _visibleItemCapacity - _itemsBefore) * _itemSize;
         }
-
-        var itemsAfter = Math.Max(0, _itemCount - _visibleItemCapacity - _itemsBefore);
-        _spacerAfterSize = itemsAfter * _itemSize;
     }
 
     private bool RangeIntersectsCurrentRender(int startIndex, int count) {
-        if (count <= 0) {
-            return false;
-        }
-
         var visibleLastItemIndex = Math.Min(_itemsBefore + _visibleItemCapacity, _itemCount);
-        var renderLastItemIndex = visibleLastItemIndex + GetPreloadedPlaceholderCount(visibleLastItemIndex);
-        return startIndex < renderLastItemIndex && startIndex + count > _itemsBefore;
+        return count > 0 && startIndex < visibleLastItemIndex + GetPreloadedPlaceholderCount(visibleLastItemIndex) && startIndex + count > _itemsBefore;
     }
 
     private void CancelAllWork() {
@@ -812,14 +666,8 @@ public struct NTVirtualizeItemsProviderRequest<TItem>() {
     ///     This conversion allows a query-friendly items provider request to be used in virtualization contexts. The <see cref="CancellationToken" /> is set to the default value since it is not
     ///     available in the source request.
     /// </remarks>
-    public static implicit operator NTVirtualizeItemsProviderRequest<TItem>(NTItemsProviderRequest request) {
-        return new NTVirtualizeItemsProviderRequest<TItem> {
-            Count = request.Count,
-            SortOnProperties = request.SortOnProperties,
-            StartIndex = request.StartIndex,
-            CancellationToken = default
-        };
-    }
+    public static implicit operator NTVirtualizeItemsProviderRequest<TItem>(NTItemsProviderRequest request) =>
+        new() { Count = request.Count, SortOnProperties = request.SortOnProperties, StartIndex = request.StartIndex };
 
     /// <summary>
     ///     Implicitly converts a <see cref="NTVirtualizeItemsProviderRequest{TItem}" /> to an <see cref="NTItemsProviderRequest" />.
@@ -827,13 +675,8 @@ public struct NTVirtualizeItemsProviderRequest<TItem>() {
     /// <param name="request">The virtualize items provider request to convert.</param>
     /// <returns>A new <see cref="NTItemsProviderRequest" /> with properties copied from the source request.</returns>
     /// <remarks>This conversion enables interoperability between the virtualization-specific request type and the query-friendly items provider request type.</remarks>
-    public static implicit operator NTItemsProviderRequest(NTVirtualizeItemsProviderRequest<TItem> request) {
-        return new NTItemsProviderRequest {
-            StartIndex = request.StartIndex,
-            Count = request.Count,
-            Sorts = NTItemsProviderRequest.FormatSorts(request.SortOnProperties)
-        };
-    }
+    public static implicit operator NTItemsProviderRequest(NTVirtualizeItemsProviderRequest<TItem> request) =>
+        new() { StartIndex = request.StartIndex, Count = request.Count, Sorts = NTItemsProviderRequest.FormatSorts(request.SortOnProperties) };
 }
 
 /// <summary>

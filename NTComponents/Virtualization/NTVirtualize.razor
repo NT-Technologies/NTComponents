@@ -2,7 +2,7 @@
 @using Microsoft.AspNetCore.Components.Rendering
 @using Microsoft.AspNetCore.Components.Web.Virtualization
 @using NTComponents.Core
-@using System.Diagnostics
+@using System.Globalization
 @typeparam TItem
 @inherits NTPageScriptComponent<NTVirtualize<TItem>>
 
@@ -19,7 +19,7 @@
 		var beforeSpacerSize = Math.Max(0, _spacerBeforeSize);
 		builder.OpenElement(0, SpacerElement);
 		builder.AddAttribute(5, "class", "nt-virtualize-spacer");
-		builder.AddAttribute(10, "data-nt-virtualize-size", beforeSpacerSize.ToString(System.Globalization.CultureInfo.InvariantCulture));
+		builder.AddAttribute(10, "data-nt-virtualize-size", beforeSpacerSize.ToString(CultureInfo.InvariantCulture));
 		builder.AddAttribute(11, "data-nt-virtualize-start", _itemsBefore);
 		builder.AddAttribute(20, "aria-hidden", "true");
 		builder.AddElementReferenceCapture(3, elementReference => Element = elementReference);
@@ -28,11 +28,7 @@
 
 		var requestedLastItemIndex = _itemsBefore + _visibleItemCapacity;
 		var lastItemIndex = _loading && _itemCount == 0 ? requestedLastItemIndex : Math.Min(requestedLastItemIndex, _itemCount);
-		var preloadedPlaceholderCount = 0;
-		if (!_loading && _itemCache.Count > 0) {
-			preloadedPlaceholderCount = GetPreloadedPlaceholderCount(lastItemIndex);
-		}
-
+		var preloadedPlaceholderCount = !_loading && _itemCache.Count > 0 ? GetPreloadedPlaceholderCount(lastItemIndex) : 0;
 		var renderLastItemIndex = lastItemIndex + preloadedPlaceholderCount;
 
 		_lastRenderedItemCount = 0;
@@ -65,12 +61,12 @@
 			builder.CloseRegion();
 		}
 
-		var afterSpacerSize = GetAdjustedSpacerAfterSize(preloadedPlaceholderCount);
+		var afterSpacerSize = Math.Max(0, _spacerAfterSize - preloadedPlaceholderCount * _itemSize);
 		builder.OpenElement(70, SpacerElement);
 		builder.AddAttribute(75, "class", "nt-virtualize-spacer");
 		builder.AddAttribute(80, "aria-hidden", "true");
 		builder.AddAttribute(85, "data-nt-virtualize-end", renderLastItemIndex);
-		builder.AddAttribute(90, "data-nt-virtualize-size", afterSpacerSize.ToString(System.Globalization.CultureInfo.InvariantCulture));
+		builder.AddAttribute(90, "data-nt-virtualize-size", afterSpacerSize.ToString(CultureInfo.InvariantCulture));
 		builder.AddContent(95, SpacerTemplate, new PlaceholderContext(renderLastItemIndex + 1, afterSpacerSize));
 		builder.AddElementReferenceCapture(100, elementReference => _afterPlaceholder = elementReference);
 		builder.CloseElement();

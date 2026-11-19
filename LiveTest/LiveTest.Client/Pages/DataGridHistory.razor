@@ -1,0 +1,14 @@
+@page "/dataGridHistory/{Mode}/{PushHistoryEntries:bool}"
+
+@* A statically routed page with an interactive grid island, so enhanced navigation is active around the grid. *@
+<DataGridHistoryGrid PushHistoryEntries="PushHistoryEntries" @rendermode="GridRenderMode" />
+
+@code {
+    [Parameter]
+    public string Mode { get; set; } = "server";
+
+    [Parameter]
+    public bool PushHistoryEntries { get; set; }
+
+    private IComponentRenderMode GridRenderMode => Mode == "wasm" ? new InteractiveWebAssemblyRenderMode(prerender: false) : new InteractiveServerRenderMode(prerender: false);
+}
