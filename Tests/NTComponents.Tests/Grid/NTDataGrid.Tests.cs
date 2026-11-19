@@ -345,6 +345,22 @@ public class NTDataGrid_Tests : BunitContext {
         href.Should().Contain("ntdg-page=1").And.Contain("filter=open").And.EndWith("#results");
     }
 
+    [Theory]
+    [InlineData(true, "false")]
+    [InlineData(false, null)]
+    public void PaginationLinks_OptOutOfEnhancedNavigation_OnlyWhenInteractive(bool interactive, string? expected) {
+        // Interactive clicks are handled in .NET; enhanced navigation would navigate the same link a second time.
+        SetRendererInfo(new RendererInfo(interactive ? "Server" : "Static", interactive));
+        var cut = Render<NTDataGrid<TestGridItem>>(parameters => parameters
+            .Add(grid => grid.Items, _items)
+            .Add(grid => grid.ShowPagination, true)
+            .Add(grid => grid.PageSize, 1)
+            .Add(grid => grid.ChildContent, DefaultColumns));
+
+        cut.FindAll(".nt-data-grid-pagination-buttons a").Should().HaveCountGreaterThan(4)
+            .And.OnlyContain(link => link.GetAttribute("data-enhance-nav") == expected);
+    }
+
     [Fact]
     public async Task HistoryOptIn_NavigatesAndRestoresPageOnLocationChange() {
         var navigation = Services.GetRequiredService<NavigationManager>();

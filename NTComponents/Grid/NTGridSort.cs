@@ -2,49 +2,38 @@ using System.Linq.Expressions;
 
 namespace NTComponents;
 
-/// <summary>
-///     Represents sorting rules for an <see cref="NTDataGrid{TItem}" /> column.
-/// </summary>
+/// <summary>    Represents sorting rules for an <see cref="NTDataGrid{TItem}" /> column.</summary>
 /// <typeparam name="TItem">The type of item displayed by the grid.</typeparam>
 public sealed class NTGridSort<TItem> where TItem : class {
     private const string _expressionNotRepresentableMessage = "The supplied expression cannot be represented as a property name for sorting. Only member expressions, such as @(item => item.SomeProperty), are supported.";
 
     private readonly ISortClause _first;
-    private string _stateSignature;
-    private List<ISortClause>? _then;
+    private readonly List<ISortClause> _then = [];
 
     private NTGridSort(ISortClause first) {
         _first = first;
-        _stateSignature = CreateStateSignature(first);
+        StateSignature = CreateStateSignature(first);
     }
 
-    /// <summary>
-    ///     Creates sorting rules that sort by the supplied expression in ascending order.
-    /// </summary>
+    /// <summary>    Creates sorting rules that sort by the supplied expression in ascending order.</summary>
     /// <typeparam name="TValue">The type returned by the expression.</typeparam>
     /// <param name="expression">The expression used to select the sort value.</param>
     /// <returns>The configured sorting rules.</returns>
     public static NTGridSort<TItem> ByAscending<TValue>(Expression<Func<TItem, TValue>> expression) => Create(expression, true);
 
-    /// <summary>
-    ///     Creates sorting rules that sort by the supplied expression in descending order.
-    /// </summary>
+    /// <summary>    Creates sorting rules that sort by the supplied expression in descending order.</summary>
     /// <typeparam name="TValue">The type returned by the expression.</typeparam>
     /// <param name="expression">The expression used to select the sort value.</param>
     /// <returns>The configured sorting rules.</returns>
     public static NTGridSort<TItem> ByDescending<TValue>(Expression<Func<TItem, TValue>> expression) => Create(expression, false);
 
-    /// <summary>
-    ///     Appends an ascending sorting rule.
-    /// </summary>
+    /// <summary>    Appends an ascending sorting rule.</summary>
     /// <typeparam name="TValue">The type returned by the expression.</typeparam>
     /// <param name="expression">The expression used to select the sort value.</param>
     /// <returns>The updated sorting rules.</returns>
     public NTGridSort<TItem> ThenAscending<TValue>(Expression<Func<TItem, TValue>> expression) => Add(expression, true);
 
-    /// <summary>
-    ///     Appends a descending sorting rule.
-    /// </summary>
+    /// <summary>    Appends a descending sorting rule.</summary>
     /// <typeparam name="TValue">The type returned by the expression.</typeparam>
     /// <param name="expression">The expression used to select the sort value.</param>
     /// <returns>The updated sorting rules.</returns>
@@ -54,46 +43,21 @@ public sealed class NTGridSort<TItem> where TItem : class {
 
     internal SortDirection DefaultDirection => _first.Ascending ? SortDirection.Ascending : SortDirection.Descending;
 
-    internal string StateSignature => _stateSignature;
+    internal string StateSignature { get; private set; }
 
     internal IOrderedEnumerable<TItem> Apply(IEnumerable<TItem> source, SortDirection direction, bool thenBy) {
         var useConfiguredDirections = direction == DefaultDirection;
-        var ordered = _first.Apply(source, useConfiguredDirections, thenBy);
-
-        if (_then is not null) {
-            foreach (var clause in _then) {
-                ordered = clause.Apply(ordered, useConfiguredDirections, true);
-            }
-        }
-
-        return ordered;
+        return _then.Aggregate(_first.Apply(source, useConfiguredDirections, thenBy), (ordered, clause) => clause.Apply(ordered, useConfiguredDirections, true));
     }
 
     internal IOrderedQueryable<TItem> Apply(IQueryable<TItem> source, SortDirection direction, bool thenBy) {
         var useConfiguredDirections = direction == DefaultDirection;
-        var ordered = _first.Apply(source, useConfiguredDirections, thenBy);
-
-        if (_then is not null) {
-            foreach (var clause in _then) {
-                ordered = clause.Apply(ordered, useConfiguredDirections, true);
-            }
-        }
-
-        return ordered;
+        return _then.Aggregate(_first.Apply(source, useConfiguredDirections, thenBy), (ordered, clause) => clause.Apply(ordered, useConfiguredDirections, true));
     }
 
     internal IReadOnlyList<NTSortDescriptor> GetSortDescriptors(SortDirection direction) {
         var useConfiguredDirections = direction == DefaultDirection;
-        var descriptors = new NTSortDescriptor[1 + (_then?.Count ?? 0)];
-        descriptors[0] = CreateSortDescriptor(_first, useConfiguredDirections);
-
-        if (_then is not null) {
-            for (var i = 0; i < _then.Count; i++) {
-                descriptors[i + 1] = CreateSortDescriptor(_then[i], useConfiguredDirections);
-            }
-        }
-
-        return descriptors;
+        return [CreateSortDescriptor(_first, useConfiguredDirections), .. _then.Select(clause => CreateSortDescriptor(clause, useConfiguredDirections))];
     }
 
     private static NTGridSort<TItem> Create<TValue>(Expression<Func<TItem, TValue>> expression, bool ascending) {
@@ -104,9 +68,8 @@ public sealed class NTGridSort<TItem> where TItem : class {
     private NTGridSort<TItem> Add<TValue>(Expression<Func<TItem, TValue>> expression, bool ascending) {
         ArgumentNullException.ThrowIfNull(expression);
         var clause = new SortClause<TValue>(expression, ascending);
-        _then ??= [];
         _then.Add(clause);
-        _stateSignature = string.Concat(_stateSignature, "|", CreateStateSignature(clause));
+        StateSignature = string.Concat(StateSignature, "|", CreateStateSignature(clause));
         return this;
     }
 
@@ -158,10 +121,6 @@ public sealed class NTGridSort<TItem> where TItem : class {
 
         if (expressionBody is not MemberExpression body) {
             throw new ArgumentException(_expressionNotRepresentableMessage, nameof(expression));
-        }
-
-        if (body.Expression is ParameterExpression) {
-            return body.Member.Name;
         }
 
         var members = new Stack<string>();

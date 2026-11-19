@@ -35,62 +35,18 @@
                         <th scope="col" class="nt-data-grid-header-cell"><span class="nt-data-grid-header-label">Details</span></th>
                     }
                     @foreach (var column in _columns) {
-                        var canSort = CanSort(column);
-                        var sortIndex = -1;
-                        if (canSort) {
-                            var sortPropertyName = column.SortPropertyName;
-                            for (var i = 0; i < _sorts.Count; i++) {
-                                if (string.Equals(_sorts[i].PropertyName, sortPropertyName, StringComparison.Ordinal)) {
-                                    sortIndex = i;
-                                    break;
-                                }
+                        var sortIndex = column.CanSort ? _sorts.FindIndex(sort => sort.PropertyName == column.SortPropertyName) : -1;
+                        var direction = sortIndex < 0 ? null : _sorts[sortIndex].Direction.ToString().ToLowerInvariant();
+                        var sortLinkClass = "nt-data-grid-sort-link" + (sortIndex < 0 ? "" : _sorts.Count > 1 ? " nt-data-grid-sort-link-sorted nt-data-grid-sort-link-multi-sorted" : " nt-data-grid-sort-link-sorted");
+                        <th scope="col" class="@column.HeaderCellClass" aria-sort="@direction">
+                            @if (!column.CanSort) {
+                                <span class="nt-data-grid-header-label">@column.HeaderTitle</span>
                             }
-                        }
-
-                        SortDirection? sortDirection = sortIndex >= 0 ? _sorts[sortIndex].Direction : null;
-                        var showSortOrder = sortIndex >= 0 && _sorts.Count > 1;
-                        var sortOrder = sortIndex + 1;
-                        var sortLinkClass = sortIndex < 0
-                            ? "nt-data-grid-sort-link"
-                            : showSortOrder
-                                ? "nt-data-grid-sort-link nt-data-grid-sort-link-sorted nt-data-grid-sort-link-multi-sorted"
-                                : "nt-data-grid-sort-link nt-data-grid-sort-link-sorted";
-                        var ariaSort = sortDirection switch {
-                            SortDirection.Ascending => "ascending",
-                            SortDirection.Descending => "descending",
-                            _ => null
-                        };
-                        <th scope="col" class="@column.HeaderCellClass" aria-sort="@ariaSort">
-                            @if (canSort) {
-                                @if (RendererInfo.IsInteractive) {
-                                    <button type="button" class="@sortLinkClass" @onclick="() => SortByColumnAsync(column)">
-                                        <span class="nt-data-grid-header-title">@column.HeaderTitle</span>
-                                        @if (sortDirection is not null) {
-                                            <span class="nt-data-grid-sort-state">
-                                                @if (showSortOrder) {
-                                                    <span class="nt-data-grid-sort-order" aria-label="@($"Sort priority {sortOrder}")">@sortOrder</span>
-                                                }
-                                                <MaterialIcon class="@GetSortIndicatorClass(sortDirection.Value)" Icon="@GetSortIndicator()" Size="IconSize.Small" aria-hidden="true" />
-                                            </span>
-                                        }
-                                    </button>
-                                }
-                                else {
-                                    <a class="@sortLinkClass" href="@BuildSortHref(column)">
-                                        <span class="nt-data-grid-header-title">@column.HeaderTitle</span>
-                                        @if (sortDirection is not null) {
-                                            <span class="nt-data-grid-sort-state">
-                                                @if (showSortOrder) {
-                                                    <span class="nt-data-grid-sort-order" aria-label="@($"Sort priority {sortOrder}")">@sortOrder</span>
-                                                }
-                                                <MaterialIcon class="@GetSortIndicatorClass(sortDirection.Value)" Icon="@GetSortIndicator()" Size="IconSize.Small" aria-hidden="true" />
-                                            </span>
-                                        }
-                                    </a>
-                                }
+                            else if (RendererInfo.IsInteractive) {
+                                <button type="button" class="@sortLinkClass" @onclick="() => SortByColumnAsync(column)">@RenderSortContent(column.HeaderTitle, direction, sortIndex)</button>
                             }
                             else {
-                                <span class="nt-data-grid-header-label">@column.HeaderTitle</span>
+                                <a class="@sortLinkClass" href="@BuildSortHref(column)">@RenderSortContent(column.HeaderTitle, direction, sortIndex)</a>
                             }
                         </th>
                     }
@@ -114,7 +70,7 @@
                                   RevalidateCachedItems="VirtualizationRevalidateCachedItems"
                                   ScrollDebounceMilliseconds="VirtualizationScrollDebounceMilliseconds"
                                   MaxCachedItemCount="VirtualizationMaxCachedItemCount"
-                                  ScrollRestorationKey="@VirtualizedScrollRestorationKey"
+                                  ScrollRestorationKey="@GetQueryName("scroll")"
                                   SpacerElement="tr"
                                   SpacerTemplate="RenderSpacerCell"
                                   ItemTemplate="RenderRowFragment"
@@ -157,36 +113,20 @@
                 </div>
             }
             <div class="nt-data-grid-pagination-buttons">
-                <a class="@GetPaginationButtonClass(!CanGoToPreviousPage, false, "pagination-first-page")"
-                   href="@BuildPageHref(0)"
-                   title="First page"
-                   aria-label="First page"
-                   aria-disabled="@(CanGoToPreviousPage ? "false" : "true")"
-                   @onclick="() => GoToPageAsync(0)"
-                   @onclick:preventDefault="true">
-                    <MaterialIcon Icon="@MaterialIcon.FirstPage" Size="IconSize.Small" />
-                </a>
-                <a class="@GetPaginationButtonClass(!CanGoToPreviousPage, false, "pagination-previous-page")"
-                   href="@BuildPageHref(CurrentPageIndex - 1)"
-                   title="Previous page"
-                   aria-label="Previous page"
-                   aria-disabled="@(CanGoToPreviousPage ? "false" : "true")"
-                   @onclick="() => GoToPageAsync(CurrentPageIndex - 1)"
-                   @onclick:preventDefault="true">
-                    <MaterialIcon Icon="@MaterialIcon.ChevronLeft" Size="IconSize.Small" />
-                </a>
+                @RenderNavLink("first", "First page", 0, !CanGoToPreviousPage, MaterialIcon.FirstPage)
+                @RenderNavLink("previous", "Previous page", CurrentPageIndex - 1, !CanGoToPreviousPage, MaterialIcon.ChevronLeft)
 
                 @if (_totalItemCount > 0) {
                     @foreach (var pageIndex in GetVisiblePageIndices()) {
                         var isCurrentPage = CurrentPageIndex == pageIndex;
-                        var pageLabel = $"Page {pageIndex + 1}";
                         <a class="@GetPaginationButtonClass(false, isCurrentPage)"
                            href="@BuildPageHref(pageIndex)"
-                           title="@pageLabel"
-                           aria-label="@pageLabel"
+                           title="@($"Page {pageIndex + 1}")"
+                           aria-label="@($"Page {pageIndex + 1}")"
                            aria-current="@(isCurrentPage ? "page" : null)"
                            aria-disabled="@(isCurrentPage ? "true" : "false")"
                            @onclick="() => GoToPageAsync(pageIndex)"
+                           data-enhance-nav="@PaginationEnhanceNav"
                            @onclick:preventDefault="true">@(pageIndex + 1)</a>
                     }
                     <span class="nt-data-grid-page-jump">
@@ -206,24 +146,8 @@
                     </span>
                 }
 
-                <a class="@GetPaginationButtonClass(!CanGoToNextPage, false, "pagination-next-page")"
-                   href="@BuildPageHref(CurrentPageIndex + 1)"
-                   title="Next page"
-                   aria-label="Next page"
-                   aria-disabled="@(CanGoToNextPage ? "false" : "true")"
-                   @onclick="() => GoToPageAsync(CurrentPageIndex + 1)"
-                   @onclick:preventDefault="true">
-                    <MaterialIcon Icon="@MaterialIcon.ChevronRight" Size="IconSize.Small" />
-                </a>
-                <a class="@GetPaginationButtonClass(!CanGoToNextPage, false, "pagination-last-page")"
-                   href="@BuildPageHref(PageCount - 1)"
-                   title="Last page"
-                   aria-label="Last page"
-                   aria-disabled="@(CanGoToNextPage ? "false" : "true")"
-                   @onclick="() => GoToPageAsync(PageCount - 1)"
-                   @onclick:preventDefault="true">
-                    <MaterialIcon Icon="@MaterialIcon.LastPage" Size="IconSize.Small" />
-                </a>
+                @RenderNavLink("next", "Next page", CurrentPageIndex + 1, !CanGoToNextPage, MaterialIcon.ChevronRight)
+                @RenderNavLink("last", "Last page", PageCount - 1, !CanGoToNextPage, MaterialIcon.LastPage)
             </div>
         </nav>
     }
@@ -231,6 +155,29 @@
 
 @code {
     // Kept as Razor templates (not builder code) so the rendered elements get this component's CSS-isolation scope attribute.
+    private RenderFragment RenderSortContent(string title, string? direction, int sortIndex) => @<text>
+        <span class="nt-data-grid-header-title">@title</span>
+        @if (direction is not null) {
+            <span class="nt-data-grid-sort-state">
+                @if (_sorts.Count > 1) {
+                    <span class="nt-data-grid-sort-order" aria-label="@($"Sort priority {sortIndex + 1}")">@(sortIndex + 1)</span>
+                }
+                <MaterialIcon class="@($"nt-data-grid-sort-indicator nt-data-grid-sort-indicator-{direction}")" Icon="arrow_drop_down" Size="IconSize.Small" aria-hidden="true" />
+            </span>
+        }
+    </text>;
+
+    private RenderFragment RenderNavLink(string role, string label, int pageIndex, bool disabled, MaterialIcon icon) => @<a class="@GetPaginationButtonClass(disabled, false, $"pagination-{role}-page")"
+       href="@BuildPageHref(pageIndex)"
+       title="@label"
+       aria-label="@label"
+       aria-disabled="@(disabled ? "true" : "false")"
+       @onclick="() => GoToPageAsync(pageIndex)"
+       data-enhance-nav="@PaginationEnhanceNav"
+       @onclick:preventDefault="true">
+        <MaterialIcon Icon="@icon" Size="IconSize.Small" />
+    </a>;
+
     private RenderFragment RenderExpansionCell(TItem item, bool expanded) => @<td class="nt-data-grid-cell nt-data-grid-expansion-cell" @onclick:stopPropagation="true" @onkeydown:stopPropagation="true">
         <NTButton Label="@(expanded ? CollapseRowText : ExpandRowText)" Variant="NTButtonVariant.Text"
                   Disabled="@(!RendererInfo.IsInteractive)" aria-expanded="@(expanded ? "true" : "false")"

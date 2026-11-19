@@ -1,0 +1,39 @@
+@using NTComponents
+
+@* Logs every provider request so E2E tests can assert that each page, sort, or history step loads exactly once. *@
+<NTDataGrid TItem="HistoryItem" ItemsProvider="Provider" Caption="History grid" ShowPagination="true" PageSize="5" PushHistoryEntries="PushHistoryEntries">
+    <NTPropertyColumn TItem="HistoryItem" TValue="int" Title="Id" Property="item => item.Id" />
+    <NTPropertyColumn TItem="HistoryItem" TValue="string" Title="Customer" Property="item => item.Customer" InitialSortDirection="SortDirection.Ascending" />
+</NTDataGrid>
+
+<ol class="provider-log">
+    @foreach (var entry in _log) {
+        <li>@entry</li>
+    }
+</ol>
+
+@code {
+    private static readonly HistoryItem[] Items = Enumerable.Range(1, 40).Select(id => new HistoryItem(id, $"Customer {id:000}")).ToArray();
+    private readonly List<string> _log = [];
+
+    [Parameter]
+    public bool PushHistoryEntries { get; set; }
+
+    private ValueTask<NTItemsProviderResult<HistoryItem>> Provider(NTDataGridItemsProviderRequest<HistoryItem> request) {
+        _log.Add($"start={request.StartIndex};sort={string.Join(",", request.Sorts.Select(sort => $"{sort.PropertyName}:{sort.Direction}"))}");
+        _ = InvokeAsync(StateHasChanged);
+        IEnumerable<HistoryItem> source = Items;
+        foreach (var sort in request.Sorts.Reverse()) {
+            source = (sort.PropertyName, sort.Direction) switch {
+                (nameof(HistoryItem.Id), SortDirection.Descending) => source.OrderByDescending(item => item.Id),
+                (nameof(HistoryItem.Id), _) => source.OrderBy(item => item.Id),
+                (_, SortDirection.Descending) => source.OrderByDescending(item => item.Customer),
+                _ => source.OrderBy(item => item.Customer)
+            };
+        }
+
+        return ValueTask.FromResult(new NTItemsProviderResult<HistoryItem>(source.Skip(request.StartIndex).Take(request.Count ?? 5).ToArray(), Items.Length));
+    }
+
+    public sealed record HistoryItem(int Id, string Customer);
+}

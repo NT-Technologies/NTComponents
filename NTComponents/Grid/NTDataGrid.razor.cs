@@ -14,39 +14,25 @@ using System.Globalization;
 using NTComponents.CodeDocumentation;
 namespace NTComponents;
 
-/// <summary>
-/// Density options for <see cref="NTDataGrid{TItem}" />.
-/// </summary>
+/// <summary>Density options for <see cref="NTDataGrid{TItem}" />.</summary>
 public enum NTDataGridDensity {
-    /// <summary>
-    /// Default row density.
-    /// </summary>
+    /// <summary>Default row density.</summary>
     Standard,
 
-    /// <summary>
-    /// Compact row density.
-    /// </summary>
+    /// <summary>Compact row density.</summary>
     Compact
 }
 
-/// <summary>
-/// Appearance options for <see cref="NTDataGrid{TItem}" />.
-/// </summary>
+/// <summary>Appearance options for <see cref="NTDataGrid{TItem}" />.</summary>
 public enum NTDataGridAppearance {
-    /// <summary>
-    /// Default grid appearance.
-    /// </summary>
+    /// <summary>Default grid appearance.</summary>
     Default,
 
-    /// <summary>
-    /// Shows alternating row backgrounds.
-    /// </summary>
+    /// <summary>Shows alternating row backgrounds.</summary>
     Striped
 }
 
-/// <summary>
-/// A Material 3 aligned data grid for direct, provider, paginated, and virtualized data.
-/// </summary>
+/// <summary>A Material 3 aligned data grid for direct, provider, paginated, and virtualized data.</summary>
 /// <remarks>
 /// A virtualized grid caps its scroll area at <see cref="VirtualizationInitialItemCount" /> rows by default. To fill a page
 /// layout instead, set <see cref="FullHeight" /> and place the grid in a parent with a bounded height, such as a flex column or
@@ -58,13 +44,15 @@ public enum NTDataGridAppearance {
     CompatibilitySummary = "Renders grid markup in static SSR and enhances sorting, paging, and virtualization interactively.",
     CompatibilityDetails = "Static SSR can emit the current table rows and query-link sorting or paging. Interactive sorting, paging, row callbacks, and Virtualize mode require an interactive render mode or browser enhancement.")]
 public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] TItem> : IDisposable where TItem : class {
-    private const string _rowClass = "nt-data-grid-row";
-    private const string _clickableRowClass = "nt-data-grid-row nt-data-grid-row-clickable";
-    private const string _stripedOddRowClass = "nt-data-grid-row nt-data-grid-row-striped-odd";
-    private const string _stripedEvenRowClass = "nt-data-grid-row nt-data-grid-row-striped-even";
-    private const string _clickableStripedOddRowClass = "nt-data-grid-row nt-data-grid-row-clickable nt-data-grid-row-striped-odd";
-    private const string _clickableStripedEvenRowClass = "nt-data-grid-row nt-data-grid-row-clickable nt-data-grid-row-striped-even";
-    private const string _emptyRowClass = "nt-data-grid-row nt-data-grid-row-empty";
+    // Indexed by striped state (none, odd, even) * 2 + clickable, so rendering a row allocates no class string.
+    private static readonly string[] _rowClasses = [
+        "nt-data-grid-row",
+        "nt-data-grid-row nt-data-grid-row-clickable",
+        "nt-data-grid-row nt-data-grid-row-striped-odd",
+        "nt-data-grid-row nt-data-grid-row-clickable nt-data-grid-row-striped-odd",
+        "nt-data-grid-row nt-data-grid-row-striped-even",
+        "nt-data-grid-row nt-data-grid-row-clickable nt-data-grid-row-striped-even"
+    ];
     // The page dropdown renders at every width (CSS shows it below the large breakpoint), so very large page counts fall back to text.
     private const int _maxPageJumpOptions = 1_000;
     private const string _pageHrefPlaceholder = "{page}";
@@ -77,18 +65,15 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     private IReadOnlyDictionary<string, object>? _rootAttributes;
     private CancellationTokenSource? _refreshCancellation;
     private UriState? _uriState;
-    private IQueryable<TItem>? _previousItems;
-    private NTDataGridItemsProvider<TItem>? _previousItemsProvider;
+    private (IQueryable<TItem>? Items, NTDataGridItemsProvider<TItem>? Provider, Func<TItem, object>? RowKey, bool Paginated, bool Virtualized, bool MultiSort)? _previousParameters;
     private IReadOnlyList<int>? _pageSizeOptionsSource;
-    private Func<TItem, object>? _previousRowKey;
     private IReadOnlyList<int> _resolvedPageSizeOptions = [];
+    private int _resolvedPageSizeOptionsPageSize;
     private string? _class;
     private string? _currentUri;
     private string? _lastNavigationManagerUri;
-    private string? _previousDataState;
     private string? _style;
     private string? _detailStyle;
-    private bool _hasDataStateSnapshot;
     private bool _disposed;
     private bool _refreshQueued;
     private bool _initialColumnConfigurationComplete;
@@ -100,11 +85,9 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     private SortPlan? _sortPlan;
     private int _currentPageIndex;
     private int _currentPageSize;
-    private int _resolvedPageSizeOptionsPageSize;
     private int _totalItemCount;
     private int _virtualizeVersion;
     private NTVirtualize<TItem>? _virtualizer;
-    private bool _updatingBrowserUri;
     private readonly HashSet<object> _expansionExceptions = [];
     private int _expansionVersion;
     private int _previousVirtualizationItemSizeVersion;
@@ -112,7 +95,6 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     private bool AllRowsExpanded => _allRowsExpanded && _expansionExceptions.Count == 0;
     private bool? _previousDefaultRowsExpanded;
     private PersistingComponentStateSubscription _persistenceSubscription;
-    private bool _persistenceRegistration;
     private bool _restoredProviderResult;
     private bool _restoreAttempted;
     private bool _hasLoadedProviderResult;
@@ -150,12 +132,10 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     /// <summary>Expands or collapses a row. Can be called from OnRowClicked.</summary>
     public Task SetRowExpandedAsync(TItem item, bool expanded) => InvokeAsync(() => {
         var key = GetRowIdentity(item);
-        var changed = expanded == _allRowsExpanded ? _expansionExceptions.Remove(key) : _expansionExceptions.Add(key);
-        if (!changed) {
-            return;
+        if (expanded == _allRowsExpanded ? _expansionExceptions.Remove(key) : _expansionExceptions.Add(key)) {
+            _expansionVersion++;
+            StateHasChanged();
         }
-        _expansionVersion++;
-        StateHasChanged();
     });
 
     /// <summary>Toggles a row's detail content. Can be assigned directly to OnRowClicked.</summary>
@@ -168,24 +148,19 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     public Task CollapseAllRowsAsync() => SetAllRowsExpandedAsync(false);
 
     private Task SetAllRowsExpandedAsync(bool expanded) => InvokeAsync(() => {
-        if (_allRowsExpanded == expanded && _expansionExceptions.Count == 0) {
-            return;
+        if (_allRowsExpanded != expanded || _expansionExceptions.Count > 0) {
+            _allRowsExpanded = expanded;
+            _expansionExceptions.Clear();
+            _expansionVersion++;
+            StateHasChanged();
         }
-        _allRowsExpanded = expanded;
-        _expansionExceptions.Clear();
-        _expansionVersion++;
-        StateHasChanged();
     });
 
-    /// <summary>
-    /// Gets or sets the direct item source.
-    /// </summary>
+    /// <summary>Gets or sets the direct item source.</summary>
     [Parameter]
     public IQueryable<TItem>? Items { get; set; }
 
-    /// <summary>
-    /// Gets or sets the provider item source.
-    /// </summary>
+    /// <summary>Gets or sets the provider item source.</summary>
     [Parameter]
     public NTDataGridItemsProvider<TItem>? ItemsProvider { get; set; }
 
@@ -197,75 +172,51 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     [Parameter]
     public string? PersistenceKey { get; set; }
 
-    /// <summary>
-    /// Gets or sets the grid columns.
-    /// </summary>
+    /// <summary>Gets or sets the grid columns.</summary>
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
-    /// <summary>
-    /// Gets or sets the table caption.
-    /// </summary>
+    /// <summary>Gets or sets the table caption.</summary>
     [Parameter]
     public string? Caption { get; set; }
 
-    /// <summary>
-    /// Gets or sets the message rendered when no items are available.
-    /// </summary>
+    /// <summary>Gets or sets the message rendered when no items are available.</summary>
     [Parameter]
     public string EmptyText { get; set; } = "No data";
 
-    /// <summary>
-    /// Gets or sets whether pagination controls are shown.
-    /// </summary>
+    /// <summary>Gets or sets whether pagination controls are shown.</summary>
     [Parameter]
     public bool ShowPagination { get; set; }
 
-    /// <summary>
-    /// Gets or sets the current zero-based page index.
-    /// </summary>
+    /// <summary>Gets or sets the current zero-based page index.</summary>
     [Parameter]
     public int PageIndex { get; set; }
 
-    /// <summary>
-    /// Invoked when <see cref="PageIndex" /> changes.
-    /// </summary>
+    /// <summary>Invoked when <see cref="PageIndex" /> changes.</summary>
     [Parameter]
     public EventCallback<int> PageIndexChanged { get; set; }
 
-    /// <summary>
-    /// Gets or sets the current page size.
-    /// </summary>
+    /// <summary>Gets or sets the current page size.</summary>
     [Parameter]
     public int PageSize { get; set; } = 10;
 
-    /// <summary>
-    /// Invoked when <see cref="PageSize" /> changes.
-    /// </summary>
+    /// <summary>Invoked when <see cref="PageSize" /> changes.</summary>
     [Parameter]
     public EventCallback<int> PageSizeChanged { get; set; }
 
-    /// <summary>
-    /// Gets or sets the available page sizes.
-    /// </summary>
+    /// <summary>Gets or sets the available page sizes.</summary>
     [Parameter]
     public IReadOnlyList<int> PageSizeOptions { get; set; } = [10, 25, 50];
 
-    /// <summary>
-    /// Invoked when the resolved total item count changes.
-    /// </summary>
+    /// <summary>Invoked when the resolved total item count changes.</summary>
     [Parameter]
     public EventCallback<int> TotalItemCountChanged { get; set; }
 
-    /// <summary>
-    /// Gets or sets whether the body is rendered through Blazor virtualization.
-    /// </summary>
+    /// <summary>Gets or sets whether the body is rendered through Blazor virtualization.</summary>
     [Parameter]
     public bool Virtualize { get; set; }
 
-    /// <summary>
-    /// Gets or sets whether the grid fills the block size of its parent and scrolls its rows inside that space.
-    /// </summary>
+    /// <summary>Gets or sets whether the grid fills the block size of its parent and scrolls its rows inside that space.</summary>
     /// <remarks>
     /// The grid becomes a flex column that grows inside a flex parent and stretches inside a grid parent or a parent with a set
     /// height, and a virtualized grid drops its default <see cref="VirtualizationInitialItemCount" />-row height cap. Give the
@@ -303,64 +254,43 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     public bool PushHistoryEntries { get; set; }
 
     /// <summary>Scrolls a virtualized grid to a zero-based item. Requires an interactive rendered virtualizer.</summary>
-    public Task ScrollToItemAsync(int index, CancellationToken cancellationToken = default) {
-        if (!Virtualize || _virtualizer is null) {
-            throw new InvalidOperationException("Scrolling requires a rendered virtualized grid.");
-        }
-        return _virtualizer.ScrollToItemAsync(index, cancellationToken);
-    }
+    public Task ScrollToItemAsync(int index, CancellationToken cancellationToken = default) => Virtualize && _virtualizer is not null
+        ? _virtualizer.ScrollToItemAsync(index, cancellationToken)
+        : throw new InvalidOperationException("Scrolling requires a rendered virtualized grid.");
 
-    /// <summary>
-    /// Gets or sets the approximate virtualized row height in pixels.
-    /// </summary>
+    /// <summary>Gets or sets the approximate virtualized row height in pixels.</summary>
     [Parameter]
     public float VirtualizationItemSize { get; set; } = 36;
 
-    /// <summary>
-    /// Gets or sets the number of extra virtualized rows requested around the visible range.
-    /// </summary>
+    /// <summary>Gets or sets the number of extra virtualized rows requested around the visible range.</summary>
     [Parameter]
     public int VirtualizationOverscanCount { get; set; } = 3;
 
-    /// <summary>
-    /// Gets or sets how many additional visible windows of placeholder rows are rendered after loaded virtualized rows.
-    /// </summary>
+    /// <summary>Gets or sets how many additional visible windows of placeholder rows are rendered after loaded virtualized rows.</summary>
     [Parameter]
     public int VirtualizationPlaceholderPreloadWindowCount { get; set; } = 1;
 
-    /// <summary>
-    /// Gets or sets how many additional visible windows of virtualized rows are fetched in the background.
-    /// </summary>
+    /// <summary>Gets or sets how many additional visible windows of virtualized rows are fetched in the background.</summary>
     [Parameter]
     public int VirtualizationBackgroundPreloadWindowCount { get; set; } = 1;
 
-    /// <summary>
-    /// Gets or sets the maximum number of virtualized rows cached by the grid.
-    /// </summary>
+    /// <summary>Gets or sets the maximum number of virtualized rows cached by the grid.</summary>
     [Parameter]
     public int VirtualizationMaxCachedItemCount { get; set; } = 1_000;
 
-    /// <summary>
-    /// Gets or sets whether cached virtualized rows are re-fetched in the background when they become visible again.
-    /// </summary>
+    /// <summary>Gets or sets whether cached virtualized rows are re-fetched in the background when they become visible again.</summary>
     [Parameter]
     public bool VirtualizationRevalidateCachedItems { get; set; }
 
-    /// <summary>
-    /// Gets or sets how long, in milliseconds, scrolling must settle before virtualized rows that are not cached are requested. Set to 0 to request on every window change.
-    /// </summary>
+    /// <summary>Gets or sets how long, in milliseconds, scrolling must settle before virtualized rows that are not cached are requested. Set to 0 to request on every window change.</summary>
     [Parameter]
     public int VirtualizationScrollDebounceMilliseconds { get; set; } = 500;
 
-    /// <summary>
-    /// Gets or sets the first server-rendered request size for provider-backed virtual grids.
-    /// </summary>
+    /// <summary>Gets or sets the first server-rendered request size for provider-backed virtual grids.</summary>
     [Parameter]
     public int VirtualizationInitialItemCount { get; set; } = 20;
 
-    /// <summary>
-    /// Gets or sets the prefix that separates this grid's URL page and sort parameters from other grids. Defaults to <c>ntdg</c>.
-    /// </summary>
+    /// <summary>Gets or sets the prefix that separates this grid's URL page and sort parameters from other grids. Defaults to <c>ntdg</c>.</summary>
     /// <remarks>
     /// <para>
     /// A prefix of <c>claims</c> produces <c>claims-page</c> (one-based page number) and
@@ -382,21 +312,15 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     [Parameter]
     public string QueryParameterPrefix { get; set; } = "ntdg";
 
-    /// <summary>
-    /// Gets or sets whether sorting can be applied to more than one column at a time.
-    /// </summary>
+    /// <summary>Gets or sets whether sorting can be applied to more than one column at a time.</summary>
     [Parameter]
     public bool AllowMultiSort { get; set; } = true;
 
-    /// <summary>
-    /// Gets or sets the grid density.
-    /// </summary>
+    /// <summary>Gets or sets the grid density.</summary>
     [Parameter]
     public NTDataGridDensity Density { get; set; }
 
-    /// <summary>
-    ///     Gets or sets whether mouse users can drag the table sideways when it is wider than the grid.
-    /// </summary>
+    /// <summary>    Gets or sets whether mouse users can drag the table sideways when it is wider than the grid.</summary>
     /// <remarks>
     ///     A press that moves less than a few pixels stays a click. Once it becomes a drag, the release does not click the
     ///     button, link, or row under the pointer. Presses on form fields and the scrollbar keep their usual behavior, and touch
@@ -407,39 +331,27 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     [Parameter]
     public bool DragToScroll { get; set; } = true;
 
-    /// <summary>
-    /// Gets or sets the grid appearance.
-    /// </summary>
+    /// <summary>Gets or sets the grid appearance.</summary>
     [Parameter]
     public NTDataGridAppearance Appearance { get; set; }
 
-    /// <summary>
-    /// Gets or sets whether divider lines are shown between body cells.
-    /// </summary>
+    /// <summary>Gets or sets whether divider lines are shown between body cells.</summary>
     [Parameter]
     public bool ShowCellDividers { get; set; }
 
-    /// <summary>
-    /// Gets or sets a row key selector.
-    /// </summary>
+    /// <summary>Gets or sets a row key selector.</summary>
     [Parameter]
     public Func<TItem, object>? RowKey { get; set; } = item => (object?)item ?? DBNull.Value;
 
-    /// <summary>
-    /// Invoked when a data row is clicked.
-    /// </summary>
+    /// <summary>Invoked when a data row is clicked.</summary>
     [Parameter]
     public EventCallback<TItem> OnRowClicked { get; set; }
 
-    /// <summary>
-    /// Gets or sets the pagination navigation label.
-    /// </summary>
+    /// <summary>Gets or sets the pagination navigation label.</summary>
     [Parameter]
     public string PaginationAriaLabel { get; set; } = "Data grid pagination";
 
-    /// <summary>
-    /// Gets or sets unmatched attributes for the grid root.
-    /// </summary>
+    /// <summary>Gets or sets unmatched attributes for the grid root.</summary>
     [Parameter(CaptureUnmatchedValues = true)]
     public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
 
@@ -471,15 +383,13 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
 
     private bool HasRowClickCallback => OnRowClicked.HasDelegate;
 
-    private bool HasStripedRows => Appearance == NTDataGridAppearance.Striped;
+    private bool PersistsProviderResult => PersistPrerenderedItems && !Virtualize && ItemsProvider is not null && !string.IsNullOrWhiteSpace(PersistenceKey);
 
-    private float DefaultVirtualizationItemSize => Density == NTDataGridDensity.Compact ? 28 : 36;
-
-    private float ResolvedVirtualizationItemSize => Math.Max(1, _hasVirtualizationItemSizeParameter ? VirtualizationItemSize : DefaultVirtualizationItemSize);
+    private float ResolvedVirtualizationItemSize => Math.Max(1, _hasVirtualizationItemSizeParameter ? VirtualizationItemSize : Density == NTDataGridDensity.Compact ? 28 : 36);
 
     private string RootClass => CssClassBuilder.Create("nt-data-grid")
         .AddClass("nt-data-grid-compact", Density == NTDataGridDensity.Compact)
-        .AddClass("nt-data-grid-striped", HasStripedRows)
+        .AddClass("nt-data-grid-striped", Appearance == NTDataGridAppearance.Striped)
         .AddClass("nt-data-grid-cell-dividers", ShowCellDividers)
         .AddClass("nt-data-grid-virtualized", Virtualize)
         .AddClass("nt-data-grid-full-height", FullHeight)
@@ -488,72 +398,62 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
 
     private string? ScrollStyle => Virtualize && !FullHeight ? $"max-height: {Math.Max(1, VirtualizationInitialItemCount) * ResolvedVirtualizationItemSize}px;" : null;
 
-    private string VirtualizedScrollRestorationKey => GetQueryName("scroll");
-
-    /// <summary>
-    /// Refreshes the data grid by re-resolving the current data source and updating the rendered rows.
-    /// </summary>
-    public Task RefreshDataGridAsync(CancellationToken cancellationToken = default) {
-        if (_disposed) {
-            return Task.CompletedTask;
-        }
-
-        return InvokeAsync(() => RefreshDataGridCoreAsync(cancellationToken));
-    }
-
-    private async Task RefreshDataGridCoreAsync(CancellationToken cancellationToken) {
+    /// <summary>Refreshes the data grid by re-resolving the current data source and updating the rendered rows.</summary>
+    public Task RefreshDataGridAsync(CancellationToken cancellationToken = default) => _disposed ? Task.CompletedTask : InvokeAsync(async () => {
         if (_disposed) {
             return;
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        if (Virtualize) {
-            if (_virtualizer is not null) {
-                await _virtualizer.RefreshDataAsync(cancellationToken);
-            }
-        }
-        else {
+        if (!Virtualize) {
             await RefreshDataAsync(cancellationToken);
+        }
+        else if (_virtualizer is not null) {
+            await _virtualizer.RefreshDataAsync(cancellationToken);
         }
 
         if (!_disposed) {
             StateHasChanged();
+        }
+    });
+
+    // Virtualized grids reload through the virtualizer, so they only reset their cached state.
+    private async Task ReloadAsync() {
+        if (Virtualize) {
+            ResetVirtualizedData();
+        }
+        else {
+            await RefreshDataAsync();
         }
     }
 
     /// <inheritdoc />
     protected override void OnInitialized() {
         _navManager.LocationChanged += OnLocationChanged;
-        if (PersistPrerenderedItems && !Virtualize && ItemsProvider is not null && !string.IsNullOrWhiteSpace(PersistenceKey)
-            && _services.GetService<PersistentComponentState>() is { } state) {
+        if (PersistsProviderResult && _services.GetService<PersistentComponentState>() is { } state) {
             _persistentComponentState = state;
             _persistenceSubscription = state.RegisterOnPersisting(PersistProviderResultAsync);
-            _persistenceRegistration = true;
         }
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "PersistentComponentState serializes caller-owned grid items; trimmed applications must preserve serializable TItem members.")]
-    private bool TryRestoreProviderResult(int startIndex, int? count, out PersistedProviderResult<TItem> result) {
-        result = default!;
-        if (_restoreAttempted || !PersistPrerenderedItems || Virtualize || ItemsProvider is null || string.IsNullOrWhiteSpace(PersistenceKey)) {
+    private bool TryRestoreProviderResult(int startIndex, int? count, out NTItemsProviderResult<TItem> result) {
+        result = default;
+        if (_restoreAttempted || !PersistsProviderResult) {
             return false;
         }
         _restoreAttempted = true;
-        var key = GetPersistenceStateKey(startIndex, count);
-        if (_persistentComponentState?.TryTakeFromJson<PersistedProviderResult<TItem>>(key, out var restored) != true || restored is null) {
+        if (_persistentComponentState?.TryTakeFromJson<PersistedProviderResult<TItem>>(GetPersistenceStateKey(startIndex, count), out var restored) != true || restored is null) {
             return false;
         }
-        result = restored;
+        result = new NTItemsProviderResult<TItem>(restored.Items.ToArray(), restored.TotalItemCount);
         return true;
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "PersistentComponentState serializes caller-owned grid items; trimmed applications must preserve serializable TItem members.")]
     private Task PersistProviderResultAsync() {
-        if (_persistentComponentState is { } state && PersistPrerenderedItems && !Virtualize && ItemsProvider is not null && !string.IsNullOrWhiteSpace(PersistenceKey)
-            && _hasLoadedProviderResult && !_restoredProviderResult) {
-            var startIndex = ShowPagination ? CurrentPageIndex * CurrentPageSize : 0;
-            int? count = ShowPagination || ItemsProvider is not null ? CurrentPageSize : null;
-            state.PersistAsJson(GetPersistenceStateKey(startIndex, count), new PersistedProviderResult<TItem>(_loadedItems.ToArray(), _totalItemCount));
+        if (_persistentComponentState is { } state && PersistsProviderResult && _hasLoadedProviderResult && !_restoredProviderResult) {
+            state.PersistAsJson(GetPersistenceStateKey(ShowPagination ? CurrentPageIndex * CurrentPageSize : 0, CurrentPageSize), new PersistedProviderResult<TItem>(_loadedItems.ToArray(), _totalItemCount));
         }
         return Task.CompletedTask;
     }
@@ -564,22 +464,25 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     public sealed record PersistedProviderResult<T>(IReadOnlyList<T> Items, int TotalItemCount);
 
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs args) {
-        if (_disposed || _updatingBrowserUri || !PushHistoryEntries) {
+        if (_disposed || !PushHistoryEntries) {
             return;
         }
         try {
             await InvokeAsync(async () => {
-                SetCurrentUri(args.Location);
+                // This also runs for the grid's own NavigateTo and for other query changes, so reload only when this grid's view changes.
+                var shownViewState = GetViewState();
+                _currentUri = args.Location;
                 _currentPageIndex = Math.Max(0, PageIndex);
-                _currentPageSize = PageSize > 0 ? PageSize : 10;
+                // Without the size in the URL, history doesn't track it, so keep the size the grid is showing.
+                if (PersistPageSizeInQuery) {
+                    _currentPageSize = PageSize > 0 ? PageSize : 10;
+                }
                 ResetSorts();
                 ApplyQueryState();
-                if (Virtualize) {
-                    ResetVirtualizedData();
+                if (shownViewState != GetViewState()) {
+                    await ReloadAsync();
                 }
-                else {
-                    await RefreshDataAsync();
-                }
+                // Render even without a reload: pagination links are built from the current URL.
                 if (!_disposed) {
                     StateHasChanged();
                 }
@@ -616,18 +519,12 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
         ValidateConfiguration();
         CaptureRootAttributes();
         _detailStyle = RowDetailTemplate is null ? null : $"max-height: {RowDetailMaxHeight};";
+        var shownViewState = GetViewState();
         _currentPageSize = PageSize > 0 ? PageSize : 10;
         _currentPageIndex = Math.Max(0, PageIndex);
         ApplyQueryState();
-        var dataStateChanged = CaptureDataStateChanged();
-
-        if (Virtualize) {
-            if (dataStateChanged) {
-                ResetVirtualizedData();
-            }
-        }
-        else if (_initialColumnConfigurationComplete && _columns.Count > 0 && dataStateChanged && !_refreshQueued) {
-            await RefreshDataAsync();
+        if ((CaptureParametersChanged() || shownViewState != GetViewState()) && (Virtualize || _initialColumnConfigurationComplete && _columns.Count > 0 && !_refreshQueued)) {
+            await ReloadAsync();
         }
     }
 
@@ -637,58 +534,45 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     };
 
     internal async Task CompleteInitialColumnConfigurationAsync() {
-        if (_initialColumnConfigurationComplete) {
-            return;
-        }
-
-        _initialColumnConfigurationComplete = true;
-        if (_columns.Count == 0 || _disposed) {
-            return;
-        }
-
-        if (Virtualize) {
-            ResetVirtualizedData();
-        }
-        else {
-            await RefreshDataAsync();
-        }
-
-        if (!_disposed) {
-            await InvokeAsync(StateHasChanged);
+        if (!_initialColumnConfigurationComplete) {
+            _initialColumnConfigurationComplete = true;
+            if (_columns.Count > 0 && !_disposed) {
+                await ReloadAsync();
+                if (!_disposed) {
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
         }
     }
 
     internal void RegisterColumn(NTDataGridColumn<TItem> column) {
-        if (_columns.Contains(column)) {
-            return;
+        if (!_columns.Contains(column)) {
+            column.Sequence = _columns.Count;
+            _columns.Add(column);
+            RebuildColumnSortLookup();
+            TryAddInitialSort(column);
         }
-
-        column.Sequence = _columns.Count;
-        _columns.Add(column);
-        RebuildColumnSortLookup();
-        TryAddInitialSort(column);
     }
 
     internal void NotifyColumnChanged(NTDataGridColumn<TItem> column, bool sortStateChanged) {
-        if (!_columns.Contains(column)) {
-            return;
-        }
+        if (_columns.Contains(column)) {
+            if (sortStateChanged) {
+                RebuildColumnSortLookup();
+                ResetSorts();
+            }
 
-        if (sortStateChanged) {
-            RebuildColumnSortLookup();
-            ResetSorts();
+            if (_initialColumnConfigurationComplete) {
+                QueueRefresh();
+            }
         }
-
-        if (!_initialColumnConfigurationComplete) {
-            return;
-        }
-
-        QueueRefresh();
     }
 
     internal void UnregisterColumn(NTDataGridColumn<TItem> column) {
         if (_columns.Remove(column)) {
-            ReindexColumns();
+            for (var i = 0; i < _columns.Count; i++) {
+                _columns[i].Sequence = i;
+            }
+
             RebuildColumnSortLookup();
             ResetSorts();
             if (_initialColumnConfigurationComplete) {
@@ -698,101 +582,69 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     }
 
     private void QueueRefresh() {
-        if (_refreshQueued) {
-            return;
-        }
-
-        _refreshQueued = true;
-        _ = InvokeAsync(async () => {
-            _refreshQueued = false;
-            if (_disposed) {
-                return;
-            }
-
-            InitializeSorts();
-            if (!Virtualize) {
-                await RefreshDataAsync();
-            }
-            else {
-                ResetVirtualizedData();
-            }
-
-            if (!_disposed) {
-                StateHasChanged();
-            }
-        });
-    }
-
-    private void ReindexColumns() {
-        for (var i = 0; i < _columns.Count; i++) {
-            _columns[i].Sequence = i;
+        if (!_refreshQueued) {
+            _refreshQueued = true;
+            _ = InvokeAsync(async () => {
+                _refreshQueued = false;
+                if (!_disposed) {
+                    InitializeSorts();
+                    await ReloadAsync();
+                    if (!_disposed) {
+                        StateHasChanged();
+                    }
+                }
+            });
         }
     }
 
     private void RebuildColumnSortLookup() {
         _columnsBySortProperty.Clear();
-        foreach (var column in _columns) {
-            if (!string.IsNullOrWhiteSpace(column.SortPropertyName)) {
-                _columnsBySortProperty.TryAdd(column.SortPropertyName, column);
-            }
+        foreach (var column in _columns.Where(column => !string.IsNullOrWhiteSpace(column.SortPropertyName))) {
+            _columnsBySortProperty.TryAdd(column.SortPropertyName!, column);
         }
 
-        InvalidateSortPlan();
+        _sortPlan = null;
     }
 
     private void ValidateConfiguration() {
         if (_hasPersistenceKeyParameter && !_hasPersistPrerenderedItemsParameter) {
             throw new InvalidOperationException($"{nameof(NTDataGrid<TItem>)} {nameof(PersistenceKey)} requires {nameof(PersistPrerenderedItems)}.");
         }
-
         if (PersistPrerenderedItems && string.IsNullOrWhiteSpace(PersistenceKey)) {
             throw new InvalidOperationException($"{nameof(NTDataGrid<TItem>)} persistence requires a non-empty {nameof(PersistenceKey)}.");
         }
-
         if (Items is not null && ItemsProvider is not null) {
             throw new InvalidOperationException($"{nameof(NTDataGrid<TItem>)} requires either {nameof(Items)} or {nameof(ItemsProvider)}, not both.");
         }
-
         if (Items is null && ItemsProvider is null) {
             throw new InvalidOperationException($"{nameof(NTDataGrid<TItem>)} requires {nameof(Items)} or {nameof(ItemsProvider)}.");
         }
-
         if (Virtualize && ShowPagination) {
             throw new InvalidOperationException($"{nameof(NTDataGrid<TItem>)} does not support using {nameof(Virtualize)} and {nameof(ShowPagination)} together.");
         }
     }
 
     private async Task RefreshDataAsync(CancellationToken cancellationToken = default) {
-        var refreshCancellation = cancellationToken.CanBeCanceled
-            ? CancellationTokenSource.CreateLinkedTokenSource(_componentCancellation.Token, cancellationToken)
-            : CancellationTokenSource.CreateLinkedTokenSource(_componentCancellation.Token);
+        var refreshCancellation = CancellationTokenSource.CreateLinkedTokenSource(_componentCancellation.Token, cancellationToken);
         var previousRefreshCancellation = _refreshCancellation;
         _refreshCancellation = refreshCancellation;
 
         try {
             previousRefreshCancellation?.Cancel();
             InitializeSorts();
-            _previousDataState = GetDataState();
             var startIndex = ShowPagination ? CurrentPageIndex * CurrentPageSize : 0;
             int? count = ShowPagination || ItemsProvider is not null ? CurrentPageSize : null;
-            if (TryRestoreProviderResult(startIndex, count, out var restoredResult)) {
-                _loadedItems.Clear();
-                _loadedItems.AddRange(restoredResult.Items);
-                _rowIndices.Clear();
-                RegisterRowIndices(startIndex, _loadedItems);
-                await SetTotalItemCountAsync(restoredResult.TotalItemCount);
-                _restoredProviderResult = true;
-                _hasLoadedProviderResult = true;
-                return;
+            var restored = TryRestoreProviderResult(startIndex, count, out var result);
+            if (!restored) {
+                result = await ResolveItemsAsync(startIndex, count, refreshCancellation.Token);
+                refreshCancellation.Token.ThrowIfCancellationRequested();
             }
-            var result = await ResolveItemsAsync(startIndex, count, refreshCancellation.Token);
-            refreshCancellation.Token.ThrowIfCancellationRequested();
             _loadedItems.Clear();
             _loadedItems.AddRange(result.Items);
             _rowIndices.Clear();
             RegisterRowIndices(startIndex, _loadedItems);
             await SetTotalItemCountAsync(result.TotalItemCount);
-            _restoredProviderResult = false;
+            _restoredProviderResult = restored;
             _hasLoadedProviderResult = true;
         }
         catch (OperationCanceledException) when (!_disposed && !ReferenceEquals(_refreshCancellation, refreshCancellation)) {
@@ -809,8 +661,7 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
 
     private async ValueTask<NTVirtualizeItemsProviderResult<TItem>> ProvideVirtualizedItemsAsync(NTVirtualizeItemsProviderRequest<TItem> request) {
         InitializeSorts();
-        var requestedCount = request.Count > 0 ? request.Count : VirtualizationInitialItemCount;
-        var result = await ResolveItemsAsync(request.StartIndex, requestedCount, request.CancellationToken);
+        var result = await ResolveItemsAsync(request.StartIndex, request.Count > 0 ? request.Count : VirtualizationInitialItemCount, request.CancellationToken);
         request.CancellationToken.ThrowIfCancellationRequested();
         if (_disposed) {
             return new NTVirtualizeItemsProviderResult<TItem>([], 0);
@@ -831,7 +682,7 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
                 StartIndex = Math.Max(0, startIndex),
                 Count = count,
                 CancellationToken = cancellationToken,
-                Sorts = GetProviderSortDescriptors()
+                Sorts = GetSortPlan().ProviderDescriptors
             });
         }
 
@@ -841,32 +692,21 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
 
         // In-memory queryables would recompile an expression tree for every Count and enumeration, so run the same operators over the underlying sequence.
         if (Items.Provider is EnumerableQuery<TItem> && TryApplyEnumerableSorts(Items, out var sorted)) {
-            var totalCount = sorted.Count();
-            var page = sorted.Skip(Math.Max(0, startIndex));
-            if (count is > 0) {
-                page = page.Take(count.Value);
-            }
-
-            return new NTItemsProviderResult<TItem>(page.ToArray(), totalCount);
+            return Page(sorted.ToArray());
         }
 
         if (TryApplyQueryableSorts(Items, out var query)) {
             var totalCount = query.Count();
             var page = query.Skip(Math.Max(0, startIndex));
-            if (count is > 0) {
-                page = page.Take(count.Value);
-            }
-
-            return new NTItemsProviderResult<TItem>(page.ToArray(), totalCount);
+            return new NTItemsProviderResult<TItem>((count is > 0 ? page.Take(count.Value) : page).ToArray(), totalCount);
         }
 
-        var localItems = ApplyLocalSorts(Items).ToArray();
-        var localStartIndex = Math.Min(Math.Max(0, startIndex), localItems.Length);
-        var localCount = count is > 0 ? Math.Min(count.Value, localItems.Length - localStartIndex) : localItems.Length - localStartIndex;
-        var localPage = localStartIndex == 0 && localCount == localItems.Length
-            ? localItems
-            : localItems.AsSpan(localStartIndex, localCount).ToArray();
-        return new NTItemsProviderResult<TItem>(localPage, localItems.Length);
+        return Page(ApplyLocalSorts(Items).ToArray());
+
+        NTItemsProviderResult<TItem> Page(TItem[] all) {
+            var page = all.Skip(Math.Max(0, startIndex));
+            return new NTItemsProviderResult<TItem>((count is > 0 ? page.Take(count.Value) : page).ToArray(), all.Length);
+        }
     }
 
     private bool TryApplyEnumerableSorts(IEnumerable<TItem> source, out IEnumerable<TItem> result) {
@@ -900,20 +740,16 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     private IEnumerable<TItem> ApplyLocalSorts(IEnumerable<TItem> source) {
         IOrderedEnumerable<TItem>? ordered = null;
         foreach (var sort in GetSortPlan().ResolvedSorts) {
-            var customSort = sort.Column.ApplyLocalSort(ordered ?? source, sort.Direction, ordered is not null);
-            ordered = customSort ?? (ordered is null
-                ? sort.Direction == SortDirection.Descending
-                    ? source.OrderByDescending(sort.Column.GetSortValue, NTDataGridObjectComparer.Instance)
-                    : source.OrderBy(sort.Column.GetSortValue, NTDataGridObjectComparer.Instance)
-                : sort.Direction == SortDirection.Descending
-                    ? ordered.ThenByDescending(sort.Column.GetSortValue, NTDataGridObjectComparer.Instance)
-                    : ordered.ThenBy(sort.Column.GetSortValue, NTDataGridObjectComparer.Instance));
+            var descending = sort.Direction == SortDirection.Descending;
+            var comparer = NTDataGridObjectComparer.Instance;
+            ordered = sort.Column.ApplyLocalSort(ordered ?? source, sort.Direction, ordered is not null)
+                ?? (ordered is null
+                    ? descending ? source.OrderByDescending(sort.Column.GetSortValue, comparer) : source.OrderBy(sort.Column.GetSortValue, comparer)
+                    : descending ? ordered.ThenByDescending(sort.Column.GetSortValue, comparer) : ordered.ThenBy(sort.Column.GetSortValue, comparer));
         }
 
         return ordered ?? source;
     }
-
-    private IReadOnlyList<NTSortDescriptor> GetProviderSortDescriptors() => GetSortPlan().ProviderDescriptors;
 
     private SortPlan GetSortPlan() {
         if (_sortPlan is not null) {
@@ -932,32 +768,23 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
             }
         }
 
-        _sortPlan = new SortPlan(resolvedSorts.ToArray(), Array.AsReadOnly(providerDescriptors.ToArray()));
-        return _sortPlan;
+        return _sortPlan = new SortPlan(resolvedSorts.ToArray(), Array.AsReadOnly(providerDescriptors.ToArray()));
     }
-
-    private void InvalidateSortPlan() => _sortPlan = null;
 
     private async Task SetTotalItemCountAsync(int totalItemCount) {
         totalItemCount = Math.Max(0, totalItemCount);
-        if (_totalItemCount == totalItemCount) {
-            return;
-        }
-
-        _totalItemCount = totalItemCount;
-        if (TotalItemCountChanged.HasDelegate) {
+        if (_totalItemCount != totalItemCount) {
+            _totalItemCount = totalItemCount;
             await TotalItemCountChanged.InvokeAsync(totalItemCount);
         }
     }
 
     private void InitializeSorts() {
-        if (_sortsInitialized || _columns.Count == 0) {
-            return;
-        }
-
-        _sortsInitialized = true;
-        foreach (var column in _columns) {
-            TryAddInitialSort(column);
+        if (!_sortsInitialized && _columns.Count > 0) {
+            _sortsInitialized = true;
+            foreach (var column in _columns) {
+                TryAddInitialSort(column);
+            }
         }
     }
 
@@ -969,60 +796,43 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     }
 
     private void TryAddInitialSort(NTDataGridColumn<TItem> column) {
-        if (!_sortsInitialized || column.InitialSortDirection is null || !CanSort(column)) {
-            return;
+        if (_sortsInitialized && column.InitialSortDirection is { } direction && column.CanSort
+            && (AllowMultiSort || _sorts.Count == 0)
+            && !_sorts.Any(sort => string.Equals(sort.PropertyName, column.SortPropertyName, StringComparison.Ordinal))) {
+            _sorts.Add(new NTSortDescriptor(column.SortPropertyName!, direction));
+            _sortPlan = null;
         }
-
-        if (!AllowMultiSort && _sorts.Count > 0) {
-            return;
-        }
-
-        if (_sorts.Any(sort => string.Equals(sort.PropertyName, column.SortPropertyName, StringComparison.Ordinal))) {
-            return;
-        }
-
-        _sorts.Add(new NTSortDescriptor(column.SortPropertyName!, column.InitialSortDirection.Value));
-        InvalidateSortPlan();
     }
 
-    private bool CanSort(NTDataGridColumn<TItem> column) => column.CanSort;
-
     private async Task SortByColumnAsync(NTDataGridColumn<TItem> column) {
-        if (!CanSort(column)) {
-            return;
-        }
+        if (column.CanSort) {
+            SetSorts(GetNextSorts(column));
+            _currentPageIndex = 0;
+            await PageIndexChanged.InvokeAsync(0);
+            if (Virtualize) {
+                _virtualizeVersion++;
+                StateHasChanged();
+            }
+            else {
+                await RefreshDataAsync();
+            }
 
-        var nextSorts = GetNextSorts(column);
-        SetSorts(nextSorts);
-
-        _currentPageIndex = 0;
-        await PageIndexChanged.InvokeAsync(_currentPageIndex);
-        if (Virtualize) {
-            _virtualizeVersion++;
-            StateHasChanged();
+            await UpdateBrowserUriAsync();
         }
-        else {
-            await RefreshDataAsync();
-        }
-
-        await UpdateBrowserUriAsync();
     }
 
     private async Task GoToPageAsync(int pageIndex) {
-        if (!ShowPagination) {
-            return;
-        }
-
         var nextPageIndex = Math.Clamp(pageIndex, 0, PageCount - 1);
-        if (nextPageIndex == CurrentPageIndex) {
-            return;
+        if (ShowPagination && nextPageIndex != CurrentPageIndex) {
+            _currentPageIndex = nextPageIndex;
+            await PageIndexChanged.InvokeAsync(nextPageIndex);
+            await RefreshDataAsync();
+            await UpdateBrowserUriAsync();
         }
-
-        _currentPageIndex = nextPageIndex;
-        await PageIndexChanged.InvokeAsync(nextPageIndex);
-        await RefreshDataAsync();
-        await UpdateBrowserUriAsync();
     }
+
+    // Interactive pagination clicks are handled in .NET; without the opt-out, enhanced navigation also follows the link.
+    private string? PaginationEnhanceNav => RendererInfo.IsInteractive ? "false" : null;
 
     // Static SSR has no .NET event handling, so the page dropdown navigates through an inline handler there instead.
     private object PageJumpOnChange => RendererInfo.IsInteractive
@@ -1036,43 +846,31 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     }
 
     private async Task ChangePageSizeAsync(ChangeEventArgs args) {
-        if (!int.TryParse(Convert.ToString(args.Value, CultureInfo.InvariantCulture), out var pageSize) || pageSize <= 0) {
-            return;
+        if (int.TryParse(Convert.ToString(args.Value, CultureInfo.InvariantCulture), out var pageSize) && pageSize > 0) {
+            _currentPageSize = pageSize;
+            _currentPageIndex = 0;
+            await PageSizeChanged.InvokeAsync(pageSize);
+            await PageIndexChanged.InvokeAsync(0);
+            await RefreshDataAsync();
+            await UpdateBrowserUriAsync();
         }
-
-        _currentPageSize = pageSize;
-        _currentPageIndex = 0;
-        await PageSizeChanged.InvokeAsync(pageSize);
-        await PageIndexChanged.InvokeAsync(0);
-        await RefreshDataAsync();
-        await UpdateBrowserUriAsync();
     }
 
     private async ValueTask UpdateBrowserUriAsync() {
-        if (_disposed || !RendererInfo.IsInteractive) {
-            return;
-        }
-
-        var uri = BuildPageHref(CurrentPageIndex);
-        if (PushHistoryEntries) {
-            _updatingBrowserUri = true;
-            try {
+        if (!_disposed && RendererInfo.IsInteractive) {
+            var uri = BuildPageHref(CurrentPageIndex);
+            // Record the URL before awaiting the browser, so a parent render in between reads the page the grid is already showing.
+            _currentUri = uri;
+            if (PushHistoryEntries) {
                 _navManager.NavigateTo(uri);
             }
-            finally {
-                _updatingBrowserUri = false;
+            else {
+                await _jsRuntime.UpdateUriAsync(uri);
             }
         }
-        else {
-            await _jsRuntime.UpdateUriAsync(uri);
-        }
-        SetCurrentUri(uri);
     }
 
-    private string BuildSortHref(NTDataGridColumn<TItem> column) {
-        var nextSorts = GetNextSorts(column);
-        return BuildHref(0, nextSorts);
-    }
+    private string BuildSortHref(NTDataGridColumn<TItem> column) => BuildHref(0, GetNextSorts(column));
 
     private string BuildPageHref(int pageIndex) => BuildHref(Math.Clamp(pageIndex, 0, PageCount - 1), _sorts);
 
@@ -1080,199 +878,128 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
         BuildHref((Math.Max(0, pageIndex) + 1).ToString(CultureInfo.InvariantCulture), sorts, pageSize);
 
     private string BuildHref(string pageValue, IReadOnlyList<NTSortDescriptor> sorts, int? pageSize = null) {
-        var sortValue = SerializeSorts(sorts);
         var uriState = GetUriState();
+        var sortValue = SerializeSorts(sorts);
         var href = uriState.PageHrefPrefix + pageValue;
-        if (!string.IsNullOrWhiteSpace(sortValue)) {
-            href += $"&{Uri.EscapeDataString(uriState.SortName)}={Uri.EscapeDataString(sortValue)}";
+        // A missing sort means "use the initial sort", so an unsorted grid with an initial sort needs an explicit empty value.
+        if (sortValue.Length > 0 || _columns.Any(column => column.InitialSortDirection is not null && column.CanSort)) {
+            href += $"&{Uri.EscapeDataString(GetQueryName("sort"))}={Uri.EscapeDataString(sortValue)}";
         }
 
         if (PersistPageSizeInQuery) {
-            href += $"&{Uri.EscapeDataString(uriState.PageSizeName)}={(pageSize ?? CurrentPageSize).ToString(CultureInfo.InvariantCulture)}";
+            href += $"&{Uri.EscapeDataString(GetQueryName("pageSize"))}={(pageSize ?? CurrentPageSize).ToString(CultureInfo.InvariantCulture)}";
         }
         return href + uriState.Fragment;
     }
 
     private UriState GetUriState() {
         var currentUri = GetCurrentUri();
-        if (_uriState is not null
-            && string.Equals(_uriState.SourceUri, currentUri, StringComparison.Ordinal)
-            && string.Equals(_uriState.GridQueryPrefix, QueryParameterPrefix, StringComparison.Ordinal)) {
+        if (_uriState?.SourceUri == currentUri && _uriState.GridQueryPrefix == QueryParameterPrefix) {
             return _uriState;
         }
 
         var uri = _navManager.ToAbsoluteUri(currentUri);
         var query = ParseQuery(uri.Query);
         var pageParameter = GetQueryName("page");
-        var pageSizeParameter = GetQueryName("pageSize");
-        var sortParameter = GetQueryName("sort");
-        var baseQuery = string.Join("&", query
-            .Where(pair => !pair.Key.Equals(pageParameter, StringComparison.OrdinalIgnoreCase)
-                && !pair.Key.Equals(pageSizeParameter, StringComparison.OrdinalIgnoreCase)
-                && !pair.Key.Equals(sortParameter, StringComparison.OrdinalIgnoreCase))
-            .Select(pair => $"{Uri.EscapeDataString(pair.Key)}={Uri.EscapeDataString(pair.Value)}"));
-        var pageHrefPrefix = uri.GetLeftPart(UriPartial.Path)
-            + "?"
-            + (string.IsNullOrEmpty(baseQuery) ? string.Empty : baseQuery + "&")
-            + Uri.EscapeDataString(pageParameter)
-            + "=";
-
-        _uriState = new UriState(currentUri, QueryParameterPrefix, pageHrefPrefix, pageParameter, pageSizeParameter, sortParameter, uri.Fragment, query);
-        return _uriState;
+        string[] gridParameters = [pageParameter, GetQueryName("pageSize"), GetQueryName("sort")];
+        var baseQuery = string.Concat(query
+            .Where(pair => !gridParameters.Contains(pair.Key, StringComparer.OrdinalIgnoreCase))
+            .Select(pair => $"{Uri.EscapeDataString(pair.Key)}={Uri.EscapeDataString(pair.Value)}&"));
+        return _uriState = new UriState(currentUri, QueryParameterPrefix, $"{uri.GetLeftPart(UriPartial.Path)}?{baseQuery}{Uri.EscapeDataString(pageParameter)}=", uri.Fragment, query);
     }
 
     private string GetCurrentUri() {
-        var navigationManagerUri = _navManager.Uri;
-        if (!string.Equals(_lastNavigationManagerUri, navigationManagerUri, StringComparison.Ordinal)) {
-            _lastNavigationManagerUri = navigationManagerUri;
-            SetCurrentUri(navigationManagerUri);
+        if (_lastNavigationManagerUri != _navManager.Uri) {
+            _currentUri = _lastNavigationManagerUri = _navManager.Uri;
         }
 
-        return _currentUri ?? navigationManagerUri;
+        return _currentUri!;
     }
 
-    private void SetCurrentUri(string uri) {
-        if (string.Equals(_currentUri, uri, StringComparison.Ordinal)) {
-            return;
-        }
-
-        _currentUri = uri;
-        _uriState = null;
-    }
-
-    private IReadOnlyList<NTSortDescriptor> GetNextSorts(NTDataGridColumn<TItem> column) {
-        if (!CanSort(column)) {
-            return _sorts;
-        }
-
-        return ApplySortTransition(_sorts, column.SortPropertyName!, column.DefaultSortDirection, AllowMultiSort);
-    }
+    private IReadOnlyList<NTSortDescriptor> GetNextSorts(NTDataGridColumn<TItem> column) => column.CanSort
+        ? ApplySortTransition(_sorts, column.SortPropertyName!, column.DefaultSortDirection, AllowMultiSort)
+        : _sorts;
 
     private static IReadOnlyList<NTSortDescriptor> ApplySortTransition(IEnumerable<NTSortDescriptor> currentSorts, string propertyName, SortDirection defaultDirection, bool allowMultiSort) {
         var nextSorts = currentSorts.ToList();
         var currentIndex = nextSorts.FindIndex(sort => string.Equals(sort.PropertyName, propertyName, StringComparison.Ordinal));
+        var nextDirection = GetNextSortDirection(currentIndex < 0 ? null : nextSorts[currentIndex].Direction, defaultDirection);
         if (!allowMultiSort) {
-            SortDirection? currentDirection = currentIndex < 0 ? null : nextSorts[currentIndex].Direction;
-            var nextDirection = GetNextSortDirection(currentDirection, defaultDirection);
-            return nextDirection is null ? [] : [new NTSortDescriptor(propertyName, nextDirection.Value)];
+            return nextDirection is { } direction ? [new NTSortDescriptor(propertyName, direction)] : [];
         }
 
         if (currentIndex < 0) {
             nextSorts.Add(new NTSortDescriptor(propertyName, defaultDirection));
         }
+        else if (nextDirection is null) {
+            nextSorts.RemoveAt(currentIndex);
+        }
         else {
-            var nextDirection = GetNextSortDirection(nextSorts[currentIndex].Direction, defaultDirection);
-            if (nextDirection is null) {
-                nextSorts.RemoveAt(currentIndex);
-            }
-            else {
-                nextSorts[currentIndex] = nextSorts[currentIndex] with { Direction = nextDirection.Value };
-            }
+            nextSorts[currentIndex] = nextSorts[currentIndex] with { Direction = nextDirection.Value };
         }
 
         return nextSorts;
     }
 
-    private static SortDirection? GetNextSortDirection(SortDirection? currentDirection, SortDirection defaultDirection) {
-        if (currentDirection is null) {
-            return defaultDirection;
-        }
-
-        return currentDirection == defaultDirection
-            ? defaultDirection == SortDirection.Ascending ? SortDirection.Descending : SortDirection.Ascending
-            : null;
-    }
+    private static SortDirection? GetNextSortDirection(SortDirection? currentDirection, SortDirection defaultDirection) => currentDirection switch {
+        null => defaultDirection,
+        _ when currentDirection == defaultDirection => defaultDirection == SortDirection.Ascending ? SortDirection.Descending : SortDirection.Ascending,
+        _ => null
+    };
 
     private void ApplyQueryState() {
-        var uriState = GetUriState();
-        var query = uriState.Query;
-        if (query.TryGetValue(uriState.PageName, out var pageValue) && int.TryParse(pageValue, out var pageNumber)) {
+        var query = GetUriState().Query;
+        if (query.TryGetValue(GetQueryName("page"), out var pageValue) && int.TryParse(pageValue, out var pageNumber)) {
             _currentPageIndex = Math.Max(1, pageNumber) - 1;
         }
 
-        if (PersistPageSizeInQuery && query.TryGetValue(uriState.PageSizeName, out var pageSizeValue) && int.TryParse(pageSizeValue, out var pageSize) && pageSize > 0) {
+        if (PersistPageSizeInQuery && query.TryGetValue(GetQueryName("pageSize"), out var pageSizeValue) && int.TryParse(pageSizeValue, out var pageSize) && pageSize > 0) {
             _currentPageSize = pageSize;
         }
 
-        if (query.TryGetValue(uriState.SortName, out var sortValue)) {
+        if (query.TryGetValue(GetQueryName("sort"), out var sortValue)) {
             SetSorts(NormalizeSorts(ParseSorts(sortValue)));
             _sortsInitialized = true;
         }
     }
 
     private void SetSorts(IReadOnlyList<NTSortDescriptor> sorts) {
-        if (_sorts.Count == sorts.Count) {
-            var unchanged = true;
-            for (var i = 0; i < sorts.Count; i++) {
-                if (_sorts[i] != sorts[i]) {
-                    unchanged = false;
-                    break;
-                }
-            }
-
-            if (unchanged) {
-                return;
-            }
+        if (!_sorts.SequenceEqual(sorts)) {
+            _sorts.Clear();
+            _sorts.AddRange(sorts);
+            _sortPlan = null;
         }
-
-        _sorts.Clear();
-        _sorts.AddRange(sorts);
-        InvalidateSortPlan();
     }
 
     private string GetQueryName(string name) => string.IsNullOrWhiteSpace(QueryParameterPrefix) ? name : $"{QueryParameterPrefix}-{name}";
 
     private static Dictionary<string, string> ParseQuery(string query) {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        var trimmed = query.TrimStart('?');
-        if (string.IsNullOrWhiteSpace(trimmed)) {
-            return result;
-        }
-
-        foreach (var part in trimmed.Split('&', StringSplitOptions.RemoveEmptyEntries)) {
+        foreach (var part in query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries)) {
             var split = part.Split('=', 2);
-            var key = Uri.UnescapeDataString(split[0].Replace("+", " ", StringComparison.Ordinal));
-            var value = split.Length > 1 ? Uri.UnescapeDataString(split[1].Replace("+", " ", StringComparison.Ordinal)) : string.Empty;
-            result[key] = value;
+            result[Unescape(split[0])] = split.Length > 1 ? Unescape(split[1]) : string.Empty;
         }
 
         return result;
+
+        static string Unescape(string value) => Uri.UnescapeDataString(value.Replace("+", " ", StringComparison.Ordinal));
     }
 
-    private static IReadOnlyList<NTSortDescriptor> ParseSorts(string value) {
-        return value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    private static IReadOnlyList<NTSortDescriptor> ParseSorts(string value) =>
+        value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(part => part.Split(':', 2, StringSplitOptions.TrimEntries))
             .Where(split => split.Length > 0 && !string.IsNullOrWhiteSpace(split[0]))
             .Select(split => new NTSortDescriptor(split[0], split.Length > 1 && split[1].Equals("desc", StringComparison.OrdinalIgnoreCase) ? SortDirection.Descending : SortDirection.Ascending))
             .ToArray();
-    }
 
     private IReadOnlyList<NTSortDescriptor> NormalizeSorts(IEnumerable<NTSortDescriptor> sorts) => AllowMultiSort ? sorts.ToArray() : sorts.Take(1).ToArray();
 
-    private static string SerializeSorts(IReadOnlyList<NTSortDescriptor> sorts) => sorts.Count == 0 ? string.Empty :
+    private static string SerializeSorts(IReadOnlyList<NTSortDescriptor> sorts) =>
         string.Join(",", sorts.Select(sort => $"{sort.PropertyName}:{(sort.Direction == SortDirection.Descending ? "desc" : "asc")}"));
 
-    private static string GetSortIndicatorClass(SortDirection sortDirection) => sortDirection switch {
-        SortDirection.Ascending => "nt-data-grid-sort-indicator nt-data-grid-sort-indicator-ascending",
-        SortDirection.Descending => "nt-data-grid-sort-indicator nt-data-grid-sort-indicator-descending",
-        _ => "nt-data-grid-sort-indicator"
-    };
-
-    private static string GetSortIndicator() => "arrow_drop_down";
-
     private IEnumerable<int> GetVisiblePageIndices() {
-        const int maxPagesToShow = 5;
-        var totalPages = PageCount;
-        var pagesToShow = Math.Min(maxPagesToShow, totalPages);
-        var startIndex = Math.Max(0, CurrentPageIndex - pagesToShow / 2);
-        var endIndex = Math.Min(totalPages - 1, startIndex + pagesToShow - 1);
-        if (endIndex - startIndex + 1 < pagesToShow) {
-            startIndex = Math.Max(0, endIndex - pagesToShow + 1);
-        }
-
-        for (var pageIndex = startIndex; pageIndex <= endIndex; pageIndex++) {
-            yield return pageIndex;
-        }
+        var pagesToShow = Math.Min(5, PageCount);
+        return Enumerable.Range(Math.Clamp(CurrentPageIndex - pagesToShow / 2, 0, PageCount - pagesToShow), pagesToShow);
     }
 
     private string GetPaginationButtonClass(bool disabled, bool currentPage, string? roleClass = null) => CssClassBuilder.Create("pagination-btn")
@@ -1282,33 +1009,16 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
         .Build();
 
     private IReadOnlyList<int> GetResolvedPageSizeOptions() {
-        if (ReferenceEquals(_pageSizeOptionsSource, PageSizeOptions) && _resolvedPageSizeOptionsPageSize == CurrentPageSize) {
-            return _resolvedPageSizeOptions;
+        if (!ReferenceEquals(_pageSizeOptionsSource, PageSizeOptions) || _resolvedPageSizeOptionsPageSize != CurrentPageSize) {
+            _pageSizeOptionsSource = PageSizeOptions;
+            _resolvedPageSizeOptionsPageSize = CurrentPageSize;
+            _resolvedPageSizeOptions = PageSizeOptions.Where(option => option > 0).Append(CurrentPageSize).Distinct().Order().ToArray();
         }
 
-        _pageSizeOptionsSource = PageSizeOptions;
-        _resolvedPageSizeOptionsPageSize = CurrentPageSize;
-        _resolvedPageSizeOptions = PageSizeOptions
-            .Where(option => option > 0)
-            .Append(CurrentPageSize)
-            .Distinct()
-            .OrderBy(option => option)
-            .ToArray();
         return _resolvedPageSizeOptions;
     }
 
-    private string GetRowClass(bool hasIndex, int rowIndex) {
-        if (!HasStripedRows || !hasIndex) {
-            return HasRowClickCallback ? _clickableRowClass : _rowClass;
-        }
-
-        return (HasRowClickCallback, rowIndex % 2 == 0) switch {
-            (true, true) => _clickableStripedOddRowClass,
-            (true, false) => _clickableStripedEvenRowClass,
-            (false, true) => _stripedOddRowClass,
-            _ => _stripedEvenRowClass
-        };
-    }
+    private string GetRowClass(bool hasIndex, int rowIndex) => _rowClasses[(Appearance == NTDataGridAppearance.Striped && hasIndex ? rowIndex % 2 == 0 ? 2 : 4 : 0) + (HasRowClickCallback ? 1 : 0)];
 
     private object GetRowIdentity(TItem item) => RowKey?.Invoke(item) ?? (object?)item ?? DBNull.Value;
 
@@ -1321,21 +1031,19 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
 
     private void TrimVirtualizedRowIndices(int activeStartIndex, int activeItemCount) {
         var maxRowIndexCount = Math.Max(Math.Max(1, activeItemCount), VirtualizationMaxCachedItemCount);
-        if (_rowIndices.Count <= maxRowIndexCount) {
-            return;
-        }
+        if (_rowIndices.Count > maxRowIndexCount) {
+            var activeEndIndex = Math.Max(0, activeStartIndex) + Math.Max(0, activeItemCount);
+            var activeCenterIndex = activeStartIndex + Math.Max(0, activeItemCount) / 2;
+            var keysToRemove = _rowIndices
+                .Where(pair => pair.Value < activeStartIndex || pair.Value >= activeEndIndex)
+                .OrderByDescending(pair => Math.Abs(pair.Value - activeCenterIndex))
+                .Select(pair => pair.Key)
+                .Take(_rowIndices.Count - maxRowIndexCount)
+                .ToArray();
 
-        var activeEndIndex = Math.Max(0, activeStartIndex) + Math.Max(0, activeItemCount);
-        var activeCenterIndex = activeStartIndex + Math.Max(0, activeItemCount) / 2;
-        var keysToRemove = _rowIndices
-            .Where(pair => pair.Value < activeStartIndex || pair.Value >= activeEndIndex)
-            .OrderByDescending(pair => Math.Abs(pair.Value - activeCenterIndex))
-            .Select(pair => pair.Key)
-            .Take(_rowIndices.Count - maxRowIndexCount)
-            .ToArray();
-
-        foreach (var key in keysToRemove) {
-            _rowIndices.Remove(key);
+            foreach (var key in keysToRemove) {
+                _rowIndices.Remove(key);
+            }
         }
     }
 
@@ -1347,30 +1055,28 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     }
 
     private void CaptureRootAttributes() {
-        _class = AdditionalAttributes != null && AdditionalAttributes.TryGetValue("class", out var classValue) ? Convert.ToString(classValue, CultureInfo.InvariantCulture) : null;
-        _style = AdditionalAttributes != null && AdditionalAttributes.TryGetValue("style", out var styleValue) ? Convert.ToString(styleValue, CultureInfo.InvariantCulture) : null;
+        _class = GetAttribute("class");
+        _style = GetAttribute("style");
         _rootAttributes = AdditionalAttributes?
             .Where(attribute => !attribute.Key.Equals("class", StringComparison.OrdinalIgnoreCase) && !attribute.Key.Equals("style", StringComparison.OrdinalIgnoreCase))
             .ToDictionary(attribute => attribute.Key, attribute => attribute.Value, StringComparer.OrdinalIgnoreCase);
+
+        string? GetAttribute(string name) => AdditionalAttributes != null && AdditionalAttributes.TryGetValue(name, out var value) ? Convert.ToString(value, CultureInfo.InvariantCulture) : null;
     }
 
-    private bool CaptureDataStateChanged() {
-        var state = GetDataState();
-        var changed = !_hasDataStateSnapshot
-            || !ReferenceEquals(Items, _previousItems)
-            || ItemsProvider != _previousItemsProvider
-            || RowKey != _previousRowKey
-            || !string.Equals(_previousDataState, state, StringComparison.Ordinal);
-
-        _hasDataStateSnapshot = true;
-        _previousItems = Items;
-        _previousItemsProvider = ItemsProvider;
-        _previousRowKey = RowKey;
-        _previousDataState = state;
-        return changed;
+    // Only parent inputs belong here; the grid changes its page, page size, sorts, and URL itself. The first call (null snapshot) always reports a change.
+    private bool CaptureParametersChanged() {
+        var previous = _previousParameters;
+        _previousParameters = (Items, ItemsProvider, RowKey, ShowPagination, Virtualize, AllowMultiSort);
+        return previous is not { } p
+            || !ReferenceEquals(Items, p.Items)
+            || ItemsProvider != p.Provider
+            || RowKey != p.RowKey
+            || (ShowPagination, Virtualize, AllowMultiSort) != (p.Paginated, p.Virtualized, p.MultiSort);
     }
 
-    private string GetDataState() => $"{CurrentPageIndex}|{CurrentPageSize}|{ShowPagination}|{Virtualize}|{AllowMultiSort}|{GetCurrentUri()}|{SerializeSorts(_sorts)}";
+    // What the grid is showing. URL changes that leave this alone, including the grid's own navigation echoing back, do not reload.
+    private string GetViewState() => $"{CurrentPageIndex}|{CurrentPageSize}|{SerializeSorts(_sorts)}";
 
     private Task InvokeRowClickedAsync(TItem item) => HasRowClickCallback ? OnRowClicked.InvokeAsync(item) : Task.CompletedTask;
 
@@ -1400,8 +1106,7 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
         if (RowDetailTemplate is not null) {
             builder.AddContent(7, RenderExpansionCell(item, expanded));
         }
-        for (var i = 0; i < _columns.Count; i++) {
-            var column = _columns[i];
+        foreach (var column in _columns) {
             builder.OpenElement(20, "td");
             builder.AddAttribute(21, "class", column.BodyCellClass);
             builder.OpenElement(22, "div");
@@ -1418,9 +1123,10 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
         }
         builder.CloseRegion();
     }
+
     private RenderFragment RenderEmptyRow() => builder => {
         builder.OpenElement(0, "tr");
-        builder.AddAttribute(1, "class", _emptyRowClass);
+        builder.AddAttribute(1, "class", "nt-data-grid-row nt-data-grid-row-empty");
         builder.OpenElement(2, "td");
         builder.AddAttribute(3, "colspan", VisibleColumnCount);
         builder.AddContent(4, EmptyText);
@@ -1431,8 +1137,7 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     private RenderFragment RenderLoadingRow(PlaceholderContext context) => builder => {
         builder.OpenElement(0, "tr");
         builder.AddAttribute(1, "class", "nt-data-grid-row nt-data-grid-row-placeholder");
-        var resolvedRowSize = Math.Max(1, context.Size);
-        var rowSize = resolvedRowSize.ToString(CultureInfo.InvariantCulture);
+        var rowSize = Math.Max(1, context.Size).ToString(CultureInfo.InvariantCulture);
         builder.AddAttribute(2, "data-nt-virtualize-size", rowSize);
         builder.AddAttribute(3, "data-nt-virtualize-placeholder", "true");
         builder.AddAttribute(4, "aria-rowindex", RowDetailTemplate is null ? (long)context.Index : (long?)null);
@@ -1452,12 +1157,10 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     };
 
     private RenderFragment RenderSpacerCell(PlaceholderContext context) => builder => {
-        var resolvedSize = Math.Max(0, context.Size);
-        var size = resolvedSize.ToString(CultureInfo.InvariantCulture);
         builder.OpenElement(0, "td");
         builder.AddAttribute(1, "class", "nt-data-grid-spacer-cell");
         builder.AddAttribute(2, "colspan", VisibleColumnCount);
-        builder.AddAttribute(3, "data-nt-virtualize-size", size);
+        builder.AddAttribute(3, "data-nt-virtualize-size", Math.Max(0, context.Size).ToString(CultureInfo.InvariantCulture));
         builder.CloseElement();
     };
 
@@ -1465,30 +1168,16 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
 
     private sealed record SortPlan(ResolvedSort[] ResolvedSorts, IReadOnlyList<NTSortDescriptor> ProviderDescriptors);
 
-    private sealed record UriState(string SourceUri, string? GridQueryPrefix, string PageHrefPrefix, string PageName, string PageSizeName, string SortName, string Fragment, IReadOnlyDictionary<string, string> Query);
+    private sealed record UriState(string SourceUri, string? GridQueryPrefix, string PageHrefPrefix, string Fragment, IReadOnlyDictionary<string, string> Query);
 
     private sealed class NTDataGridObjectComparer : IComparer<object?> {
         public static readonly NTDataGridObjectComparer Instance = new();
 
-        public int Compare(object? x, object? y) {
-            if (ReferenceEquals(x, y)) {
-                return 0;
-            }
-
-            if (x is null) {
-                return -1;
-            }
-
-            if (y is null) {
-                return 1;
-            }
-
-            if (x is IComparable comparable) {
-                return comparable.CompareTo(y);
-            }
-
-            return StringComparer.CurrentCulture.Compare(Convert.ToString(x, CultureInfo.CurrentCulture), Convert.ToString(y, CultureInfo.CurrentCulture));
-        }
+        public int Compare(object? x, object? y) => ReferenceEquals(x, y) ? 0
+            : x is null ? -1
+            : y is null ? 1
+            : x is IComparable comparable ? comparable.CompareTo(y)
+            : StringComparer.CurrentCulture.Compare(Convert.ToString(x, CultureInfo.CurrentCulture), Convert.ToString(y, CultureInfo.CurrentCulture));
     }
 
     /// <inheritdoc />
@@ -1499,7 +1188,7 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
 
         _disposed = true;
         _navManager.LocationChanged -= OnLocationChanged;
-        if (_persistenceRegistration) {
+        if (_persistentComponentState is not null) {
             _persistenceSubscription.Dispose();
         }
         _refreshCancellation = null;
