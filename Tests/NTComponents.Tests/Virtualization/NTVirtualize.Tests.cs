@@ -447,6 +447,143 @@ public class NTVirtualize_Tests : BunitContext {
         });
     }
 
+    [Theory]
+    [InlineData(23)]
+    [InlineData(20)]
+    public async Task WindowChangeWithinRunningPrefetch_KeepsPrefetch(int settledCapacity) {
+        // Arrange
+        var captured = new List<NTVirtualizeItemsProviderRequest<string>>();
+        var prefetch = new TaskCompletionSource<NTVirtualizeItemsProviderResult<string>>();
+        NTVirtualizeItemsProvider<string> provider = request => {
+            captured.Add(request);
+            if (request.StartIndex > 0) {
+                return new ValueTask<NTVirtualizeItemsProviderResult<string>>(prefetch.Task);
+            }
+
+            var resultItems = Enumerable.Range(0, request.Count ?? 0).Select(index => $"Item {index}").ToList();
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(resultItems, 100));
+        };
+
+        var cut = Render<NTVirtualize<string>>(p => p
+            .Add(c => c.ItemsProvider, provider)
+            .Add(c => c.ScrollDebounceMilliseconds, 0)
+            .Add(c => c.BackgroundPreloadWindowCount, 1)
+            .Add(c => c.ItemTemplate, item => builder => builder.AddContent(0, $"-{item}-")));
+
+        await cut.InvokeAsync(() => cut.Instance.LoadItems(0, 3850, 0, 23));
+        cut.WaitForAssertion(() => captured.Select(request => request.StartIndex).Should().Equal(0, 23));
+
+        // Act: measurement settles the window; every row it prefetches is already being fetched.
+        await cut.InvokeAsync(() => cut.Instance.LoadItems(0, 4000, 0, settledCapacity));
+
+        // Assert
+        captured.Should().HaveCount(2);
+        captured[1].CancellationToken.IsCancellationRequested.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task WindowMovesToFullyCachedRows_CancelsStalePrefetch() {
+        // Arrange
+        var captured = new List<NTVirtualizeItemsProviderRequest<string>>();
+        var stalePrefetch = new TaskCompletionSource<NTVirtualizeItemsProviderResult<string>>();
+        NTVirtualizeItemsProvider<string> provider = request => {
+            captured.Add(request);
+            if (request.StartIndex == 10) {
+                return new ValueTask<NTVirtualizeItemsProviderResult<string>>(stalePrefetch.Task);
+            }
+
+            var resultItems = Enumerable.Range(request.StartIndex, request.Count ?? 0).Select(index => $"Item {index}").ToList();
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(resultItems, 100));
+        };
+
+        var cut = Render<NTVirtualize<string>>(p => p
+            .Add(c => c.ItemsProvider, provider)
+            .Add(c => c.ScrollDebounceMilliseconds, 0)
+            .Add(c => c.BackgroundPreloadWindowCount, 1)
+            .Add(c => c.ItemTemplate, item => builder => builder.AddContent(0, $"-{item}-")));
+
+        await cut.InvokeAsync(() => cut.Instance.LoadItems(0, 4750, 0, 5));
+        cut.WaitForAssertion(() => captured.Select(request => request.StartIndex).Should().Equal(0, 5));
+        await cut.InvokeAsync(() => cut.Instance.LoadItems(150, 4600, 3, 5));
+        cut.WaitForAssertion(() => captured.Select(request => request.StartIndex).Should().Equal(0, 5, 10));
+
+        // Act: the window returns to rows whose preload window is already cached.
+        await cut.InvokeAsync(() => cut.Instance.LoadItems(0, 4750, 0, 5));
+
+        // Assert
+        captured[2].CancellationToken.IsCancellationRequested.Should().BeTrue();
+        captured.Should().HaveCount(3);
+    }
+
+    [Fact]
+    public async Task ForegroundLoadCancelsPrefetch_RestartsPrefetchForRemainingRows() {
+        // Arrange
+        var captured = new List<NTVirtualizeItemsProviderRequest<string>>();
+        var canceledPrefetch = new TaskCompletionSource<NTVirtualizeItemsProviderResult<string>>();
+        NTVirtualizeItemsProvider<string> provider = request => {
+            captured.Add(request);
+            if (request.Count == 10) {
+                return new ValueTask<NTVirtualizeItemsProviderResult<string>>(canceledPrefetch.Task);
+            }
+
+            var resultItems = Enumerable.Range(request.StartIndex, request.Count ?? 0).Select(index => $"Item {index}").ToList();
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(resultItems, 15));
+        };
+
+        var cut = Render<NTVirtualize<string>>(p => p
+            .Add(c => c.ItemsProvider, provider)
+            .Add(c => c.ScrollDebounceMilliseconds, 0)
+            .Add(c => c.BackgroundPreloadWindowCount, 2)
+            .Add(c => c.ItemTemplate, item => builder => builder.AddContent(0, $"-{item}-")));
+
+        await cut.InvokeAsync(() => cut.Instance.LoadItems(0, 500, 0, 5));
+        cut.WaitForAssertion(() => captured.Select(request => (request.StartIndex, request.Count)).Should().Equal((0, 5), (5, 10)));
+
+        // Act: the window grows into rows the prefetch had not returned yet, so the foreground load cancels it.
+        await cut.InvokeAsync(() => cut.Instance.LoadItems(0, 450, 0, 6));
+
+        // Assert: the rows the canceled prefetch was covering are requested again.
+        cut.WaitForAssertion(() => captured.Select(request => (request.StartIndex, request.Count)).Should().Equal((0, 5), (5, 10), (5, 1), (6, 9)));
+        captured[1].CancellationToken.IsCancellationRequested.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SpacerChangeDuringRevalidation_KeepsRevalidation() {
+        // Arrange
+        var captured = new List<NTVirtualizeItemsProviderRequest<string>>();
+        var revalidation = new TaskCompletionSource<NTVirtualizeItemsProviderResult<string>>();
+        NTVirtualizeItemsProvider<string> provider = request => {
+            captured.Add(request);
+            if (captured.Count > 1) {
+                return new ValueTask<NTVirtualizeItemsProviderResult<string>>(revalidation.Task);
+            }
+
+            var resultItems = Enumerable.Range(0, request.Count ?? 0).Select(index => $"Old {index}").ToList();
+            return new ValueTask<NTVirtualizeItemsProviderResult<string>>(new NTVirtualizeItemsProviderResult<string>(resultItems, 20));
+        };
+
+        var cut = Render<NTVirtualize<string>>(p => p
+            .Add(c => c.ItemsProvider, provider)
+            .Add(c => c.ScrollDebounceMilliseconds, 0)
+            .Add(c => c.PlaceholderPreloadWindowCount, 0)
+            .Add(c => c.BackgroundPreloadWindowCount, 0)
+            .Add(c => c.RevalidateCachedItems, true)
+            .Add(c => c.ItemTemplate, item => builder => builder.AddContent(0, $"-{item}-")));
+
+        await cut.InvokeAsync(() => cut.Instance.LoadItems(0, 750, 0, 5));
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("-Old 4-"));
+        await cut.InvokeAsync(() => cut.Instance.LoadItems(0, 740, 0, 5));
+        cut.WaitForAssertion(() => captured.Should().HaveCount(2));
+
+        // Act: only the spacer sizes change while the revalidation is in flight.
+        await cut.InvokeAsync(() => cut.Instance.LoadItems(0, 730, 0, 5));
+        revalidation.SetResult(new NTVirtualizeItemsProviderResult<string>(Enumerable.Range(0, 5).Select(index => $"New {index}").ToList(), 20));
+
+        // Assert
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("-New 4-"));
+        captured.Should().HaveCount(2);
+    }
+
     [Fact]
     public async Task BackgroundPreload_Replaces_Preloaded_Placeholders_With_Cached_Items() {
         var items = Enumerable.Range(1, 20).Select(i => $"Item {i}").ToList();

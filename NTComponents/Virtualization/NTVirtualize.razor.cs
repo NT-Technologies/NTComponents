@@ -170,9 +170,9 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
     private NTVirtualizeItemsProvider<TItem>? _lastItemsProvider;
     private bool _loading;
     private CancellationTokenSource? _prefetchCts;
+    private (int Start, int Count) _prefetchRange;
     private CancellationTokenSource? _revalidateCts;
-    private int _revalidatingCount;
-    private int _revalidatingStartIndex = -1;
+    private (int Start, int Count) _revalidateRange;
     private CancellationTokenSource? _refreshCts;
     private Exception? _refreshException;
     private float _spacerAfterSize;
@@ -211,9 +211,8 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
                 _visibleItemCapacity = size;
                 _spacerBeforeSize = before;
                 _spacerAfterSize = after;
-                _prefetchCts?.Cancel();
-                _revalidateCts?.Cancel();
 
+                // Background work is not canceled here: the refresh replaces it only when the new window needs a different range.
                 if (!RefreshDataCoreAsync(debounce: _hasLoadedItems).IsCompleted) {
                     _ = InvokeAsync(StateHasChanged);
                 }
@@ -424,8 +423,7 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
             await InvokeAsync(StateHasChanged);
         }
         else if (count > 0) { // Otherwise browser measurement owns the first request, including InitialItemIndex.
-            CancelAndDispose(ref _prefetchCts);
-            CancelAndDispose(ref _revalidateCts);
+            CancelBackgroundWork();
             _pendingAnchor = null;
             var refreshCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _refreshCts = refreshCancellation;
@@ -553,24 +551,37 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
 
     private void StartBackgroundPreload(TimeSpan delay) {
         var activeLastItemIndex = Math.Min(_itemsBefore + _visibleItemCapacity, _itemCount);
-        if (!_loading && TryGetMissingRange(activeLastItemIndex, GetWindowItemCount(activeLastItemIndex, BackgroundPreloadWindowCount), out var missingStartIndex, out var missingCount)) {
-            CancelAndDispose(ref _prefetchCts);
+        var hasMissingRange = TryGetMissingRange(activeLastItemIndex, GetWindowItemCount(activeLastItemIndex, BackgroundPreloadWindowCount), out var missingStartIndex, out var missingCount) && !_loading;
+        if (hasMissingRange && Covers(_prefetchRange, missingStartIndex, missingCount)) {
+            return;
+        }
+
+        // Any running prefetch is for rows this window no longer needs.
+        CancelAndDispose(ref _prefetchCts);
+        _prefetchRange = default;
+        if (hasMissingRange) {
             _prefetchCts = new CancellationTokenSource();
-            _ = InvokeAsync(() => LoadInBackgroundAsync(missingStartIndex, missingCount, delay, false, _prefetchCts.Token));
+            _prefetchRange = (missingStartIndex, missingCount);
+            var token = _prefetchCts.Token;
+            _ = InvokeAsync(() => LoadInBackgroundAsync(missingStartIndex, missingCount, delay, false, token));
         }
     }
 
     private void StartBackgroundRevalidation(TimeSpan delay) {
         var startIndex = _itemsBefore;
         var count = Math.Min(_visibleItemCapacity, _itemCount - startIndex);
-        if (RevalidateCachedItems && !_loading && count > 0 && (_revalidatingStartIndex != startIndex || _revalidatingCount != count)) {
+        if (RevalidateCachedItems && !_loading && count > 0 && !Covers(_revalidateRange, startIndex, count)) {
             CancelAndDispose(ref _revalidateCts);
             _revalidateCts = new CancellationTokenSource();
-            _revalidatingStartIndex = startIndex;
-            _revalidatingCount = count;
-            _ = InvokeAsync(() => LoadInBackgroundAsync(startIndex, count, delay, true, _revalidateCts.Token));
+            _revalidateRange = (startIndex, count);
+            var token = _revalidateCts.Token;
+            _ = InvokeAsync(() => LoadInBackgroundAsync(startIndex, count, delay, true, token));
         }
     }
+
+    /// <summary>Whether a running background request for <paramref name="running" /> already fetches every row in the given range.</summary>
+    private static bool Covers((int Start, int Count) running, int startIndex, int count) =>
+        running.Start <= startIndex && (long)startIndex + count <= (long)running.Start + running.Count;
 
     // Preloads and revalidation are opportunistic: cached rows stay visible and the foreground load path surfaces provider failures when the range is actually requested.
     private async Task LoadInBackgroundAsync(int startIndex, int count, TimeSpan delay, bool revalidate, CancellationToken cancellationToken) {
@@ -595,9 +606,14 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
         }
         catch { }
         finally {
-            if (revalidate && _revalidatingStartIndex == startIndex && _revalidatingCount == count) {
-                _revalidatingStartIndex = -1;
-                _revalidatingCount = 0;
+            // Whoever cancels a background request also replaces or clears its range, so only an uncanceled request is still the tracked one.
+            if (!cancellationToken.IsCancellationRequested) {
+                if (revalidate) {
+                    _revalidateRange = default;
+                }
+                else {
+                    _prefetchRange = default;
+                }
             }
         }
     }
@@ -617,11 +633,15 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
     }
 
     private void CancelAllWork() {
+        CancelBackgroundWork();
+        CancelAndDispose(ref _refreshCts);
+    }
+
+    private void CancelBackgroundWork() {
         CancelAndDispose(ref _prefetchCts);
         CancelAndDispose(ref _revalidateCts);
-        CancelAndDispose(ref _refreshCts);
-        _revalidatingStartIndex = -1;
-        _revalidatingCount = 0;
+        _prefetchRange = default;
+        _revalidateRange = default;
     }
 
     private static void CancelAndDispose(ref CancellationTokenSource? cancellationTokenSource) {
