@@ -63,8 +63,17 @@ internal static class NTDataGridRules {
         isEnabledByDefault: true,
         helpLinkUri: RuleCategory.HelpUri + "#ntc1076");
 
+    public static readonly DiagnosticDescriptor StaleNavigationUri = new(
+        "NTC1113",
+        "Merge NTDataGrid QueryParameters into URLs this component builds",
+        "NavigationManager.Uri does not include this NTDataGrid's page and sort; merge the grid's QueryParameters into URLs this component builds for the current page",
+        RuleCategory.Usage,
+        DiagnosticSeverity.Info,
+        isEnabledByDefault: true,
+        helpLinkUri: RuleCategory.HelpUri + "#ntc1113");
+
     public static void Register(ComponentRuleRegistry registry) {
-        registry.Describe(DuplicateSource, MissingSource, VirtualizedPagination, ComputedPropertySort, PersistencePair, PersistenceIdentity);
+        registry.Describe(DuplicateSource, MissingSource, VirtualizedPagination, ComputedPropertySort, PersistencePair, PersistenceIdentity, StaleNavigationUri);
         registry.On("NTComponents.NTDataGrid`1", AnalyzeGrid);
         registry.On("NTComponents.NTPropertyColumn`2", AnalyzeColumn);
     }
@@ -102,7 +111,65 @@ internal static class NTDataGridRules {
         if (virtualize == true && frame.GetNumber("VirtualizationItemSize") is { } itemSize && itemSize < 1) {
             context.Report(CommonRules.Adjusted, frame.LocationOf("VirtualizationItemSize"), "NTDataGrid VirtualizationItemSize", Format(itemSize), "1");
         }
+
+        // Only the component that renders the grid is checked; a grid and a URL writer in different components are not linked.
+        if (frame.GetBool("PushHistoryEntries") == false && context.ContainingType is { } owner && BuildsUrlFromNavigationManager(owner, context.CancellationToken)) {
+            context.Report(StaleNavigationUri, frame.Location);
+        }
     }
+
+    /// <summary>
+    ///     True when <paramref name="type" /> reads <c>Uri</c> from one of its NavigationManager members or builds a URL from it with
+    ///     <c>GetUriWithQueryParameter(s)</c>, and never reads a grid's <c>QueryParameters</c>. Members are matched by name.
+    /// </summary>
+    private static bool BuildsUrlFromNavigationManager(INamedTypeSymbol type, CancellationToken cancellationToken) {
+        var names = NavigationManagerNames(type);
+        var accesses = type.DeclaringSyntaxReferences.SelectMany(reference => reference.GetSyntax(cancellationToken).DescendantNodes().OfType<MemberAccessExpressionSyntax>());
+        return names.Count > 0
+            && !accesses.Any(access => access.Name.Identifier.ValueText == "QueryParameters")
+            && accesses.Any(access => names.Contains(ReceiverName(access.Expression)) && access.Name.Identifier.ValueText switch {
+                "Uri" or "GetUriWithQueryParameter" => true,
+                // The overload that takes its own base URI does not read NavigationManager.Uri.
+                "GetUriWithQueryParameters" => access.Parent is InvocationExpressionSyntax { ArgumentList.Arguments.Count: 1 },
+                _ => false
+            });
+    }
+
+    /// <summary>Names of the NavigationManager fields, properties, and primary constructor parameters <paramref name="type" /> can use.</summary>
+    private static HashSet<string> NavigationManagerNames(INamedTypeSymbol type) {
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        for (var current = type; current is not null; current = current.BaseType) {
+            foreach (var member in current.GetMembers()) {
+                if (member switch { IPropertySymbol property => property.Type, IFieldSymbol field => field.Type, _ => null } is INamedTypeSymbol memberType && IsNavigationManager(memberType)) {
+                    names.Add(member.Name);
+                }
+            }
+        }
+
+        foreach (var parameter in type.InstanceConstructors.SelectMany(static constructor => constructor.Parameters)) {
+            if (parameter.Type is INamedTypeSymbol parameterType && IsNavigationManager(parameterType)) {
+                names.Add(parameter.Name);
+            }
+        }
+
+        return names;
+    }
+
+    private static bool IsNavigationManager(INamedTypeSymbol type) {
+        for (var current = type; current is not null; current = current.BaseType) {
+            if (ComponentFrame.MetadataNameOf(current) == "Microsoft.AspNetCore.Components.NavigationManager") {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string ReceiverName(ExpressionSyntax expression) => expression switch {
+        IdentifierNameSyntax identifier => identifier.Identifier.ValueText,
+        MemberAccessExpressionSyntax { Expression: ThisExpressionSyntax or BaseExpressionSyntax } access => access.Name.Identifier.ValueText,
+        _ => string.Empty
+    };
 
     /// <summary>True when the parameter holds a value other than a constant null, false when it is omitted or null, and null when unknown.</summary>
     private static bool? IsSupplied(ComponentFrame frame, string name) {

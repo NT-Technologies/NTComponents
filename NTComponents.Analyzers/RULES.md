@@ -114,6 +114,7 @@ Each diagnostic links here from its help link. Rules that predict a runtime exce
 | [NTC1110](#ntc1110) | Accessibility | Warning | NTProgress and NTLoader need a non-empty AriaLabel or AriaLabelledBy to have an accessible name. |
 | [NTC1111](#ntc1111) | Usage | Warning | NTContextMenu needs either TargetContent or TargetElementId. |
 | [NTC1112](#ntc1112) | Usage | Warning | NTContextMenu TargetContent and TargetElementId are both set. |
+| [NTC1113](#ntc1113) | Usage | Info | NTDataGrid QueryParameters should be merged into URLs a component builds from NavigationManager. |
 
 ## NTC1001
 
@@ -774,3 +775,11 @@ Category: Usage. Default severity: Warning.
 NTContextMenu TargetContent and TargetElementId are both set.
 
 Category: Usage. Default severity: Warning.
+
+## NTC1113
+
+NTDataGrid QueryParameters should be merged into URLs a component builds from NavigationManager.
+
+The grid writes its page and sort to the address bar without a Blazor navigation, so NavigationManager.Uri does not include them. A component that renders the grid and builds a URL for the current page from NavigationManager, for example with GetUriWithQueryParameters to keep a filter in the URL, drops the grid's page and sort when it navigates. Merge the grid's QueryParameters into the parameters you pass. The rule only checks the component that renders the grid, and stays silent once that component reads QueryParameters. A grid that still sets the obsolete PushHistoryEntries is skipped, because its navigations keep NavigationManager.Uri current.
+
+Category: Usage. Default severity: Info.

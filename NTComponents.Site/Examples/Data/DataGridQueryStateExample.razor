@@ -1,0 +1,62 @@
+@inject NavigationManager Navigation
+
+<NTSelect TValue="string"
+          @bind-Value="Status"
+          @bind-Value:after="KeepStatusInUrl"
+          Label="Status"
+          SupportingText="Stored in the URL as docs-status.">
+    <option value="">All statuses</option>
+    <option value="Open">Open</option>
+    <option value="Closed">Closed</option>
+</NTSelect>
+
+<NTDataGrid @ref="_grid"
+            TItem="Order"
+            Items="_orders"
+            Caption="Orders by status"
+            ShowPagination="true"
+            PageSize="5"
+            QueryParameterPrefix="docs-status-orders"
+            class="docs-fill">
+    <NTPropertyColumn TItem="Order"
+                      TValue="int"
+                      Title="Order"
+                      Property="order => order.Id"
+                      InitialSortDirection="SortDirection.Ascending" />
+    <NTPropertyColumn TItem="Order"
+                      TValue="string"
+                      Title="Status"
+                      Property="order => order.Status" />
+    <NTPropertyColumn TItem="Order"
+                      TValue="decimal"
+                      Title="Total"
+                      Property="order => order.Total"
+                      Format="C" />
+</NTDataGrid>
+
+@code {
+    private static readonly Order[] AllOrders = Enumerable.Range(1, 30)
+        .Select(index => new Order(1000 + index, index % 3 == 0 ? "Closed" : "Open", index * 7.5m))
+        .ToArray();
+
+    private NTDataGrid<Order>? _grid;
+    private IQueryable<Order> _orders = AllOrders.AsQueryable();
+
+    [SupplyParameterFromQuery(Name = "docs-status")]
+    public string? Status { get; set; }
+
+    protected override void OnInitialized() => ApplyFilter();
+
+    // The grid writes its page and sort to the address bar without a Blazor navigation, so Navigation.Uri can be
+    // missing them. Merging the grid's QueryParameters keeps them in the URL this page writes.
+    private void KeepStatusInUrl() {
+        ApplyFilter();
+        Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(new Dictionary<string, object?>(_grid!.QueryParameters) {
+            ["docs-status"] = string.IsNullOrEmpty(Status) ? null : Status
+        }), replace: true);
+    }
+
+    private void ApplyFilter() => _orders = AllOrders.Where(order => string.IsNullOrEmpty(Status) || order.Status == Status).AsQueryable();
+
+    private sealed record Order(int Id, string Status, decimal Total);
+}

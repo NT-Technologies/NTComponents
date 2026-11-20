@@ -249,9 +249,33 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     [Parameter]
     public bool PersistPageSizeInQuery { get; set; }
 
-    /// <summary>Creates browser history entries for sorting and paging. The default replaces the current entry.</summary>
+    /// <summary>Obsolete. Creates browser history entries for sorting and paging. The default replaces the current entry.</summary>
+    /// <remarks>
+    /// Back should return to the previous page, not undo a sort or page change, so this option will be removed in the next major
+    /// version. Each entry is also a Blazor navigation, which on pages without an interactive router makes the server render the page
+    /// again, including a prerendered grid's provider call.
+    /// </remarks>
+    [Obsolete("Sorting and paging should not add browser history entries; Back returns to the previous page. This parameter will be removed in the next major version.")]
     [Parameter]
     public bool PushHistoryEntries { get; set; }
+
+    // The grid keeps honoring the obsolete parameter until it is removed.
+#pragma warning disable CS0618
+    private bool PushesHistoryEntries => PushHistoryEntries;
+#pragma warning restore CS0618
+
+    /// <summary>The grid's current page, sort, and page-size query parameters, named with <see cref="QueryParameterPrefix" />.</summary>
+    /// <remarks>
+    /// The grid updates the address bar without a Blazor navigation, so <see cref="NavigationManager.Uri" /> does not include its latest
+    /// page and sort. A page that builds a URL for itself, for example to keep a filter in the query string, should pass these to
+    /// <c>NavigationManager.GetUriWithQueryParameters</c> together with its own parameters; otherwise its navigation drops the grid's state.
+    /// A null value removes that parameter, matching the URL the grid writes. A new dictionary is returned on each read.
+    /// </remarks>
+    public IReadOnlyDictionary<string, object?> QueryParameters => new Dictionary<string, object?> {
+        [GetQueryName("page")] = Math.Clamp(CurrentPageIndex, 0, PageCount - 1) + 1,
+        [GetQueryName("sort")] = GetSortQueryValue(_sorts),
+        [GetQueryName("pageSize")] = PersistPageSizeInQuery ? CurrentPageSize : null
+    };
 
     /// <summary>Scrolls a virtualized grid to a zero-based item. Requires an interactive rendered virtualizer.</summary>
     public Task ScrollToItemAsync(int index, CancellationToken cancellationToken = default) => Virtualize && _virtualizer is not null
@@ -464,7 +488,7 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     public sealed record PersistedProviderResult<T>(IReadOnlyList<T> Items, int TotalItemCount);
 
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs args) {
-        if (_disposed || !PushHistoryEntries) {
+        if (_disposed || !PushesHistoryEntries) {
             return;
         }
         try {
@@ -861,7 +885,7 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
             var uri = BuildPageHref(CurrentPageIndex);
             // Record the URL before awaiting the browser, so a parent render in between reads the page the grid is already showing.
             _currentUri = uri;
-            if (PushHistoryEntries) {
+            if (PushesHistoryEntries) {
                 _navManager.NavigateTo(uri);
             }
             else {
@@ -879,10 +903,8 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
 
     private string BuildHref(string pageValue, IReadOnlyList<NTSortDescriptor> sorts, int? pageSize = null) {
         var uriState = GetUriState();
-        var sortValue = SerializeSorts(sorts);
         var href = uriState.PageHrefPrefix + pageValue;
-        // A missing sort means "use the initial sort", so an unsorted grid with an initial sort needs an explicit empty value.
-        if (sortValue.Length > 0 || _columns.Any(column => column.InitialSortDirection is not null && column.CanSort)) {
+        if (GetSortQueryValue(sorts) is { } sortValue) {
             href += $"&{Uri.EscapeDataString(GetQueryName("sort"))}={Uri.EscapeDataString(sortValue)}";
         }
 
@@ -890,6 +912,12 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
             href += $"&{Uri.EscapeDataString(GetQueryName("pageSize"))}={(pageSize ?? CurrentPageSize).ToString(CultureInfo.InvariantCulture)}";
         }
         return href + uriState.Fragment;
+    }
+
+    // A missing sort means "use the initial sort", so an unsorted grid with an initial sort needs an explicit empty value.
+    private string? GetSortQueryValue(IReadOnlyList<NTSortDescriptor> sorts) {
+        var value = SerializeSorts(sorts);
+        return value.Length > 0 || _columns.Any(column => column.InitialSortDirection is not null && column.CanSort) ? value : null;
     }
 
     private UriState GetUriState() {
