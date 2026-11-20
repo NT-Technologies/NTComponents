@@ -1,0 +1,10 @@
+@inject NavigationManager Navigation
+
+<NTDataGrid TItem="string" Items="_items" /> @* NTC1113 *@
+<NTDataGrid TItem="string" Items="_items" PushHistoryEntries="true" />
+
+@code {
+    private IQueryable<string> _items = Array.Empty<string>().AsQueryable();
+
+    private void Filter(string status) => Navigation.NavigateTo(Navigation.GetUriWithQueryParameter("status", status), replace: true);
+}

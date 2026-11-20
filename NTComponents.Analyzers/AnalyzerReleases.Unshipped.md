@@ -113,3 +113,4 @@ NTC1107 | Accessibility | Info | Form field has no accessible name.
 NTC1108 | Accessibility | Warning | NTFormSectionView with UseFieldset needs a Heading for the legend.
 NTC1111 | Usage | Warning | NTContextMenu needs either TargetContent or TargetElementId.
 NTC1112 | Usage | Warning | NTContextMenu TargetContent and TargetElementId are both set.
+NTC1113 | Usage | Info | NTDataGrid QueryParameters should be merged into URLs a component builds from NavigationManager.

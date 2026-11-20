@@ -639,6 +639,28 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
     }
 
     [Fact]
+    public async Task DataGridQueryStateDemo_FilterChangeKeepsGridSort_AndReloadRestoresBoth() {
+        var example = await OpenExampleAsync("ntdatagrid", "DataGridQueryStateExample");
+        var page = _page!;
+        var firstRow = example.Locator("tbody tr.nt-data-grid-row").First;
+
+        await example.Locator("thead button", new LocatorLocatorOptions { HasText = "Order" }).ClickAsync();
+        await Assertions.Expect(page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex("docs-status-orders-sort=Id%3Adesc"));
+
+        // The page writes its filter from NavigationManager, which never saw the grid's sort; QueryParameters keeps it.
+        await example.Locator("select[name='Status']").SelectOptionAsync("Closed");
+        await Assertions.Expect(page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex("docs-status=Closed"));
+        page.Url.Should().Contain("docs-status-orders-sort=Id%3Adesc");
+        await Assertions.Expect(firstRow).ToContainTextAsync("1030");
+
+        await page.ReloadAsync();
+        example = Example("DataGridQueryStateExample");
+        await Assertions.Expect(example.Locator("select[name='Status']")).ToHaveValueAsync("Closed");
+        await Assertions.Expect(example.Locator("tbody tr.nt-data-grid-row").First).ToContainTextAsync("1030");
+        _browserDiagnostics.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task SnackbarAndToastDemos_ShowTheirMessage() {
         var snackbar = await OpenExampleAsync("ntsnackbar", "SnackbarServiceExample");
         await snackbar.GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { Name = "Show snackbar", Exact = true }).ClickAsync();
