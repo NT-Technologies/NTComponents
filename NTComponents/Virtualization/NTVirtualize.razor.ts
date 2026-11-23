@@ -7,6 +7,7 @@ interface DotNetVirtualizeRef {
 
 interface ScrollMetrics {
     containerSize: number;
+    headerInset: number;
     scrollTop: number;
 }
 
@@ -49,6 +50,25 @@ const scrollPositionsStateKey = '__ntVirtualizeScrollPositions';
 const scrollPersistenceInterval = 100;
 const scrollInterruptKeys = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
 const inputEvents = ['wheel', 'touchstart', 'pointerdown', 'keydown'];
+// Material 3 medium-3 duration and standard easing.
+const crossfadeDuration = 350;
+const crossfadeEasing = 'cubic-bezier(0.2, 0, 0, 1)';
+
+function canCrossfade(): boolean {
+    return typeof HTMLElement.prototype.animate === 'function' && !(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
+}
+
+function fade(element: Element, from: number, to: number, fill: FillMode): Animation | undefined {
+    return element instanceof HTMLElement ? element.animate([{ opacity: from }, { opacity: to }], { duration: crossfadeDuration, easing: crossfadeEasing, fill }) : undefined;
+}
+
+// A detached table row only lays out like a row inside a table of its own.
+function wrapInTable(row: HTMLTableRowElement): HTMLTableElement {
+    const table = document.createElement('table');
+    table.style.borderCollapse = 'collapse';
+    table.createTBody().appendChild(row);
+    return table;
+}
 
 /**
  * Initializes the virtualization component by setting up intersection observers and mutation observers
@@ -106,6 +126,9 @@ export function init(dotNetRef: Maybe<DotNetVirtualizeRef>, topSpacer: HTMLEleme
             pendingAnchor = null;
             cancelScrollOperation();
         }
+        if (crossfade) {
+            crossfade.content.style.transform = `translateY(${crossfade.scrollTop - observedScrollTop}px)`;
+        }
         if (scheduledScrollUpdate === null) {
             scheduledScrollUpdate = scheduleFrame(() => {
                 scheduledScrollUpdate = null;
@@ -157,6 +180,9 @@ export function init(dotNetRef: Maybe<DotNetVirtualizeRef>, topSpacer: HTMLEleme
     let pendingIndex: number | null = initialItemIndex > 0 ? Math.floor(initialItemIndex) : null;
     let pendingOperation: { id: number; resolve: () => void; reject: (error: unknown) => void } | null = null;
     let pendingAnchor: { snapshot: AnchorSnapshot; index: number; mode: number } | null = null;
+    // Placeholders from the last render; a later render that removes them in the same window has loaded their rows.
+    let placeholderSnapshot: { start: number; scrollTop: number; elements: Set<Element>; placeholders: { element: Element; rect: DOMRect }[] } | null = null;
+    let crossfade: { layer: HTMLElement; content: HTMLElement; scrollTop: number } | null = null;
     if (pendingIndex !== null) {
         pendingScrollTop = null;
     }
@@ -307,6 +333,99 @@ export function init(dotNetRef: Maybe<DotNetVirtualizeRef>, topSpacer: HTMLEleme
         return changed;
     }
 
+    function getRenderedElements(): Element[] {
+        const elements: Element[] = [];
+        for (let element = topSpacer.nextElementSibling; element && element !== bottomSpacer; element = element.nextElementSibling) {
+            elements.push(element);
+        }
+        return elements;
+    }
+
+    // The part of the viewport where rows are visible: the scroll container's client box below any sticky header.
+    function getVisibleRect(): { left: number; top: number; width: number; height: number } {
+        const container = getContainer();
+        if (!container) {
+            return { left: 0, top: 0, width: window.innerWidth || document.documentElement.clientWidth, height: window.innerHeight || document.documentElement.clientHeight };
+        }
+        const rect = container.getBoundingClientRect();
+        const { headerInset } = getMetrics();
+        return { left: rect.left + container.clientLeft, top: rect.top + container.clientTop + headerInset, width: container.clientWidth, height: Math.max(0, container.clientHeight - headerInset) };
+    }
+
+    function snapshotPlaceholders(): void {
+        placeholderSnapshot = null;
+        if (!canCrossfade()) {
+            return;
+        }
+        // Off-screen placeholders are kept too: the list can still scroll them into view before their rows load.
+        const elements = getRenderedElements();
+        const placeholders = elements.filter(element => element.hasAttribute('data-nt-virtualize-placeholder'))
+            .map(element => ({ element, rect: element.getBoundingClientRect() }))
+            .filter(({ rect }) => rect.height > 0);
+        if (placeholders.length > 0) {
+            placeholderSnapshot = { start: getRenderedRange()[0], scrollTop: getObservedScrollTop(), elements: new Set(elements), placeholders };
+        }
+    }
+
+    // Blazor swaps a placeholder for its row in one render, so the removed placeholder is laid over the
+    // row in a fixed, clipped layer and faded out while the row fades in. The layer stays inside the scroll
+    // container so component styles that depend on ancestors still apply to the placeholder.
+    function startCrossfade(): void {
+        const snapshot = placeholderSnapshot;
+        placeholderSnapshot = null;
+        if (!snapshot || snapshot.start !== getRenderedRange()[0]) {
+            return;
+        }
+        // The list may have scrolled since that render without moving the window; placeholders moved with it.
+        const scrollTop = getObservedScrollTop();
+        const visible = getVisibleRect();
+        const replaced = snapshot.placeholders.filter(({ element }) => !element.isConnected)
+            .map(({ element, rect }) => ({ element, rect, top: rect.top - (scrollTop - snapshot.scrollTop) }))
+            .filter(({ rect, top }) => top + rect.height > visible.top && top < visible.top + visible.height);
+        if (replaced.length === 0) {
+            return;
+        }
+        finishCrossfade();
+        const layer = document.createElement('div');
+        layer.setAttribute('aria-hidden', 'true');
+        Object.assign(layer.style, { position: 'fixed', left: `${visible.left}px`, top: `${visible.top}px`, width: `${visible.width}px`, height: `${visible.height}px`, margin: '0', overflow: 'hidden', pointerEvents: 'none' });
+        // Ghosts sit in an inner element that follows scrolling during the fade.
+        const content = layer.appendChild(document.createElement('div'));
+        (getContainer() ?? document.body).appendChild(layer);
+        // A transformed ancestor becomes the containing block of fixed elements; shift by the measured difference.
+        const placed = layer.getBoundingClientRect();
+        if (placed.width > 0) {
+            layer.style.left = `${2 * visible.left - placed.left}px`;
+            layer.style.top = `${2 * visible.top - placed.top}px`;
+        }
+        const ghostFades: (Promise<Animation> | undefined)[] = [];
+        for (const { element, rect, top } of replaced) {
+            const ghost = element instanceof HTMLTableRowElement ? wrapInTable(element) : element as HTMLElement;
+            Object.assign(ghost.style, { position: 'absolute', left: `${rect.left - visible.left}px`, top: `${top - visible.top}px`, width: `${rect.width}px`, height: `${rect.height}px`, margin: '0', boxSizing: 'border-box' });
+            content.appendChild(ghost);
+            ghostFades.push(fade(ghost, 1, 0, 'forwards')?.finished);
+        }
+        for (const element of getRenderedElements()) {
+            if (!snapshot.elements.has(element)) {
+                fade(element, 0, 1, 'none');
+            }
+        }
+        // Animations start on the next frame, so a wall-clock timer could remove the placeholder before a page
+        // blocked by rendering ever showed the fade. Remove it when its fade has actually played.
+        const current = { layer, content, scrollTop };
+        crossfade = current;
+        void Promise.all(ghostFades).catch(() => undefined).then(() => {
+            if (crossfade === current) {
+                finishCrossfade();
+            }
+        });
+    }
+
+    function finishCrossfade(): void {
+        crossfade?.layer.remove();
+        crossfade = null;
+    }
+
     function setSpacerSize(spacer: HTMLElement, size: number): void {
         const height = `${Math.max(0, size)}px`;
         setStyle(spacer, 'height', height);
@@ -355,6 +474,7 @@ export function init(dotNetRef: Maybe<DotNetVirtualizeRef>, topSpacer: HTMLEleme
 
     observersByDotNetRef.set(dotNetRefKey, {
         updateRenderState: (itemCount, placeholderCount, measureItemSize, itemSizeVersion, loading, preserveScrollOffset) => {
+            startCrossfade();
             const previousItemCount = state.itemCount;
             state.itemCount = Math.max(0, itemCount);
             const measurementChanged = state.measureItemSize !== measureItemSize;
@@ -377,6 +497,7 @@ export function init(dotNetRef: Maybe<DotNetVirtualizeRef>, topSpacer: HTMLEleme
             const restoredScrollPosition = restoreScrollPosition();
 
             requestVisibleItemDistribution(versionChanged || sizesChanged || state.itemCount !== previousItemCount || restoredScrollPosition);
+            snapshotPlaceholders();
         },
         updateOptions: (size, overscan, maximum, restorationKey) => {
             const sizeChanged = state.itemSize !== size;
@@ -426,6 +547,7 @@ export function init(dotNetRef: Maybe<DotNetVirtualizeRef>, topSpacer: HTMLEleme
         dispose: () => {
             cancelScrollOperation();
             inputEvents.forEach(event => inputTarget.removeEventListener(event, interruptScroll));
+            finishCrossfade();
             resizeObserver?.disconnect();
             intersectionObserver.disconnect();
             mutationObserverBefore.disconnect();
@@ -622,6 +744,7 @@ function getScrollMetrics(scrollContainer: Maybe<HTMLElement>, topSpacer: HTMLEl
     return {
         scrollTop: Math.max(0, viewportTop + headerInset - topSpacerRect.top),
         containerSize: Math.max(0, containerSize - headerInset),
+        headerInset,
     };
 }
 

@@ -1,11 +1,13 @@
 @using NTComponents.Virtualization
 
-<div class="docs-fill" style="block-size: 20rem; overflow: auto; border: 1px solid var(--nt-color-outline-variant); border-radius: var(--nt-sys-shape-corner-medium);">
-    <NTVirtualize TItem="Note" ItemsProvider="LoadNotesAsync" ItemSize="72" MeasureItemSize="true">
+<div class="docs-fill" style="block-size: 32rem; overflow: auto; border: 1px solid var(--nt-color-outline-variant); border-radius: var(--nt-sys-shape-corner-medium);">
+    <NTVirtualize TItem="Note" ItemsProvider="LoadNotesAsync" ItemSize="140" MeasureItemSize="true">
         <ItemTemplate Context="note">
             <div data-nt-virtualize-index="@note.Index" style="box-sizing: border-box; padding: 12px 16px; border-block-end: 1px solid var(--nt-color-outline-variant);">
                 <div class="nt-title-small">Note @(note.Index + 1)</div>
-                <p class="nt-body-medium" style="margin: 0; color: var(--nt-color-on-surface-variant);">@note.Text</p>
+                @if (note.Text.Length > 0) {
+                    <p class="nt-body-medium" style="margin: 4px 0 0; color: var(--nt-color-on-surface-variant);">@note.Text</p>
+                }
             </div>
         </ItemTemplate>
     </NTVirtualize>
@@ -15,10 +17,13 @@
     private const int NoteCount = 500;
     private const string Sentence = "Follow up with the customer about the delivery window and confirm the updated address. ";
 
+    // Sentences per note, from a title-only row to a long note, in an irregular order.
+    private static readonly int[] SentenceCounts = [0, 2, 9, 1, 16, 0, 5, 1, 3, 12];
+
     private static async ValueTask<NTVirtualizeItemsProviderResult<Note>> LoadNotesAsync(NTVirtualizeItemsProviderRequest<Note> request) {
         await Task.Delay(300, request.CancellationToken);
         var count = Math.Clamp(request.Count ?? 20, 0, Math.Max(0, NoteCount - request.StartIndex));
-        var notes = Enumerable.Range(request.StartIndex, count).Select(index => new Note(index, string.Concat(Enumerable.Repeat(Sentence, index % 4 + 1)))).ToArray();
+        var notes = Enumerable.Range(request.StartIndex, count).Select(index => new Note(index, string.Concat(Enumerable.Repeat(Sentence, SentenceCounts[index % SentenceCounts.Length])))).ToArray();
         return new NTVirtualizeItemsProviderResult<Note>(notes, NoteCount);
     }
 

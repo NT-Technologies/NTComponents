@@ -1262,6 +1262,70 @@ public class NTVirtualize_Tests : BunitContext {
         cut.Markup.Should().Contain("-Item 0-");
     }
 
+    [Fact]
+    public async Task DefaultPlaceholder_IsMarkedForTheLoadCrossfade() {
+        var pending = new TaskCompletionSource<NTVirtualizeItemsProviderResult<string>>();
+        var cut = Render<NTVirtualize<string>>(p => p
+            .Add(c => c.ItemsProvider, _ => new ValueTask<NTVirtualizeItemsProviderResult<string>>(pending.Task))
+            .Add(c => c.PlaceholderPreloadWindowCount, 0)
+            .Add(c => c.ItemTemplate, item => builder => builder.AddContent(0, item)));
+
+        await cut.InvokeAsync(() => cut.Instance.LoadItems(0, 0, 0, 2));
+
+        cut.WaitForAssertion(() => {
+            var placeholders = cut.FindAll(".nt-skeleton");
+            placeholders.Should().HaveCount(2);
+            placeholders.Should().OnlyContain(placeholder => placeholder.GetAttribute("data-nt-virtualize-placeholder") == "true");
+        });
+    }
+
+    [Fact]
+    public async Task LoadedItem_NeverReusesItsPlaceholderComponent() {
+        // Arrange: placeholder and item templates render the same component type at the same sequence, which
+        // Blazor would update in place if both shared a key. The browser crossfade needs the placeholder removed.
+        var log = new List<string>();
+        var pending = new TaskCompletionSource<NTVirtualizeItemsProviderResult<string>>();
+        var cut = Render<NTVirtualize<string>>(p => p
+            .Add(c => c.ItemsProvider, _ => new ValueTask<NTVirtualizeItemsProviderResult<string>>(pending.Task))
+            .Add(c => c.PlaceholderPreloadWindowCount, 0)
+            .Add(c => c.ScrollDebounceMilliseconds, 0)
+            .Add(c => c.ItemTemplate, item => builder => {
+                builder.OpenComponent<LifecycleProbe>(0);
+                builder.AddAttribute(1, nameof(LifecycleProbe.Text), item);
+                builder.AddAttribute(2, nameof(LifecycleProbe.Log), log);
+                builder.CloseComponent();
+            })
+            .Add(c => c.LoadingTemplate, _ => builder => {
+                builder.OpenComponent<LifecycleProbe>(0);
+                builder.AddAttribute(1, nameof(LifecycleProbe.Text), "placeholder");
+                builder.AddAttribute(2, nameof(LifecycleProbe.Log), log);
+                builder.CloseComponent();
+            }));
+        await cut.InvokeAsync(() => cut.Instance.LoadItems(0, 0, 0, 1));
+        cut.WaitForAssertion(() => log.Should().Equal("init placeholder"));
+
+        // Act
+        pending.SetResult(new NTVirtualizeItemsProviderResult<string>(["Item 0"], 1));
+
+        // Assert
+        cut.WaitForAssertion(() => {
+            cut.Markup.Should().Contain("Item 0");
+            log.Should().Equal("init placeholder", "init Item 0");
+        });
+    }
+
+    private sealed class LifecycleProbe : ComponentBase {
+        [Parameter]
+        public string? Text { get; set; }
+
+        [Parameter]
+        public List<string> Log { get; set; } = [];
+
+        protected override void OnInitialized() => Log.Add($"init {Text}");
+
+        protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder) => builder.AddContent(0, Text);
+    }
+
     private sealed class TestVirtualize<TItem> : NTVirtualize<TItem> {
         public Task InvokeOnAfterRenderAsync(bool firstRender) => base.OnAfterRenderAsync(firstRender);
     }

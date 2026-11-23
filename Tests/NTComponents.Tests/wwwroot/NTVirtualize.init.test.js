@@ -1010,4 +1010,200 @@ describe('NTVirtualize.init', () => {
         expect(scrollAncestor.style.overflowAnchor).toBe('auto');
         expect(dotNetRef.dispose).not.toHaveBeenCalled();
     });
+
+    describe('placeholder crossfade', () => {
+        let animate;
+        let reduceMotion;
+        let finishFades;
+
+        beforeEach(() => {
+            jest.useFakeTimers();
+            const fadesFinished = new Promise(resolve => finishFades = resolve);
+            animate = jest.fn(() => ({ finished: fadesFinished }));
+            HTMLElement.prototype.animate = animate;
+            reduceMotion = false;
+            window.matchMedia = jest.fn(() => ({ matches: reduceMotion }));
+        });
+
+        afterEach(() => {
+            delete HTMLElement.prototype.animate;
+            delete window.matchMedia;
+            jest.useRealTimers();
+        });
+
+        function setUpViewport(scrollAncestor) {
+            Object.defineProperty(scrollAncestor, 'clientHeight', { configurable: true, value: 200 });
+            Object.defineProperty(scrollAncestor, 'clientWidth', { configurable: true, value: 300 });
+            scrollAncestor.getBoundingClientRect = jest.fn(() => ({ top: 0, left: 0, right: 300, bottom: 200, width: 300, height: 200 }));
+        }
+
+        function markPlaceholder(placeholder, topSpacer, bottomSpacer, top = 10) {
+            topSpacer.dataset.ntVirtualizeStart = '0';
+            bottomSpacer.dataset.ntVirtualizeEnd = '1';
+            placeholder.setAttribute('data-nt-virtualize-placeholder', 'true');
+            placeholder.getBoundingClientRect = () => ({ top, bottom: top + 50, left: 5, right: 305, width: 300, height: 50 });
+            return placeholder;
+        }
+
+        function renderPlaceholderThenRow(top = 10) {
+            const elements = createVirtualizedElements('auto');
+            const { topSpacer, bottomSpacer, dotNetRef, scrollAncestor } = elements;
+            setUpViewport(scrollAncestor);
+            const placeholder = markPlaceholder(topSpacer.nextElementSibling, topSpacer, bottomSpacer, top);
+            init(dotNetRef, topSpacer, bottomSpacer, 50, 0, 100);
+            updateRenderState(dotNetRef, 10, 0, 1);
+            const row = document.createElement('div');
+            placeholder.replaceWith(row);
+            return { ...elements, placeholder, row };
+        }
+
+        const flushPromises = async () => {
+            for (let i = 0; i < 5; i++) {
+                await Promise.resolve();
+            }
+        };
+
+        const fadesOf = element => animate.mock.calls.filter((_, index) => animate.mock.contexts[index] === element).map(([keyframes]) => keyframes);
+
+        test('fades a replaced placeholder out over the loaded row while the row fades in', () => {
+            const { dotNetRef, scrollAncestor, placeholder, row } = renderPlaceholderThenRow();
+
+            updateRenderState(dotNetRef, 10, 1, 0);
+
+            const layer = placeholder.parentElement.parentElement;
+            expect(layer.parentElement).toBe(scrollAncestor);
+            expect(layer.style.position).toBe('fixed');
+            expect(layer.style.pointerEvents).toBe('none');
+            expect(layer.style.overflow).toBe('hidden');
+            expect(placeholder.style.position).toBe('absolute');
+            expect(placeholder.style.top).toBe('10px');
+            expect(placeholder.style.left).toBe('5px');
+            expect(placeholder.style.height).toBe('50px');
+            expect(fadesOf(placeholder)).toEqual([[{ opacity: 1 }, { opacity: 0 }]]);
+            expect(fadesOf(row)).toEqual([[{ opacity: 0 }, { opacity: 1 }]]);
+
+        });
+
+        test('keeps the fading placeholder until its fade has played, however long rendering blocks the page', async () => {
+            const { dotNetRef, placeholder } = renderPlaceholderThenRow();
+            updateRenderState(dotNetRef, 10, 1, 0);
+            const layer = placeholder.parentElement.parentElement;
+
+            jest.advanceTimersByTime(5000);
+            await flushPromises();
+            expect(layer.isConnected).toBe(true);
+
+            finishFades();
+            await flushPromises();
+            expect(layer.isConnected).toBe(false);
+        });
+
+        test('does not crossfade when the browser cannot animate', () => {
+            delete HTMLElement.prototype.animate;
+            const { dotNetRef, scrollAncestor, placeholder } = renderPlaceholderThenRow();
+
+            updateRenderState(dotNetRef, 10, 1, 0);
+
+            expect(placeholder.isConnected).toBe(false);
+            expect([...scrollAncestor.children].some(child => child.style.position === 'fixed')).toBe(false);
+        });
+
+        test('crossfades when the load also appends preloaded placeholders after the window', () => {
+            const { bottomSpacer, dotNetRef, placeholder, row } = renderPlaceholderThenRow();
+            bottomSpacer.dataset.ntVirtualizeEnd = '3';
+
+            updateRenderState(dotNetRef, 10, 1, 0);
+
+            expect(fadesOf(placeholder)).toEqual([[{ opacity: 1 }, { opacity: 0 }]]);
+            expect(fadesOf(row)).toEqual([[{ opacity: 0 }, { opacity: 1 }]]);
+        });
+
+        test('does not crossfade placeholders that left because the rendered window moved', () => {
+            const { topSpacer, dotNetRef, placeholder } = renderPlaceholderThenRow();
+            topSpacer.dataset.ntVirtualizeStart = '1';
+
+            updateRenderState(dotNetRef, 10, 1, 0);
+
+            expect(placeholder.isConnected).toBe(false);
+            expect(animate).not.toHaveBeenCalled();
+        });
+
+        test('does not crossfade when the user prefers reduced motion', () => {
+            reduceMotion = true;
+            const { dotNetRef, placeholder } = renderPlaceholderThenRow();
+
+            updateRenderState(dotNetRef, 10, 1, 0);
+
+            expect(placeholder.isConnected).toBe(false);
+            expect(animate).not.toHaveBeenCalled();
+        });
+
+        test('crossfades after the list scrolled within the window, offsetting the placeholder by the scroll', () => {
+            const { dotNetRef, scrollAncestor, placeholder, row } = renderPlaceholderThenRow();
+            scrollAncestor.scrollTop = 30;
+
+            updateRenderState(dotNetRef, 10, 1, 0);
+
+            expect(placeholder.style.top).toBe('-20px');
+            expect(fadesOf(placeholder)).toEqual([[{ opacity: 1 }, { opacity: 0 }]]);
+            expect(fadesOf(row)).toEqual([[{ opacity: 0 }, { opacity: 1 }]]);
+        });
+
+        test('crossfades placeholders that were below the viewport when rendered and scrolled into view', () => {
+            const { dotNetRef, scrollAncestor, placeholder } = renderPlaceholderThenRow(250);
+            scrollAncestor.scrollTop = 100;
+
+            updateRenderState(dotNetRef, 10, 1, 0);
+
+            expect(placeholder.style.top).toBe('150px');
+            expect(fadesOf(placeholder)).toEqual([[{ opacity: 1 }, { opacity: 0 }]]);
+        });
+
+        test('the fading placeholder moves with scrolling instead of disappearing', () => {
+            const { dotNetRef, scrollAncestor, placeholder } = renderPlaceholderThenRow();
+            updateRenderState(dotNetRef, 10, 1, 0);
+            const layer = placeholder.parentElement.parentElement;
+
+            scrollAncestor.scrollTop = 40;
+            scrollAncestor.dispatchEvent(new Event('scroll'));
+
+            expect(layer.isConnected).toBe(true);
+            expect(placeholder.parentElement.style.transform).toBe('translateY(-40px)');
+        });
+
+        test('table row placeholders fade inside their own table so row styles still apply', () => {
+            const scrollAncestor = document.createElement('div');
+            scrollAncestor.style.overflowY = 'auto';
+            const table = document.createElement('table');
+            const body = table.createTBody();
+            const topSpacer = document.createElement('tr');
+            const placeholder = document.createElement('tr');
+            placeholder.appendChild(document.createElement('td'));
+            const bottomSpacer = document.createElement('tr');
+            body.append(topSpacer, placeholder, bottomSpacer);
+            scrollAncestor.appendChild(table);
+            document.body.appendChild(scrollAncestor);
+            topSpacer.getBoundingClientRect = jest.fn(() => ({ top: 0 }));
+            bottomSpacer.getBoundingClientRect = jest.fn(() => ({ top: 400 }));
+            setUpViewport(scrollAncestor);
+            const dotNetRef = { _id: `virtualize-test-${++dotNetRefId}`, invokeMethodAsync: jest.fn(), dispose: jest.fn() };
+            virtualizedElements.push({ topSpacer, dotNetRef });
+            markPlaceholder(placeholder, topSpacer, bottomSpacer);
+            init(dotNetRef, topSpacer, bottomSpacer, 50, 0, 100);
+            updateRenderState(dotNetRef, 10, 0, 1);
+            const row = document.createElement('tr');
+            placeholder.replaceWith(row);
+
+            updateRenderState(dotNetRef, 10, 1, 0);
+
+            const ghostTable = placeholder.closest('table');
+            expect(ghostTable).not.toBe(table);
+            expect(placeholder.parentElement.tagName).toBe('TBODY');
+            expect(ghostTable.parentElement.parentElement.parentElement).toBe(scrollAncestor);
+            expect(ghostTable.style.position).toBe('absolute');
+            expect(ghostTable.style.top).toBe('10px');
+            expect(fadesOf(ghostTable)).toEqual([[{ opacity: 1 }, { opacity: 0 }]]);
+            expect(fadesOf(row)).toEqual([[{ opacity: 0 }, { opacity: 1 }]]);
+        });
+    });
 });
