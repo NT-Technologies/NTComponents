@@ -1,0 +1,26 @@
+@using NTComponents.Virtualization
+
+<div class="docs-fill" style="block-size: 20rem; overflow: auto; border: 1px solid var(--nt-color-outline-variant); border-radius: var(--nt-sys-shape-corner-medium);">
+    <NTVirtualize TItem="Note" ItemsProvider="LoadNotesAsync" ItemSize="72" MeasureItemSize="true">
+        <ItemTemplate Context="note">
+            <div data-nt-virtualize-index="@note.Index" style="box-sizing: border-box; padding: 12px 16px; border-block-end: 1px solid var(--nt-color-outline-variant);">
+                <div class="nt-title-small">Note @(note.Index + 1)</div>
+                <p class="nt-body-medium" style="margin: 0; color: var(--nt-color-on-surface-variant);">@note.Text</p>
+            </div>
+        </ItemTemplate>
+    </NTVirtualize>
+</div>
+
+@code {
+    private const int NoteCount = 500;
+    private const string Sentence = "Follow up with the customer about the delivery window and confirm the updated address. ";
+
+    private static async ValueTask<NTVirtualizeItemsProviderResult<Note>> LoadNotesAsync(NTVirtualizeItemsProviderRequest<Note> request) {
+        await Task.Delay(300, request.CancellationToken);
+        var count = Math.Clamp(request.Count ?? 20, 0, Math.Max(0, NoteCount - request.StartIndex));
+        var notes = Enumerable.Range(request.StartIndex, count).Select(index => new Note(index, string.Concat(Enumerable.Repeat(Sentence, index % 4 + 1)))).ToArray();
+        return new NTVirtualizeItemsProviderResult<Note>(notes, NoteCount);
+    }
+
+    private sealed record Note(int Index, string Text);
+}

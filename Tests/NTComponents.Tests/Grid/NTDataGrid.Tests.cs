@@ -304,6 +304,46 @@ public class NTDataGrid_Tests : BunitContext {
     }
 
     [Fact]
+    public async Task SingleRowExpansion_KeepsVirtualizerItemSizeVersion_AndRendersDetail() {
+        var cut = Render<NTDataGrid<TestGridItem>>(parameters => parameters
+            .Add(grid => grid.Items, _items)
+            .Add(grid => grid.Virtualize, true)
+            .Add(grid => grid.VirtualizationMeasureItemSize, true)
+            .Add(grid => grid.VirtualizationItemSizeVersion, 5)
+            .Add(grid => grid.RowKey, item => item.Id)
+            .Add(grid => grid.RowDetailTemplate, item => builder => builder.AddContent(0, item.Name))
+            .Add(grid => grid.ChildContent, DefaultColumns));
+        var virtualizer = cut.FindComponent<NTVirtualize<TestGridItem>>().Instance;
+        await cut.InvokeAsync(() => virtualizer.LoadItems(0, 0, 0, 3));
+        var previousVersion = virtualizer.ItemSizeVersion;
+
+        await cut.InvokeAsync(() => cut.Instance.SetRowExpandedAsync(_items.First(item => item.Id == 2), true));
+
+        virtualizer.ItemSizeVersion.Should().Be(previousVersion);
+        cut.Find(".nt-data-grid-detail-row").TextContent.Should().Contain("Alpha");
+    }
+
+    [Fact]
+    public async Task ExpandAndCollapseAllRows_ChangeVirtualizerItemSizeVersion() {
+        var cut = Render<NTDataGrid<TestGridItem>>(parameters => parameters
+            .Add(grid => grid.Items, _items)
+            .Add(grid => grid.Virtualize, true)
+            .Add(grid => grid.VirtualizationMeasureItemSize, true)
+            .Add(grid => grid.VirtualizationItemSizeVersion, 5)
+            .Add(grid => grid.RowDetailTemplate, item => builder => builder.AddContent(0, item.Name))
+            .Add(grid => grid.ChildContent, DefaultColumns));
+        var virtualizer = cut.FindComponent<NTVirtualize<TestGridItem>>().Instance;
+        var initialVersion = virtualizer.ItemSizeVersion;
+
+        await cut.InvokeAsync(() => cut.Instance.ExpandAllRowsAsync());
+        var expandedVersion = virtualizer.ItemSizeVersion;
+        await cut.InvokeAsync(() => cut.Instance.CollapseAllRowsAsync());
+
+        expandedVersion.Should().NotBe(initialVersion);
+        virtualizer.ItemSizeVersion.Should().NotBe(expandedVersion);
+    }
+
+    [Fact]
     public void VirtualizedOptions_ForwardInitialPositionAnchoringAndIdentity() {
         Func<TestGridItem, object> key = item => item.Id;
         var comparer = EqualityComparer<TestGridItem>.Default;

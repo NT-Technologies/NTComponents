@@ -273,6 +273,7 @@ export function init(dotNetRef: Maybe<DotNetVirtualizeRef>, topSpacer: HTMLEleme
         }
         measuredElements = elements;
         let changed = reset;
+        const [renderedStart, renderedEnd] = getRenderedRange();
         for (const [index, size] of sizes) {
             if (size > 0 && Math.abs((state.measuredSizes.get(index) ?? state.itemSize) - size) > 0.5) {
                 state.measuredSizes.set(index, size);
@@ -280,15 +281,23 @@ export function init(dotNetRef: Maybe<DotNetVirtualizeRef>, topSpacer: HTMLEleme
                 changed = true;
             }
         }
+        if (state.measureItemSize) {
+            for (let index = renderedStart; index < renderedEnd; index++) {
+                // A rendered index without an indexed element is a placeholder drawn at ItemSize.
+                if (!sizes.has(index) && state.measuredSizes.delete(index)) {
+                    cumulativeSizes = null;
+                    changed = true;
+                }
+            }
+            setSpacerSize(topSpacer, itemOffset(renderedStart));
+            setSpacerSize(bottomSpacer, itemOffset(state.itemCount) - itemOffset(renderedEnd));
+        }
+        // Spacers are updated before adjusting scrollTop. Waiting for the asynchronous
+        // Blazor render would move the anchor a second time or clamp it.
         if (changed && pendingScrollTop === null) {
             const anchorSize = state.measuredSizes.get(anchorIndex) ?? state.itemSize;
             const nextOffsetWithinItem = Math.min(offsetWithinItem, Math.max(0, anchorSize - 1));
             const adjustment = itemOffset(anchorIndex) - anchorOffset + nextOffsetWithinItem - offsetWithinItem;
-            // Update the currently rendered spacers before adjusting scrollTop. Waiting for
-            // the asynchronous Blazor render would move the anchor a second time or clamp it.
-            const [renderedStart, renderedEnd] = getRenderedRange();
-            setSpacerSize(topSpacer, itemOffset(renderedStart));
-            setSpacerSize(bottomSpacer, itemOffset(state.itemCount) - itemOffset(renderedEnd));
             if (preserveScrollOffset || Math.abs(adjustment) > 0.5) {
                 scrollToTop(previousScrollTop + (preserveScrollOffset ? 0 : adjustment));
                 expectedScrollTop = getObservedScrollTop();
@@ -300,9 +309,10 @@ export function init(dotNetRef: Maybe<DotNetVirtualizeRef>, topSpacer: HTMLEleme
 
     function setSpacerSize(spacer: HTMLElement, size: number): void {
         const height = `${Math.max(0, size)}px`;
-        spacer.style.height = height;
+        setStyle(spacer, 'height', height);
+        setStyle(spacer, 'flex-shrink', '0');
         if (spacer.firstElementChild instanceof HTMLTableCellElement) {
-            spacer.firstElementChild.style.height = height;
+            setStyle(spacer.firstElementChild, 'height', height);
         }
     }
 
@@ -358,6 +368,9 @@ export function init(dotNetRef: Maybe<DotNetVirtualizeRef>, topSpacer: HTMLEleme
                 }
             }
             const scrollTopBeforeSizing = preserveScrollOffset ? getObservedScrollTop() : undefined;
+            for (const spacer of [topSpacer, bottomSpacer]) {
+                measuredSpacers[measureItemSize ? 'add' : 'delete'](spacer);
+            }
             applySizes(topSpacer.parentElement);
             const sizesChanged = (measureItemSize || measurementChanged) && measureItems(versionChanged || measurementChanged, preserveScrollOffset, scrollTopBeforeSizing);
             afterRender(placeholderCount, loading);
@@ -649,8 +662,14 @@ export function updateRenderState(dotNetRef: Maybe<DotNetVirtualizeRef>, itemCou
     getObservers(dotNetRef)?.updateRenderState(itemCount ?? 0, _lastRenderedPlaceholderCount ?? 0, measureItemSize, itemSizeVersion, loading, preserveScrollOffset);
 }
 
+// While measuring, JS derives spacer heights from measured sizes instead of the server attributes.
+const measuredSpacers = new WeakSet<Element>();
+
 function applySizes(element: Maybe<HTMLElement>): void {
     for (const target of element ? [element, ...element.querySelectorAll<HTMLElement>('[data-nt-virtualize-size]')] : []) {
+        if (measuredSpacers.has(target)) {
+            continue;
+        }
         const size = Number(target.getAttribute('data-nt-virtualize-size'));
         if (target.hasAttribute('data-nt-virtualize-size') && Number.isFinite(size) && size >= 0) {
             const height = `${size}px`;

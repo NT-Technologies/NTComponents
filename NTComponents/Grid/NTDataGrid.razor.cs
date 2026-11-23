@@ -133,7 +133,6 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     public Task SetRowExpandedAsync(TItem item, bool expanded) => InvokeAsync(() => {
         var key = GetRowIdentity(item);
         if (expanded == _allRowsExpanded ? _expansionExceptions.Remove(key) : _expansionExceptions.Add(key)) {
-            _expansionVersion++;
             StateHasChanged();
         }
     });

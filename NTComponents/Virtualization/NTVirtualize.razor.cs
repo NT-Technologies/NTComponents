@@ -39,7 +39,7 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
     [Parameter]
     public float ItemSize { get; set; } = 50f;
 
-    /// <summary>Measures variable-height items. Template root elements must carry data-nt-virtualize-index with their zero-based provider index; multiple elements may share an index.</summary>
+    /// <summary>Measures variable-height items. Template root elements must carry data-nt-virtualize-index with their zero-based provider index; multiple elements may share an index. Sizes come from border boxes, so vertical margins and container gaps are not counted; use padding instead.</summary>
     [Parameter]
     public bool MeasureItemSize { get; set; }
 

@@ -108,6 +108,76 @@ describe('NTVirtualize.init', () => {
         expect(topSpacer.style.height).toBe('100px');
     });
 
+    test('measured spacer sizes survive a later render with unchanged sizes', () => {
+        const { topSpacer, bottomSpacer, dotNetRef, scrollAncestor } = createVirtualizedElements('auto');
+        scrollAncestor.style.maxHeight = '100px';
+        const row = topSpacer.nextElementSibling;
+        row.dataset.ntVirtualizeIndex = '0';
+        row.getBoundingClientRect = () => ({ height: 100 });
+        topSpacer.dataset.ntVirtualizeStart = '1';
+        topSpacer.dataset.ntVirtualizeSize = '20';
+        bottomSpacer.dataset.ntVirtualizeEnd = '5';
+        bottomSpacer.dataset.ntVirtualizeSize = '1900';
+        init(dotNetRef, topSpacer, bottomSpacer, 20, 0, 100);
+        updateRenderState(dotNetRef, 100, 5, 0, true);
+        updateRenderState(dotNetRef, 100, 5, 0, true);
+        expect(topSpacer.style.height).toBe('100px');
+        onLoad(topSpacer, dotNetRef);
+        expect(topSpacer.style.height).toBe('100px');
+    });
+
+    test('bottom spacer follows the measured model when the sizing attribute is stale', () => {
+        const { topSpacer, bottomSpacer, dotNetRef, scrollAncestor } = createVirtualizedElements('auto');
+        scrollAncestor.style.maxHeight = '100px';
+        const row = topSpacer.nextElementSibling;
+        row.dataset.ntVirtualizeIndex = '0';
+        row.getBoundingClientRect = () => ({ height: 100 });
+        topSpacer.dataset.ntVirtualizeStart = '1';
+        topSpacer.dataset.ntVirtualizeSize = '20';
+        bottomSpacer.dataset.ntVirtualizeEnd = '5';
+        bottomSpacer.dataset.ntVirtualizeSize = '1800';
+        init(dotNetRef, topSpacer, bottomSpacer, 20, 0, 100);
+        updateRenderState(dotNetRef, 100, 5, 0, true);
+        updateRenderState(dotNetRef, 100, 5, 0, true);
+        expect(bottomSpacer.style.height).toBe('1900px');
+    });
+
+    test('a placeholder replacing a measured row is measured as ItemSize and the later load keeps the anchor', () => {
+        const { topSpacer, bottomSpacer, dotNetRef, scrollAncestor } = createVirtualizedElements('auto');
+        scrollAncestor.style.maxHeight = '100px';
+        const first = topSpacer.nextElementSibling;
+        topSpacer.dataset.ntVirtualizeStart = '0';
+        bottomSpacer.dataset.ntVirtualizeEnd = '4';
+        init(dotNetRef, topSpacer, bottomSpacer, 20, 0, 100);
+        const render = (loaded0And1) => {
+            while (topSpacer.nextElementSibling !== bottomSpacer) {
+                topSpacer.nextElementSibling.remove();
+            }
+            for (let index = 0; index < 4; index++) {
+                const row = document.createElement('div');
+                const height = index < 2 && loaded0And1 ? 80 : 20;
+                if (index >= 2 || loaded0And1) {
+                    row.setAttribute('data-nt-virtualize-index', String(index));
+                }
+                row.getBoundingClientRect = () => ({ height });
+                bottomSpacer.before(row);
+            }
+            updateRenderState(dotNetRef, 100, 4, 0, true);
+        };
+        first.remove();
+        render(true);
+        scrollAncestor.scrollTop = 165; // Item 2, five pixels into the row.
+        render(true);
+        expect(scrollAncestor.scrollTop).toBe(165);
+
+        render(false);
+        expect(scrollAncestor.scrollTop).toBe(45);
+
+        render(true);
+        expect(scrollAncestor.scrollTop).toBe(165);
+        onDispose(topSpacer, dotNetRef);
+    });
+
     test('programmatic scrolling aligns rows below a sticky table header', async () => {
         const { topSpacer, bottomSpacer, dotNetRef, scrollAncestor } = createVirtualizedElements('auto');
         scrollAncestor.style.maxHeight = '140px';
