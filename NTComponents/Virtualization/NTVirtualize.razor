@@ -41,15 +41,16 @@
 			builder.OpenRegion(50);
 
 			for (var renderIndex = _itemsBefore; renderIndex < renderLastItemIndex; renderIndex++) {
-				// Keep overlapping items and their browser state when the window moves.
+				// Keep overlapping items and their browser state when the window moves. Placeholders never share a key with
+				// items, so a loaded row replaces its placeholder element and the browser can crossfade the two.
 				builder.OpenComponent<DeferRendering>(0);
 				if (_itemCache.TryGetValue(renderIndex, out var item)) {
-					builder.SetKey(ItemKey is null ? renderIndex : (true, ItemKey(item)));
+					builder.SetKey((true, ItemKey is null ? renderIndex : ItemKey(item)));
 					builder.AddAttribute(1, nameof(DeferRendering.ChildContent), ItemTemplate(item));
 					_lastRenderedItemCount++;
 				}
 				else {
-					builder.SetKey(ItemKey is null ? renderIndex : (false, (object)renderIndex));
+					builder.SetKey((false, (object)renderIndex));
 					builder.AddAttribute(1, nameof(DeferRendering.ChildContent), LoadingTemplate?.Invoke(new PlaceholderContext(renderIndex + 2, _itemSize)));
 					if (renderIndex < lastItemIndex) {
 						_lastRenderedPlaceholderCount++;

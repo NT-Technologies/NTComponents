@@ -1,0 +1,44 @@
+@page "/virtualizationMeasurement"
+@using NTComponents
+@using NTComponents.Virtualization
+@rendermode InteractiveWebAssembly
+
+<main>
+    <h1>Measured variable-height items</h1>
+    <p>Heights vary by item. The small cache evicts rows, so scrolling back shows placeholders before rows reload.</p>
+    <button @onclick="StateHasChanged">Re-render</button>
+    <div id="measured-scroll" style="block-size: 400px; overflow: auto; border: 1px solid var(--nt-color-outline-variant);">
+        <NTVirtualize TItem="int" ItemsProvider="ProvideAsync" ItemSize="50" MeasureItemSize="true" MaxCachedItemCount="40" ScrollDebounceMilliseconds="150">
+            <ItemTemplate Context="index">
+                <div data-nt-virtualize-index="@index" style="block-size: @(HeightOf(index))px; box-sizing: border-box; padding-inline: 16px; border-block-end: 1px solid var(--nt-color-outline-variant);">Item @index (@HeightOf(index)px)</div>
+            </ItemTemplate>
+        </NTVirtualize>
+    </div>
+
+    <h2>Virtualized grid with a slow provider</h2>
+    <p>Placeholder rows crossfade into loaded rows.</p>
+    <NTDataGrid TItem="GridRow" ItemsProvider="ProvideRowsAsync" RowKey="row => row.Id" Caption="Slow virtualized rows" Virtualize="true" QueryParameterPrefix="slow">
+        <NTPropertyColumn TItem="GridRow" TValue="int" Title="Id" Property="row => row.Id" />
+        <NTPropertyColumn TItem="GridRow" TValue="string" Title="Name" Property="row => row.Name" />
+    </NTDataGrid>
+</main>
+
+@code {
+    private const int Count = 2_000;
+
+    private static int HeightOf(int index) => 40 + index % 5 * 30;
+
+    private static async ValueTask<NTVirtualizeItemsProviderResult<int>> ProvideAsync(NTVirtualizeItemsProviderRequest<int> request) {
+        await Task.Delay(200, request.CancellationToken);
+        var count = Math.Min(request.Count ?? 20, Count - request.StartIndex);
+        return new NTVirtualizeItemsProviderResult<int>(Enumerable.Range(request.StartIndex, Math.Max(0, count)).ToArray(), Count);
+    }
+
+    private static async ValueTask<NTItemsProviderResult<GridRow>> ProvideRowsAsync(NTDataGridItemsProviderRequest<GridRow> request) {
+        await Task.Delay(400, request.CancellationToken);
+        var count = Math.Min(request.Count ?? 20, Count - request.StartIndex);
+        return new NTItemsProviderResult<GridRow>(Enumerable.Range(request.StartIndex, Math.Max(0, count)).Select(id => new GridRow(id, $"Row {id}")).ToArray(), Count);
+    }
+
+    private sealed record GridRow(int Id, string Name);
+}

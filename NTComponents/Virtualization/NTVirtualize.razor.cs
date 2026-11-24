@@ -39,7 +39,7 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
     [Parameter]
     public float ItemSize { get; set; } = 50f;
 
-    /// <summary>Measures variable-height items. Template root elements must carry data-nt-virtualize-index with their zero-based provider index; multiple elements may share an index.</summary>
+    /// <summary>Measures variable-height items. Template root elements must carry data-nt-virtualize-index with their zero-based provider index; multiple elements may share an index. Sizes come from border boxes, so vertical margins and container gaps are not counted; use padding instead.</summary>
     [Parameter]
     public bool MeasureItemSize { get; set; }
 
@@ -79,7 +79,8 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
     public override string? JsModulePath => "./_content/NTComponents/Virtualization/NTVirtualize.razor.js";
 
     /// <summary>
-    ///     Gets or sets the template for items that have not yet been loaded in memory.
+    ///     Gets or sets the template for items that have not yet been loaded in memory. Give its root element a
+    ///     data-nt-virtualize-placeholder attribute to crossfade it into the loaded item; the default placeholder has one.
     /// </summary>
     [Parameter]
     public RenderFragment<PlaceholderContext>? LoadingTemplate { get; set; }
@@ -402,6 +403,7 @@ public partial class NTVirtualize<TItem>() : NTPageScriptComponent<NTVirtualize<
     private RenderFragment DefaultPlaceholder(PlaceholderContext context) => (builder) => {
         builder.OpenComponent<NTSkeleton>(0);
         builder.AddAttribute(1, "data-nt-virtualize-size", context.Size.ToString(CultureInfo.InvariantCulture));
+        builder.AddAttribute(2, "data-nt-virtualize-placeholder", "true");
         builder.CloseComponent();
     };
 
