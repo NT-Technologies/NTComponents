@@ -564,6 +564,11 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
         await Assertions.Expect(selector).ToHaveValueAsync("DARK-DEFAULT");
         await Assertions.Expect(activeTheme).ToHaveAttributeAsync("href", new System.Text.RegularExpressions.Regex("/Themes/dark\\.css$"));
         await _page.SetViewportSizeAsync(390, 844);
+        await WaitForRenderAsync(_page);
+        // The rail expanded on desktop opens as a modal on mobile and makes the header inert, so close it first.
+        await _page.GetByRole(AriaRole.Navigation, new PageGetByRoleOptions { Name = "Documentation navigation", Exact = true })
+            .GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { Name = "Collapse navigation rail", Exact = true }).ClickAsync();
+        await Assertions.Expect(_page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Expand navigation rail", Exact = true })).ToBeVisibleAsync();
         var github = _page.Locator(".docs-github-link");
         await Assertions.Expect(github).ToBeVisibleAsync();
         await Assertions.Expect(selector).ToBeVisibleAsync();

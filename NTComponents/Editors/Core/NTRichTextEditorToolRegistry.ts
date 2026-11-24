@@ -41,7 +41,14 @@ export interface RichTextEditorToolPlugin<TState> {
     execute?(context: RichTextEditorToolContext<TState>, value?: string): boolean;
     close?(context: RichTextEditorToolContext<TState>, options?: InlineToolCloseOptions): void;
     syncState?(context: RichTextEditorToolContext<TState>): void;
+    /**
+     * Tags this tool's content uses, such as ['A']. Pasted, dropped, and HTML source content keeps them only while the
+     * tool's button is on the toolbar. Tags the editor's sanitizer does not allow are removed regardless.
+     */
+    allowedTags?: string[];
     /** Elements this tool edits. Clicking one in the surface calls openForTarget so its settings show. */
     targetSelector?: string;
     openForTarget?(context: RichTextEditorToolContext<TState>): void;
+    /** Files pasted or dropped into the editor while the tool's button is on the toolbar. Returns true when the tool takes them. */
+    openForFiles?(context: RichTextEditorToolContext<TState>, files: File[]): boolean;
 }

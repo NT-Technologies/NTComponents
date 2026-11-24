@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Web;
+using NTComponents;
 
 namespace LiveTest.Client.Components;
 
@@ -11,6 +12,21 @@ namespace LiveTest.Client.Components;
 public partial class RichTextEditorComponent : ComponentBase {
     [Parameter]
     public string ModeName { get; set; } = "Editor";
+
+    /// <summary>
+    ///     Gets or sets whether the editor shows a narrow toolbar, so paste, drop, and HTML source keep only its formatting.
+    /// </summary>
+    [Parameter]
+    public bool RestrictedToolbar { get; set; }
+
+    private static readonly IReadOnlyList<INTRichTextEditorButton> RestrictedToolbarButtons = [
+        new NTRichTextEditorButton("paragraph", "Paragraph", "Paragraph", icon: MaterialIcon.Subject),
+        new NTRichTextEditorButton("heading", "Heading 2", "Heading 2", icon: MaterialIcon.LooksTwo, value: "2"),
+        new NTRichTextEditorButton("bold", "Bold", "Bold", icon: MaterialIcon.FormatBold, shortcut: "Ctrl+B"),
+        new NTRichTextEditorButton("unorderedList", "Bulleted List", "Bulleted list", icon: MaterialIcon.FormatListBulleted),
+        new NTRichTextEditorButton("link", "Insert Link", "Insert link", icon: MaterialIcon.InsertLink),
+        new NTRichTextEditorButton("editHtml", "Edit HTML", "Edit HTML source", icon: MaterialIcon.Html)
+    ];
 
     private string EditorId => $"rich-text-editor-{ModeKey}";
 

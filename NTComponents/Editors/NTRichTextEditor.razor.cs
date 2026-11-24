@@ -154,7 +154,12 @@ public partial class NTRichTextEditor : INTPageScriptComponent<NTRichTextEditor>
     /// Gets or sets the toolbar items rendered by the editor.
     /// </summary>
     /// <remarks>
-    /// When not provided, <see cref="DefaultToolbarButtons" /> is used.
+    /// When not provided, <see cref="DefaultToolbarButtons" /> is used. Content from outside the editor (paste, drop, and
+    /// HTML source edits) is limited to the formatting these buttons can produce; anything else is reduced to plain text or
+    /// paragraphs. Browser formatting shortcuts without a matching button are blocked. Pasted plain text is read as markdown,
+    /// unless it is HTML markup, which is rendered. Pasted or dropped image files without markup open the image panel one at a
+    /// time when the image button is present. The bound value is not changed when it loads, even if it holds formatting these
+    /// buttons cannot produce; HTML source edits keep formatting the value already had.
     /// </remarks>
     [Parameter]
     public IReadOnlyList<INTRichTextEditorButton>? ToolbarButtons { get; set; }

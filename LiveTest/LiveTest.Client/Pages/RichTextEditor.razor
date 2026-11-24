@@ -31,5 +31,13 @@
             </header>
             <RichTextEditorComponent ModeName="WASM" @rendermode="InteractiveWebAssembly" />
         </article>
+
+        <article class="rich-text-editor-demo" data-testid="rich-text-editor-restricted">
+            <header>
+                <h2>Restricted toolbar</h2>
+                <p>Paste, drop, and HTML source keep only paragraphs, level 2 headings, bold, bulleted lists, and links.</p>
+            </header>
+            <RichTextEditorComponent ModeName="Restricted" RestrictedToolbar="true" @rendermode="InteractiveServer" />
+        </article>
     </section>
 </main>
