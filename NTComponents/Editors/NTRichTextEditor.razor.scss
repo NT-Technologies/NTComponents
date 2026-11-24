@@ -272,7 +272,7 @@ $nt-rich-text-panel-max-width: 36rem;
                 padding-left: 1.5rem;
             }
 
-            li + li {
+            li:not(:first-child) {
                 margin-top: 0.2rem;
             }
 
@@ -294,20 +294,27 @@ $nt-rich-text-panel-max-width: 36rem;
                 white-space: pre-wrap;
 
                 code {
-                    font-family: Consolas, 'Courier New', monospace;
                     white-space: inherit;
                 }
             }
 
+            // The editor's code block is a bare <pre>; seeded or pasted values may wrap it in <code>, or use inline code.
+            pre,
+            code {
+                font-family: Consolas, 'Courier New', monospace;
+            }
+
+            // Columns size to their content, so a narrow editor scrolls the table instead of breaking words letter by letter.
             table {
                 width: 100%;
                 border-collapse: collapse;
-                table-layout: fixed;
                 --nt-rich-text-table-border-color: color-mix(in srgb, currentColor 16%, transparent);
             }
 
             th,
             td {
+                word-break: normal;
+                overflow-wrap: break-word;
                 padding: 8px 10px;
                 border: 1px solid var(--nt-rich-text-table-border-color);
                 text-align: left;
@@ -342,36 +349,9 @@ $nt-rich-text-panel-max-width: 36rem;
                 text-underline-offset: 2px;
             }
 
-            p + p,
-            h1 + p,
-            h2 + p,
-            h3 + p,
-            h4 + p,
-            h5 + p,
-            h6 + p,
-            p + h1,
-            p + h2,
-            p + h3,
-            p + h4,
-            p + h5,
-            p + h6,
-            h1 + h2,
-            h2 + h3,
-            h3 + h4,
-            p + ul,
-            p + ol,
-            p + blockquote,
-            p + pre,
-            ul + p,
-            ol + p,
-            blockquote + p,
-            pre + p,
-            table + p,
-            p + table,
-            img + p,
-            p + img,
-            iframe + p,
-            p + iframe {
+            // Blocks after the first are spaced apart. Not sibling combinators (p + p): with the field's :has() rules they
+            // restyle the whole document on every node a large delete removes, freezing the tab for seconds.
+            :is(p, h1, h2, h3, h4, h5, h6, ul, ol, blockquote, pre, table, img, iframe):not(:first-child) {
                 margin-top: 0.55rem;
             }
         }
