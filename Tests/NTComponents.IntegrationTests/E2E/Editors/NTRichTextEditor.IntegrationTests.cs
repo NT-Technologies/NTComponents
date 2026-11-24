@@ -10,6 +10,8 @@ namespace NTComponents.IntegrationTests.Editors;
 public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
     private const int ExpectedDefaultToolbarButtonCount = 28;
     private const string ServerEditorTestId = "rich-text-editor-server";
+    private const string RestrictedEditorTestId = "rich-text-editor-restricted";
+    private const int RestrictedToolbarButtonCount = 6;
     private readonly List<string> _browserDiagnostics = [];
     private PlaywrightFixture? _fixture;
     private IPage? _page;
@@ -150,6 +152,155 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
         await _page.Keyboard.TypeAsync("body");
 
         await WaitForHiddenValueAsync(ServerEditorTestId, "<h2>Title</h2><p>body</p>");
+    }
+
+    [Theory]
+    [InlineData("text/plain", "## Pasted\n\n- **one**\n- two", "<p>Start</p><h2>Pasted</h2><ul><li><strong>one</strong></li><li>two</li></ul>")]
+    [InlineData("text/html", "<h2 onclick=\"alert(1)\">Pasted</h2><hr><p><span style=\"font-weight:700\">bold</span></p>", "<p>Start</p><h2>Pasted</h2><p><strong>bold</strong></p>")]
+    public async Task Paste_Converts_Markdown_And_Html_Into_Editor_Value(string format, string clipboardText, string expectedValue) {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<p>Start|</p>");
+
+        (await DispatchTransferAsync(ServerEditorTestId, "paste", format, clipboardText)).Should().BeTrue();
+        await WaitForHiddenValueAsync(ServerEditorTestId, expectedValue);
+    }
+
+    [Fact]
+    public async Task RestrictedToolbar_Holds_Pasted_And_Dropped_Content_To_Its_Formatting() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(RestrictedEditorTestId, RestrictedToolbarButtonCount);
+        await SetEditorHtmlWithSelectionAsync(RestrictedEditorTestId, "<p>Start|</p>");
+
+        (await DispatchTransferAsync(RestrictedEditorTestId, "paste", "text/html", "<h2>Sub</h2><h3>Three</h3><p><b>bold</b> <i>italic</i></p><table><tr><td>cell</td></tr></table>")).Should().BeTrue();
+        await WaitForHiddenValueAsync(RestrictedEditorTestId, "<h2>Sub</h2><p>Three</p><p><b>bold</b> italic</p><p>cell</p>");
+
+        (await DispatchTransferAsync(RestrictedEditorTestId, "drop", "text/plain", "> quoted *text*")).Should().BeTrue();
+        // No drop point inside the editor, so the text lands at the end, joining the last paragraph like any insert at a caret.
+        await WaitForHiddenValueAsync(RestrictedEditorTestId, "<p>cellquoted text</p>");
+    }
+
+    [Fact]
+    public async Task Dropped_Image_Files_Open_The_Image_Panel_In_Turn_Only_When_The_Toolbar_Has_The_Image_Tool() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<p>Start|</p>");
+        var root = EditorRoot(ServerEditorTestId);
+        var altInput = root.Locator("[data-role='image-alt']");
+        (await DispatchTransferAsync(ServerEditorTestId, "drop", "image/png", "diagram.png,chart.png")).Should().BeTrue();
+
+        await Assertions.Expect(altInput).ToHaveValueAsync("diagram");
+        await Assertions.Expect(altInput).ToBeFocusedAsync();
+        (await root.Locator("[data-role='image-file']").EvaluateAsync<int>("input => input.files.length")).Should().Be(1);
+        (await root.Locator(".nt-rich-text-editor-surface img").CountAsync()).Should().Be(0);
+
+        await root.Locator("[data-role='image-width']").FillAsync("64");
+        await root.Locator("[data-role='image-apply']").ClickAsync();
+        await Assertions.Expect(altInput).ToHaveValueAsync("chart");
+        await Assertions.Expect(root.Locator("[data-role='image-width']")).ToHaveValueAsync(string.Empty);
+        await root.Locator("[data-role='image-apply']").ClickAsync();
+        await WaitForHiddenValueAsync(ServerEditorTestId, $"<img src=\"data:image/png;base64,{Convert.ToBase64String("diagram.png"u8)}\" alt=\"diagram\" width=\"64\"><img src=\"data:image/png;base64,{Convert.ToBase64String("chart.png"u8)}\" alt=\"chart\">");
+
+        await WaitForEditorReadyAsync(RestrictedEditorTestId, RestrictedToolbarButtonCount);
+        await SetEditorHtmlWithSelectionAsync(RestrictedEditorTestId, "<p>Start|</p>");
+        (await DispatchTransferAsync(RestrictedEditorTestId, "drop", "image/png", "diagram.png")).Should().BeTrue();
+        (await DispatchTransferAsync(RestrictedEditorTestId, "paste", "text/plain", "after")).Should().BeTrue();
+        await WaitForHiddenValueAsync(RestrictedEditorTestId, "<p>Startafter</p>");
+        (await Section(RestrictedEditorTestId).Locator(".nt-rich-text-editor-hidden-input").InputValueAsync()).Should().NotContain("<img");
+    }
+
+    [Fact]
+    public async Task RestrictedToolbar_Blocks_Native_Formatting_Shortcuts_It_Does_Not_Offer() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(RestrictedEditorTestId, RestrictedToolbarButtonCount);
+        await SetEditorHtmlWithSelectionAsync(RestrictedEditorTestId, "<p>[word]</p>");
+
+        await _page.Keyboard.PressAsync("Control+i");
+        await _page.Keyboard.PressAsync("Control+u");
+        await _page.Keyboard.PressAsync("Control+b");
+
+        await WaitForHiddenValueAsync(RestrictedEditorTestId, "<b>word</b>");
+        (await EditorRoot(RestrictedEditorTestId).Locator(".nt-rich-text-editor-surface :is(i, em, u)").CountAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task RestrictedToolbar_Holds_Html_Source_Edits_To_Its_Formatting() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(RestrictedEditorTestId, RestrictedToolbarButtonCount);
+        var toggle = EditorRoot(RestrictedEditorTestId).Locator(".nt-rich-text-editor-toolbar-button[data-command='editHtml']");
+
+        await toggle.ClickAsync();
+        // The demo value already underlines text, so <u> stays; <h3> and <s> are new and the toolbar cannot produce them.
+        await EditorRoot(RestrictedEditorTestId).Locator("[data-role='html-source']").FillAsync("<h3>Three</h3><p><u>under</u> <s>struck</s> <b>kept</b></p>");
+        await toggle.ClickAsync();
+
+        await WaitForHiddenValueAsync(RestrictedEditorTestId, "<p>Three</p><p><u>under</u> struck <b>kept</b></p>");
+    }
+
+    [Fact]
+    public async Task RestrictedToolbar_Keeps_Loaded_Value_When_Html_Source_Is_Not_Edited() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(RestrictedEditorTestId, RestrictedToolbarButtonCount);
+        var root = EditorRoot(RestrictedEditorTestId);
+        var toggle = root.Locator(".nt-rich-text-editor-toolbar-button[data-command='editHtml']");
+
+        await toggle.ClickAsync();
+        await toggle.ClickAsync();
+
+        await Assertions.Expect(root.Locator(".nt-rich-text-editor-surface h1")).ToHaveTextAsync("Meeting Notes");
+        (await root.Locator(".nt-rich-text-editor-surface table").CountAsync()).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Drag_Within_The_Editor_Is_Left_To_The_Browser_But_Outside_Drops_Are_Cleaned() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(RestrictedEditorTestId, RestrictedToolbarButtonCount);
+
+        var prevented = await EditorRoot(RestrictedEditorTestId).Locator(".nt-rich-text-editor-surface").EvaluateAsync<bool[]>(
+            """
+            surface => {
+                const drop = (data) => {
+                    const event = new DragEvent('drop', { dataTransfer: data, bubbles: true, cancelable: true });
+                    surface.dispatchEvent(event);
+                    return event.defaultPrevented;
+                };
+                const inside = new DataTransfer();
+                inside.setData('text/html', '<h3>moved</h3>');
+                surface.querySelector('p').dispatchEvent(new DragEvent('dragstart', { dataTransfer: inside, bubbles: true }));
+                const outside = new DataTransfer();
+                outside.setData('text/html', '<h3>outside</h3>');
+                return [drop(inside), drop(outside)];
+            }
+            """);
+
+        prevented.Should().Equal(false, true);
+    }
+
+    [Fact]
+    public async Task Paste_Into_Code_Block_Keeps_Text_As_Copied() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<pre><code>x|</code></pre>");
+
+        (await DispatchTransferAsync(ServerEditorTestId, "paste", "text/plain", "# a*b*\n    __init__ <T>")).Should().BeTrue();
+
+        await Assertions.Expect(EditorRoot(ServerEditorTestId).Locator(".nt-rich-text-editor-surface pre")).ToHaveTextAsync("x# a*b*\n    __init__ <T>");
     }
 
     [Theory]
@@ -704,6 +855,43 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
     }
 
     [Fact]
+    public async Task NarrowEditor_WideTable_Keeps_Words_Whole_And_Scrolls_Inside_The_Editor() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await _page.SetViewportSizeAsync(390, 900);
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<table><tbody><tr><th>Milestone</th><th>Deliverable</th><th>Owner</th><th>Status</th><th>Estimate</th><th>Notes</th></tr></tbody></table><p>After|</p>");
+
+        var layout = await EditorRoot(ServerEditorTestId).Locator(".nt-rich-text-editor-surface").EvaluateAsync<double[]>(
+            """
+            surface => {
+                const range = document.createRange();
+                range.selectNodeContents(surface.querySelector('th'));
+                return [range.getClientRects().length, surface.scrollWidth - surface.clientWidth, document.documentElement.scrollWidth - window.innerWidth];
+            }
+            """);
+
+        layout[0].Should().Be(1, "the header word stays on one line");
+        layout[1].Should().BeGreaterThan(0, "the editor scrolls sideways to show the table");
+        layout[2].Should().BeLessThanOrEqualTo(0, "the page itself does not scroll sideways");
+    }
+
+    [Fact]
+    public async Task CodeBlocks_Made_In_The_Editor_Use_The_Code_Font() {
+        ArgumentNullException.ThrowIfNull(_page);
+
+        await NavigateToRichTextEditorAsync();
+        await WaitForEditorReadyAsync(ServerEditorTestId);
+        await SetEditorHtmlWithSelectionAsync(ServerEditorTestId, "<pre>block</pre><p>Inline <code>code</code>|</p>");
+
+        var fonts = await EditorRoot(ServerEditorTestId).Locator(".nt-rich-text-editor-surface").EvaluateAsync<string[]>(
+            "surface => ['pre', 'p code'].map(selector => getComputedStyle(surface.querySelector(selector)).fontFamily)");
+
+        fonts.Should().AllSatisfy(font => font.Should().StartWith("Consolas"));
+    }
+
+    [Fact]
     public async Task Interactive_Render_Modes_Submit_Updated_Html() {
         ArgumentNullException.ThrowIfNull(_page);
 
@@ -739,6 +927,29 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
         _browserDiagnostics.Should().NotContain(diagnostic => diagnostic.Contains("Connection disconnected", StringComparison.Ordinal));
     }
 
+    // Dispatches a paste or a drop from outside the editor and reports whether the editor took it over.
+    // An image/* format sends files, as files dragged from the desktop arrive: the text lists their comma-separated names,
+    // and each file's content is its name.
+    private Task<bool> DispatchTransferAsync(string testId, string eventType, string format, string text) =>
+        EditorRoot(testId).Locator(".nt-rich-text-editor-surface").EvaluateAsync<bool>(
+            """
+            (surface, [eventType, format, text]) => {
+                const data = new DataTransfer();
+                if (format.startsWith('image/')) {
+                    text.split(',').forEach((name) => data.items.add(new File([name], name, { type: format })));
+                } else {
+                    data.setData(format, text);
+                }
+
+                const event = eventType === 'paste'
+                    ? new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true })
+                    : new DragEvent('drop', { dataTransfer: data, bubbles: true, cancelable: true });
+                surface.dispatchEvent(event);
+                return event.defaultPrevented;
+            }
+            """,
+            new[] { eventType, format, text });
+
     private async Task NavigateToRichTextEditorAsync() {
         ArgumentNullException.ThrowIfNull(_page);
 
@@ -755,7 +966,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
 
     private ILocator FieldRoot(string testId) => Section(testId).Locator(".nt-input.nt-rich-text-editor");
 
-    private async Task WaitForEditorReadyAsync(string testId) {
+    private async Task WaitForEditorReadyAsync(string testId, int expectedToolbarButtonCount = ExpectedDefaultToolbarButtonCount) {
         ArgumentNullException.ThrowIfNull(_page);
 
         try {
@@ -769,7 +980,7 @@ public class NTRichTextEditor_IntegrationTests : IAsyncLifetime {
                         && surface?.textContent?.includes('Meeting Notes');
                 }
                 """,
-                new object[] { testId, ExpectedDefaultToolbarButtonCount },
+                new object[] { testId, expectedToolbarButtonCount },
                 new PageWaitForFunctionOptions { Timeout = 30000 });
         }
         catch (TimeoutException ex) {

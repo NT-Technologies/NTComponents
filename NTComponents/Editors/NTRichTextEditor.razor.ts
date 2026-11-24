@@ -51,9 +51,16 @@ interface RichTextEditorToolPlugin<TState> {
     execute?(context: RichTextEditorToolContext<TState>, value?: string): boolean;
     close?(context: RichTextEditorToolContext<TState>, options?: InlineToolCloseOptions): void;
     syncState?(context: RichTextEditorToolContext<TState>): void;
+    /**
+     * Tags this tool's content uses, such as ['A']. Pasted, dropped, and HTML source content keeps them only while the
+     * tool's button is on the toolbar. Tags the editor's sanitizer does not allow are removed regardless.
+     */
+    allowedTags?: string[];
     /** Elements this tool edits. Clicking one in the surface calls openForTarget so its settings show. */
     targetSelector?: string;
     openForTarget?(context: RichTextEditorToolContext<TState>): void;
+    /** Files pasted or dropped into the editor while the tool's button is on the toolbar. Returns true when the tool takes them. */
+    openForFiles?(context: RichTextEditorToolContext<TState>, files: File[]): boolean;
 }
 
 interface DotNetEditorRef {
@@ -84,6 +91,8 @@ interface EditorState extends RichTextEditorToolEditorState {
     sentValueCount: number;
     sourceMode: boolean;
     sourceEmbeddedData: string[];
+    // The source text as the editor wrote it; while it is unedited, leaving source view keeps the value as it was.
+    sourceWrittenValue: string;
     onInput: () => void;
     onSourceInput: () => void;
     onSourceScroll: () => void;
@@ -97,6 +106,20 @@ interface EditorState extends RichTextEditorToolEditorState {
     onKeyDown: (event: KeyboardEvent) => void;
     onPanelKeyDown: (event: KeyboardEvent) => void;
     onToolbarMouseDown: (event: MouseEvent) => void;
+    onPaste: (event: ClipboardEvent) => void;
+    onDrop: (event: DragEvent) => void;
+    onDragStart: (event: DragEvent) => void;
+    onDragOver: (event: DragEvent) => void;
+    onBeforeInput: (event: InputEvent) => void;
+    // Marks drags that start in this editor, so a drop can tell them from content dragged in from outside.
+    dragToken: string;
+}
+
+interface PasteRules {
+    tags: Set<string>;
+    alignments: Set<string>;
+    color: boolean;
+    ariaLabel: boolean;
 }
 
 type RegisteredTool = RichTextEditorToolPlugin<unknown>;
@@ -354,10 +377,36 @@ function writeHtmlSource(source: HTMLTextAreaElement, state: EditorState, html: 
         const index = state.sourceEmbeddedData.includes(data) ? state.sourceEmbeddedData.indexOf(data) : state.sourceEmbeddedData.push(data) - 1;
         return `data:${type};base64,[image-data-${index + 1}, ${Math.ceil((data.length * 3) / 4 / 1024)} KB]`;
     });
+    state.sourceWrittenValue = source.value;
 }
 
-function readHtmlSource(source: HTMLTextAreaElement, state: EditorState): string {
-    return flattenEditorHtml(source.value.replace(embeddedDataTokenPattern, (token, index: string) => state.sourceEmbeddedData[Number(index) - 1] ?? token));
+// Edited source is held to the toolbar like pasted content, so HTML editing cannot add formatting the editor does not
+// offer, but formatting the value already had stays. Unedited source is the value as it was, which, like a loaded
+// value, is left alone.
+function readHtmlSource(element: HTMLElement, source: HTMLTextAreaElement, state: EditorState): string {
+    const restoreData = (text: string) => text.replace(embeddedDataTokenPattern, (token, index: string) => state.sourceEmbeddedData[Number(index) - 1] ?? token);
+    const html = restoreData(source.value);
+    if (source.value === state.sourceWrittenValue) {
+        return flattenEditorHtml(html);
+    }
+
+    return flattenEditorHtml(cleanIncomingHtml(html, addExistingFormatting(getPasteRules(element), restoreData(state.sourceWrittenValue))));
+}
+
+function addExistingFormatting(rules: PasteRules, html: string): PasteRules {
+    const template = document.createElement('template');
+    template.innerHTML = html;
+    for (const node of toArray(template.content.querySelectorAll('*')).filter(isHtmlElement)) {
+        rules.tags.add(node.tagName);
+        if (node.style.textAlign) {
+            rules.alignments.add(node.style.textAlign);
+        }
+
+        rules.color ||= Boolean(node.style.color);
+        rules.ariaLabel ||= node.hasAttribute('aria-label');
+    }
+
+    return rules;
 }
 
 function setHtmlSourceMode(element: HTMLElement, state: EditorState, enabled: boolean): void {
@@ -373,7 +422,7 @@ function setHtmlSourceMode(element: HTMLElement, state: EditorState, enabled: bo
         state.sourceEmbeddedData = [];
         writeHtmlSource(source, state, state.lastHtml);
     } else {
-        surface.innerHTML = readHtmlSource(source, state);
+        surface.innerHTML = readHtmlSource(element, source, state);
         state.selectionRange = null;
     }
 
@@ -876,6 +925,451 @@ function sanitizeHtmlFragment(root: ParentNode): void {
     }
 }
 
+// Converts pasted markdown (or plain text) to editor HTML. It covers what the editor can hold: headings, paragraphs,
+// lists, quotes, fenced code, GFM tables, emphasis, strikethrough, code spans, links, and images. Raw HTML in the text
+// stays text. Single line breaks are kept, as plain text pastes expect. The caller sanitizes the result.
+
+const listItemPattern = /^( *)([-*+]|\d{1,9}[.)])[ \t]+(.*)$/;
+// A backtick fence cannot carry backticks after it, so ```code``` on one line stays a code span.
+const fencePattern = /^ {0,3}(`{3,}(?=[^`]*$)|~{3,})/;
+const headingPattern = /^ {0,3}(#{1,6})[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$/;
+const quotePattern = /^ {0,3}>/;
+const thematicBreakPattern = /^ {0,3}([-*_])(?:[ \t]*\1){2,}[ \t]*$/;
+const tableDelimiterPattern = /^ *\|? *:?-+:? *(?:\| *:?-+:? *)*\|? *$/;
+
+function markdownToHtml(markdown: string): string {
+    const lines = markdown
+        .replace(/[\uE000\uE001]/g, '')
+        .replace(/\r\n?/g, '\n')
+        .split('\n')
+        .map((line) => line.replace(/^\t+/, (tabs) => '    '.repeat(tabs.length)));
+    return renderBlocks(lines);
+}
+
+function indentOf(line: string): number {
+    return line.length - line.trimStart().length;
+}
+
+function nextContentIndex(lines: string[], index: number): number {
+    while (index < lines.length && !lines[index].trim()) {
+        index++;
+    }
+
+    return index;
+}
+
+function isTableStart(line: string, nextLine: string | undefined): boolean {
+    return line.includes('|') && nextLine !== undefined && nextLine.includes('-') && tableDelimiterPattern.test(nextLine);
+}
+
+function isBlockStart(lines: string[], index: number): boolean {
+    const line = lines[index];
+    return [fencePattern, headingPattern, quotePattern, thematicBreakPattern, listItemPattern].some((pattern) => pattern.test(line))
+        || isTableStart(line, lines[index + 1]);
+}
+
+function renderBlocks(lines: string[]): string {
+    const html: string[] = [];
+    let index = 0;
+    while (index < lines.length) {
+        const line = lines[index];
+        let match: RegExpMatchArray | null;
+
+        if (!line.trim() || thematicBreakPattern.test(line)) {
+            // Blank lines and thematic breaks only separate blocks; the editor has no rule element.
+            index++;
+        } else if ((match = line.match(fencePattern))) {
+            const code: string[] = [];
+            while (++index < lines.length && !lines[index].trim().startsWith(match[1])) {
+                code.push(lines[index]);
+            }
+
+            html.push(`<pre>${escapeHtml(code.join('\n'))}</pre>`);
+            index++;
+        } else if ((match = line.match(headingPattern))) {
+            html.push(`<h${match[1].length}>${renderInline(match[2])}</h${match[1].length}>`);
+            index++;
+        } else if (quotePattern.test(line)) {
+            const quoted: string[] = [];
+            for (; index < lines.length && quotePattern.test(lines[index]); index++) {
+                quoted.push(lines[index].replace(/^ {0,3}> ?/, ''));
+            }
+
+            html.push(`<blockquote>${renderBlocks(quoted)}</blockquote>`);
+        } else if (isTableStart(line, lines[index + 1])) {
+            const rows: string[] = [];
+            for (index += 2; index < lines.length && lines[index].includes('|') && lines[index].trim(); index++) {
+                rows.push(renderTableRow(lines[index], 'td'));
+            }
+
+            const body = rows.length ? `<tbody>${rows.join('')}</tbody>` : '';
+            html.push(`<table><thead>${renderTableRow(line, 'th')}</thead>${body}</table>`);
+        } else if (listItemPattern.test(line)) {
+            index = renderList(lines, index, html);
+        } else {
+            const paragraph: string[] = [];
+            for (; index < lines.length && lines[index].trim() && (!paragraph.length || !isBlockStart(lines, index)); index++) {
+                paragraph.push(lines[index].trim());
+            }
+
+            html.push(`<p>${renderInline(paragraph.join('\n')).replaceAll('\n', '<br>')}</p>`);
+        }
+    }
+
+    return html.join('');
+}
+
+// Renders the list that starts at lines[start] and returns the index of the first line after it.
+function renderList(lines: string[], start: number, html: string[]): number {
+    const isOrdered = (marker: string): boolean => /\d/.test(marker);
+    const first = lines[start].match(listItemPattern)!;
+    const indent = first[1].length;
+    const ordered = isOrdered(first[2]);
+    const matchSibling = (line: string | undefined): RegExpMatchArray | null => {
+        const match = line?.match(listItemPattern) ?? null;
+        return match && match[1].length === indent && isOrdered(match[2]) === ordered ? match : null;
+    };
+
+    const items: string[] = [];
+    let index = start;
+    let match: RegExpMatchArray | null;
+    while ((match = matchSibling(lines[index]))) {
+        const contentIndent = indent + match[2].length + 1;
+        const body = [match[3]];
+        // The item holds the lines indented under it, and blank lines only when such a line follows them.
+        for (index++; index < lines.length; index++) {
+            const line = lines[index];
+            const next = line.trim() ? line : lines[nextContentIndex(lines, index)];
+            if (next === undefined || indentOf(next) <= indent) {
+                break;
+            }
+
+            body.push(line.slice(Math.min(contentIndent, indentOf(line))));
+        }
+
+        // The item's first paragraph sits directly in the <li>, as the editor writes list items.
+        items.push(`<li>${renderBlocks(body).replace(/^<p>([\s\S]*?)<\/p>/, '$1')}</li>`);
+        const after = nextContentIndex(lines, index);
+        if (matchSibling(lines[after])) {
+            index = after;
+        }
+    }
+
+    const tag = ordered ? 'ol' : 'ul';
+    html.push(`<${tag}>${items.join('')}</${tag}>`);
+    return index;
+}
+
+function renderTableRow(line: string, cellTag: 'th' | 'td'): string {
+    const cells = line.trim().replace(/^\|/, '').replace(/(?<!\\)\|$/, '').split(/(?<!\\)\|/);
+    return `<tr>${cells.map((cell) => `<${cellTag}>${renderInline(cell.trim())}</${cellTag}>`).join('')}</tr>`;
+}
+
+function renderInline(text: string): string {
+    // Finished markup is parked behind private-use placeholders so later patterns cannot rewrite it.
+    const held: string[] = [];
+    const restore = (value: string): string => value.replace(/\uE000(\d+)\uE001/g, (_, position: string) => held[Number(position)]);
+    const hold = (markup: string): string => `\uE000${held.push(restore(markup)) - 1}\uE001`;
+    const title = (value: string | undefined): string => value ? ` title="${value}"` : '';
+
+    return restore(escapeHtml(text
+        .replace(/\\([!-/:-@[-`{-~])/g, (_, character: string) => hold(escapeHtml(character)))
+        .replace(/(`+)(.*?[^`])\1(?!`)/g, (_, _fence: string, code: string) => hold(`<code>${escapeHtml(code.trim())}</code>`)))
+        .replace(/!\[([^\]]*)\]\(\s*(\S+?)(?:\s+&quot;(.*?)&quot;)?\s*\)/g, (_, alt: string, src: string, imageTitle?: string) => hold(`<img src="${src}" alt="${alt}"${title(imageTitle)}>`))
+        .replace(/\[([^\]]+)\]\(\s*(\S+?)(?:\s+&quot;(.*?)&quot;)?\s*\)/g, (_, label: string, href: string, linkTitle?: string) => `${hold(`<a href="${href}"${title(linkTitle)}>`)}${label}${hold('</a>')}`)
+        .replace(/&lt;((?:https?|mailto):[^\s<>]+?)&gt;/g, (_, url: string) => hold(`<a href="${url}">${url}</a>`))
+        .replace(/\*\*(?=\S)(.*?\S)\*\*/g, '<strong>$1</strong>')
+        .replace(/(^|[^\p{L}\p{N}_])__(?=\S)(.*?\S)__(?![\p{L}\p{N}_])/gu, '$1<strong>$2</strong>')
+        .replace(/~~(?=\S)(.*?\S)~~/g, '<del>$1</del>')
+        .replace(/\*(?=\S)(.*?\S)\*/g, '<em>$1</em>')
+        .replace(/(^|[^\p{L}\p{N}_])_(?=\S)(.*?\S)_(?![\p{L}\p{N}_])/gu, '$1<em>$2</em>'));
+}
+
+// The markup each built-in toolbar command can produce; tool plugins list theirs in allowedTags. Content from outside
+// the editor (paste, drop, HTML source) is held to the commands the editor shows.
+const commandHtmlTags: Record<string, string[]> = {
+    unorderedList: ['UL', 'LI'],
+    orderedList: ['OL', 'LI'],
+    blockquote: ['BLOCKQUOTE'],
+    codeBlock: ['PRE', 'CODE'],
+    bold: ['B', 'STRONG'],
+    italic: ['I', 'EM'],
+    underline: ['U'],
+    strikeThrough: ['S', 'STRIKE', 'DEL']
+};
+const alignmentCommands: Record<string, Alignment> = { alignLeft: 'left', alignCenter: 'center', alignRight: 'right', alignJustify: 'justify' };
+
+// Formatting browsers apply on their own (Ctrl+B, the macOS Format menu, mobile B/I/U bars), by the command that offers it.
+const nativeFormatCommands: Record<string, string> = {
+    formatBold: 'bold',
+    formatItalic: 'italic',
+    formatUnderline: 'underline',
+    formatStrikeThrough: 'strikeThrough',
+    formatJustifyLeft: 'alignLeft',
+    formatJustifyCenter: 'alignCenter',
+    formatJustifyRight: 'alignRight',
+    formatJustifyFull: 'alignJustify',
+    formatFontColor: 'textColor'
+};
+
+function hasToolbarCommand(element: HTMLElement, command: string): boolean {
+    return getToolbarButtons(element).some((button) => button.dataset.command === command);
+}
+
+// List indenting and clearing formatting stay; other native formatting needs its toolbar button, and the rest has none.
+function blockUnofferedFormatting(element: HTMLElement, event: InputEvent): void {
+    const inputType = event.inputType ?? '';
+    if (!inputType.startsWith('format') || ['formatOutdent', 'formatRemove'].includes(inputType)) {
+        return;
+    }
+
+    // Indenting nests a list item; anywhere else browsers wrap the block in a blockquote.
+    if (inputType === 'formatIndent') {
+        if (!closestInSurface(getSurface(element), 'li') && !hasToolbarCommand(element, 'blockquote')) {
+            event.preventDefault();
+        }
+
+        return;
+    }
+
+    const command = nativeFormatCommands[inputType];
+    if (!command || !hasToolbarCommand(element, command)) {
+        event.preventDefault();
+    }
+}
+
+function getPasteRules(element: HTMLElement): PasteRules {
+    // Paragraphs, line breaks, and plain containers are text's structure; spans carry the color and label attributes.
+    // With the default toolbar every tag the sanitizer allows is kept, so only a narrower toolbar removes content.
+    const rules: PasteRules = { tags: new Set(['P', 'BR', 'DIV', 'SPAN']), alignments: new Set(), color: false, ariaLabel: false };
+    for (const button of getToolbarButtons(element)) {
+        const command = button.dataset.command ?? '';
+        if (command === 'heading') {
+            rules.tags.add(`H${button.dataset.value || '1'}`);
+        }
+
+        [...commandHtmlTags[command] ?? [], ...getRichTextEditorTool(command)?.allowedTags ?? []].forEach((tag) => rules.tags.add(tag.toUpperCase()));
+        if (alignmentCommands[command]) {
+            rules.alignments.add(alignmentCommands[command]);
+        }
+
+        rules.color ||= command === 'textColor';
+        rules.ariaLabel ||= command === 'ariaLabel';
+    }
+
+    return rules;
+}
+
+// Google Docs and Word mark formatting with inline styles, which the sanitizer drops, so turn it into tags first.
+function convertStyledFormatting(root: ParentNode): void {
+    for (const element of toArray(root.querySelectorAll('[style]')).filter(isHtmlElement)) {
+        // A link's own color and underline are the copied page's link styling (Chrome bakes in the theme's colors), not
+        // formatting; the editor's theme styles links.
+        if (element.tagName === 'A') {
+            element.style.removeProperty('color');
+            element.style.removeProperty('text-decoration');
+            element.style.removeProperty('text-decoration-line');
+        }
+
+        const { fontWeight, fontStyle } = element.style;
+        const isBold = fontWeight === 'bold' || fontWeight === 'bolder' || Number(fontWeight) >= 600;
+        // Google Docs wraps the whole copy in <b style="font-weight:normal">.
+        if ((element.tagName === 'B' || element.tagName === 'STRONG') && !isBold && fontWeight) {
+            unwrapElement(element);
+            continue;
+        }
+
+        if (element.querySelector(blockLevelSelector)) {
+            continue;
+        }
+
+        const decoration = `${element.style.textDecoration} ${element.style.getPropertyValue('text-decoration-line')}`;
+        const tags = [isBold && 'strong', fontStyle === 'italic' && 'em', decoration.includes('underline') && 'u', decoration.includes('line-through') && 's'];
+        for (const tag of tags) {
+            if (tag) {
+                const wrapper = element.ownerDocument.createElement(tag);
+                wrapper.append(...toArray(element.childNodes));
+                element.append(wrapper);
+            }
+        }
+    }
+}
+
+function breakTextLines(root: Element): void {
+    const walker = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const textNodes: Text[] = [];
+    while (walker.nextNode()) {
+        textNodes.push(walker.currentNode as Text);
+    }
+
+    for (const text of textNodes) {
+        const lines = text.data.replace(/\n$/, '').split('\n');
+        text.replaceWith(...lines.flatMap((line, index) => index ? [root.ownerDocument.createElement('br'), line] : [line]));
+    }
+}
+
+function restrictHtmlToTools(root: ParentNode, rules: PasteRules): void {
+    for (const element of toArray(root.querySelectorAll('*'))) {
+        // Parents come first, so an item whose list was not allowed has already lost that list.
+        const isOrphanItem = element.tagName === 'LI' && !['UL', 'OL'].includes(element.parentElement?.tagName ?? '');
+        if (!rules.tags.has(element.tagName) || isOrphanItem) {
+            // A block the editor cannot make becomes a paragraph so its text does not run into its neighbors.
+            if (element.matches(blockLevelSelector) && !element.querySelector(blockLevelSelector)) {
+                const paragraph = element.ownerDocument.createElement('p');
+                paragraph.append(...toArray(element.childNodes));
+                element.replaceWith(paragraph);
+                // Code keeps its lines once it is a paragraph.
+                if (element.tagName === 'PRE') {
+                    breakTextLines(paragraph);
+                }
+            } else {
+                unwrapElement(element);
+            }
+
+            continue;
+        }
+
+        if (element instanceof HTMLElement) {
+            if (!rules.color) {
+                element.style.removeProperty('color');
+            }
+
+            if (!rules.alignments.has(element.style.textAlign)) {
+                element.style.removeProperty('text-align');
+            }
+
+            if (!element.getAttribute('style')) {
+                element.removeAttribute('style');
+            }
+        }
+
+        // The link tool sets its own aria-label.
+        if (!rules.ariaLabel && element.tagName !== 'A') {
+            element.removeAttribute('aria-label');
+            element.removeAttribute('role');
+        }
+
+        if (element.tagName === 'SPAN' && element.attributes.length === 0) {
+            unwrapElement(element);
+        }
+    }
+}
+
+const maxConvertedTextLength = 50_000;
+
+function getPastedHtml(data: DataTransfer): string | null {
+    const html = data.getData('text/html');
+    // VS Code puts its syntax colors on the clipboard as HTML; the plain text is what was copied.
+    if (html && !data.types.includes('vscode-editor-data')) {
+        return html;
+    }
+
+    const text = data.getData('text/plain');
+    if (!text) {
+        return null;
+    }
+
+    // Converting very long text can take seconds, so it is kept as plain text.
+    if (text.length > maxConvertedTextLength) {
+        return `<p>${escapeHtml(text).replace(/\r?\n/g, '<br>')}</p>`;
+    }
+
+    // Copied HTML source is markup to render; any other text is read as markdown, which plain text also is.
+    return /^\s*<[a-z][a-z\d]*[\s/>][\s\S]*>\s*$/i.test(text) ? text : markdownToHtml(text);
+}
+
+// Sanitizes HTML from outside the editor and keeps only the formatting the rules allow.
+function cleanIncomingHtml(html: string, rules: PasteRules): string {
+    const template = document.createElement('template');
+    template.innerHTML = html;
+    convertStyledFormatting(template.content);
+    sanitizeHtmlFragment(template.content);
+    restrictHtmlToTools(template.content, rules);
+    // Comments are removed as nodes: a pattern over the markup could also match "<!--" inside an attribute value.
+    const comments = document.createTreeWalker(template.content, NodeFilter.SHOW_COMMENT);
+    const commentNodes: Node[] = [];
+    while (comments.nextNode()) {
+        commentNodes.push(comments.currentNode);
+    }
+
+    commentNodes.forEach((comment) => comment.parentNode?.removeChild(comment));
+    return template.innerHTML;
+}
+
+// Inserts pasted or dropped content at the selection.
+function insertTransferredContent(element: HTMLElement, event: Event, data: DataTransfer | null): void {
+    const state = editorState.get(element);
+    if (!data || !state || state.sourceMode || !isEditorEditable(element)) {
+        return;
+    }
+
+    event.preventDefault();
+    // Files win over plain text, such as the file name a file manager adds, but not over markup that describes them.
+    const files = Array.from(data.files ?? []);
+    if (files.length && !data.types.includes('text/html')) {
+        // A toolbar tool may take them, as the image tool opens its panel with an image file.
+        for (const command of state.toolCommands) {
+            const tool = getRichTextEditorTool(command);
+            if (tool?.openForFiles?.(createRichTextEditorToolContext(element, state, toolHost, tool), files)) {
+                break;
+            }
+        }
+
+        return;
+    }
+
+    // Text put into a code block is code: it goes in as it was copied, without markdown or HTML conversion.
+    const text = data.getData('text/plain');
+    if (text && closestInSurface(getSurface(element), 'pre')) {
+        document.execCommand('insertHTML', false, escapeHtml(text.replace(/\r\n?/g, '\n')));
+        return;
+    }
+
+    const html = getPastedHtml(data);
+    const cleanHtml = html === null ? '' : cleanIncomingHtml(html, getPasteRules(element));
+    if (cleanHtml) {
+        // insertHTML keeps the insert on the undo stack and raises the input event that syncs the value.
+        document.execCommand('insertHTML', false, cleanHtml);
+    }
+}
+
+// Focuses the surface and selects the range when it is inside the surface, else places the caret at the end.
+function selectInSurface(surface: HTMLElement, range: Range | null): void {
+    const selection = window.getSelection?.();
+    surface.focus({ preventScroll: true });
+    if (range && selection && surface.contains(range.startContainer)) {
+        selection.removeAllRanges();
+        selection.addRange(range);
+    } else {
+        placeCaretAtEnd(surface);
+    }
+}
+
+function getRangeAtPoint(x: number, y: number): Range | null {
+    const position = document.caretPositionFromPoint?.(x, y);
+    if (!position) {
+        return document.caretRangeFromPoint?.(x, y) ?? null;
+    }
+
+    const range = document.createRange();
+    range.setStart(position.offsetNode, position.offset);
+    return range;
+}
+
+const editorDragType = 'application/x-nt-rich-text-editor';
+
+function dropIntoEditor(element: HTMLElement, surface: HTMLElement, event: DragEvent): void {
+    // A drag within the editor moves its own content, which the browser does best.
+    const isDraggingWithin = event.dataTransfer?.getData(editorDragType) === editorState.get(element)?.dragToken;
+    if (isDraggingWithin || !isEditorEditable(element)) {
+        return;
+    }
+
+    // The drop point becomes the selection so the content lands where it was dropped, as the browser would place it.
+    selectInSurface(surface, getRangeAtPoint(event.clientX, event.clientY));
+    insertTransferredContent(element, event, event.dataTransfer);
+}
+
 // Structural repairs for markup produced by browser editing commands.
 function normalizeEditorStructure(surface: HTMLElement): void {
     // Chrome nests lists inside the paragraph they were created from, which no parser can round-trip.
@@ -1096,6 +1590,10 @@ interface ImageToolState {
     imageTarget: HTMLImageElement | null;
     // A chosen file waits here as a data URL until Insert is clicked; it is never shown in the URL field.
     uploadedImageUrl: string;
+    // The file being read; a read that finishes after another file was chosen, or the panel reopened, is ignored.
+    readingImageFile: File | null;
+    // Further pasted or dropped image files, each opened in the panel after the one before it is inserted.
+    queuedImageFiles: File[];
     onImageFileChange?: (event: Event) => void;
     onImageApply?: (event: MouseEvent) => void;
     onImageCancel?: (event: MouseEvent) => void;
@@ -1229,14 +1727,15 @@ function getImageHeightInput(element: Maybe<ParentNode>): HTMLInputElement | nul
 function handleImageFileSelection(context: RichTextEditorToolContext<ImageToolState>, file: File | null): void {
     const { element, toolState } = context;
     toolState.uploadedImageUrl = '';
+    toolState.readingImageFile = file;
     if (!(file instanceof File) || !file.type.startsWith('image/')) {
         return;
     }
 
     const reader = new FileReader();
     reader.onload = () => {
-        // The read is async: the panel may have been closed, or the editor disabled, while it ran.
-        if (getToolEditor(element, 'image')?.hidden !== false || !isEditorEditable(element)) {
+        // The read is async: the panel may have been closed or reopened, another file chosen, or the editor disabled.
+        if (toolState.readingImageFile !== file || getToolEditor(element, 'image')?.hidden !== false || !isEditorEditable(element)) {
             return;
         }
 
@@ -1372,10 +1871,11 @@ function closeImageEditor(context: RichTextEditorToolContext<ImageToolState>, op
     context.toolState.imageTarget = null;
     clearImageFileInput(context.toolState);
     context.toolState.uploadedImageUrl = '';
+    context.toolState.queuedImageFiles = [];
     closeInlineTool(context, 'image', options);
 }
 
-function openImageEditor(context: RichTextEditorToolContext<ImageToolState>, { focusInput = true, selectInputText = true }: { focusInput?: boolean; selectInputText?: boolean } = {}): boolean {
+function openImageEditor(context: RichTextEditorToolContext<ImageToolState>, { focusInput = true, selectInputText = true, newImage = false }: { focusInput?: boolean; selectInputText?: boolean; newImage?: boolean } = {}): boolean {
     const { element, editorState, host, toolState } = context;
     const surface = host.getSurface(element);
     if (!surface || !getToolEditor(element, 'image')) {
@@ -1383,10 +1883,12 @@ function openImageEditor(context: RichTextEditorToolContext<ImageToolState>, { f
     }
 
     host.closeOtherTools(element, editorState, 'image');
-    const existingImage = getSelectionClosest(surface, 'img', isHtmlImageElement);
+    const existingImage = newImage ? null : getSelectionClosest(surface, 'img', isHtmlImageElement);
     const imageDetails = getImageDetails(existingImage);
     host.saveSelectionRange(surface, editorState);
     toolState.imageTarget = existingImage;
+    toolState.queuedImageFiles = [];
+    toolState.readingImageFile = null;
     clearImageFileInput(toolState);
     // An embedded (uploaded) image keeps its data URL out of the URL field; Insert keeps it unless a URL is typed.
     const isEmbedded = imageDetails.src.startsWith('data:');
@@ -1427,6 +1929,34 @@ function openImageEditor(context: RichTextEditorToolContext<ImageToolState>, { f
     return false;
 }
 
+// Opens the panel for a new image loaded from the first image file, as if it had been picked, so it can be edited before
+// Insert. The other image files wait their turn; Cancel drops them.
+function openImageEditorForFiles(context: RichTextEditorToolContext<ImageToolState>, files: File[]): boolean {
+    const [file, ...queuedFiles] = files.filter((candidate) => candidate.type.startsWith('image/'));
+    if (!file) {
+        return false;
+    }
+
+    openImageEditor(context, { focusInput: false, newImage: true });
+    if (getToolEditor(context.element, 'image')?.hidden !== false) {
+        return false;
+    }
+
+    context.toolState.queuedImageFiles = queuedFiles;
+
+    // Show the file in the picker where the browser allows it.
+    const fileInput = context.toolState.imageFileInput;
+    if (fileInput && typeof DataTransfer === 'function') {
+        const picked = new DataTransfer();
+        picked.items.add(file);
+        fileInput.files = picked.files;
+    }
+
+    handleImageFileSelection(context, file);
+    getImageAltInput(context.element)?.focus();
+    return true;
+}
+
 async function applyImageEditor(context: RichTextEditorToolContext<ImageToolState>): Promise<boolean> {
     const { element, editorState, host, toolState } = context;
     const surface = host.getSurface(element);
@@ -1446,6 +1976,8 @@ async function applyImageEditor(context: RichTextEditorToolContext<ImageToolStat
     const imageWidth = normalizeImageDimension(getImageWidthInput(element)?.value ?? '');
     const imageHeight = normalizeImageDimension(getImageHeightInput(element)?.value ?? '');
     const imageTarget = toolState.imageTarget;
+    // Read before the insert: restoring the selection focuses the surface, and that sync closes the panel and clears the queue.
+    const queuedFiles = toolState.queuedImageFiles;
 
     if (imageTarget instanceof HTMLImageElement && surface.contains(imageTarget)) {
         imageTarget.setAttribute('src', imageUrl);
@@ -1465,6 +1997,8 @@ async function applyImageEditor(context: RichTextEditorToolContext<ImageToolStat
     }
 
     closeImageEditor(context, { focusSurface: true });
+    // The caret now follows the inserted image, so the next queued file lands after it.
+    openImageEditorForFiles(context, queuedFiles);
     return true;
 }
 
@@ -2538,7 +3072,8 @@ registerRichTextEditorTool<AriaLabelToolState>({
 
 registerRichTextEditorTool<ImageToolState>({
     command: 'image',
-    createState: () => ({ imageEditorInputs: [], imageFileInput: null, imageApplyButton: null, imageCancelButton: null, imageTarget: null, uploadedImageUrl: '' }),
+    allowedTags: ['IMG'],
+    createState: () => ({ imageEditorInputs: [], imageFileInput: null, imageApplyButton: null, imageCancelButton: null, imageTarget: null, uploadedImageUrl: '', readingImageFile: null, queuedImageFiles: [] }),
     bind: bindImageToolControls,
     unbind: unbindImageToolControls,
     setDisabled: ({ toolState }, disabled) => {
@@ -2551,11 +3086,13 @@ registerRichTextEditorTool<ImageToolState>({
     close: closeImageEditor,
     targetSelector: 'img',
     openForTarget: (context) => { openImageEditor(context, { focusInput: false }); },
+    openForFiles: openImageEditorForFiles,
     syncState: (context) => syncPanelTool(context, 'image', 'img', closeImageEditor)
 });
 
 registerRichTextEditorTool<TableToolState>({
     command: 'table',
+    allowedTags: ['TABLE', 'CAPTION', 'THEAD', 'TBODY', 'TFOOT', 'TR', 'TH', 'TD'],
     createState: () => ({ tableEditorInputs: [], tableApplyButton: null, tableCancelButton: null, tableTarget: null, tableGrid: null, tableSurface: null, tableContextCell: null }),
     bind: bindTableToolControls,
     unbind: unbindTableToolControls,
@@ -2591,6 +3128,7 @@ registerRichTextEditorTool<TextColorToolState>({
 
 registerRichTextEditorTool<LinkToolState>({
     command: 'link',
+    allowedTags: ['A'],
     createState: () => ({ linkEditorInputs: [], linkApplyButton: null, linkCancelButton: null, linkTarget: null, linkSelectedText: '' }),
     bind: bindLinkToolControls,
     unbind: unbindLinkToolControls,
@@ -2608,6 +3146,7 @@ registerRichTextEditorTool<LinkToolState>({
 
 registerRichTextEditorTool<IframeToolState>({
     command: 'iframe',
+    allowedTags: ['IFRAME'],
     createState: () => ({ iframeEditorInputs: [], iframeApplyButton: null, iframeCancelButton: null, iframeTarget: null }),
     bind: bindIframeToolControls,
     unbind: unbindIframeToolControls,
@@ -2780,7 +3319,7 @@ function commitValue(element: HTMLElement): void {
     if (state.sourceMode) {
         const source = getHtmlSource(element);
         if (source) {
-            surface.innerHTML = readHtmlSource(source, state);
+            surface.innerHTML = readHtmlSource(element, source, state);
         }
     }
 
@@ -3450,6 +3989,7 @@ function ensureState(element: Maybe<HTMLElement>, dotNetRef: DotNetEditorRef | n
         sentValueCount: 0,
         sourceMode: false,
         sourceEmbeddedData: [],
+        sourceWrittenValue: '',
         onInput: () => {
             state.hasUncommittedEdit = true;
             const shouldNotify = element.dataset.bindOnInput === 'true';
@@ -3467,7 +4007,7 @@ function ensureState(element: Maybe<HTMLElement>, dotNetRef: DotNetEditorRef | n
             }
 
             updateHtmlSourceView(source);
-            const html = readHtmlSource(source, state);
+            const html = readHtmlSource(element, source, state);
             surface.innerHTML = html;
             updateEmptyState(surface);
             const hiddenInput = getHiddenInput(element);
@@ -3548,7 +4088,27 @@ function ensureState(element: Maybe<HTMLElement>, dotNetRef: DotNetEditorRef | n
         },
         onToolbarMouseDown: (event: MouseEvent) => {
             event.preventDefault();
-        }
+        },
+        onPaste: (event: ClipboardEvent) => {
+            insertTransferredContent(element, event, event.clipboardData);
+        },
+        onDrop: (event: DragEvent) => {
+            dropIntoEditor(element, surface, event);
+        },
+        onDragStart: (event: DragEvent) => {
+            event.dataTransfer?.setData(editorDragType, state.dragToken);
+        },
+        onDragOver: (event: DragEvent) => {
+            // A file dropped on a read-only editor would otherwise be opened by the browser in place of the page.
+            if (event.dataTransfer?.types.includes('Files') && !isEditorEditable(element)) {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'none';
+            }
+        },
+        onBeforeInput: (event: InputEvent) => {
+            blockUnofferedFormatting(element, event);
+        },
+        dragToken: Math.random().toString(36).slice(2)
     };
 
     surface.addEventListener('input', state.onInput);
@@ -3557,6 +4117,11 @@ function ensureState(element: Maybe<HTMLElement>, dotNetRef: DotNetEditorRef | n
     surface.addEventListener('mouseup', state.onMouseUp);
     surface.addEventListener('click', state.onClick);
     surface.addEventListener('keydown', state.onKeyDown);
+    surface.addEventListener('paste', state.onPaste);
+    surface.addEventListener('drop', state.onDrop);
+    surface.addEventListener('dragstart', state.onDragStart);
+    surface.addEventListener('dragover', state.onDragOver);
+    surface.addEventListener('beforeinput', state.onBeforeInput);
     getHtmlSource(element)?.addEventListener('input', state.onSourceInput);
     getHtmlSource(element)?.addEventListener('scroll', state.onSourceScroll);
     window.addEventListener('resize', state.onWindowResize);
@@ -3771,6 +4336,11 @@ export function onDispose(element: Maybe<HTMLElement>): void {
         surface.removeEventListener('mouseup', state.onMouseUp);
         surface.removeEventListener('click', state.onClick);
         surface.removeEventListener('keydown', state.onKeyDown);
+        surface.removeEventListener('paste', state.onPaste);
+        surface.removeEventListener('drop', state.onDrop);
+        surface.removeEventListener('dragstart', state.onDragStart);
+        surface.removeEventListener('dragover', state.onDragOver);
+        surface.removeEventListener('beforeinput', state.onBeforeInput);
     }
 
     if (state) {
@@ -3843,6 +4413,7 @@ export const __testHooks = {
     sanitizeElementAttributes,
     sanitizeHtmlFragment,
     sanitizeEditorHtml,
+    markdownToHtml,
     normalizeImageDimension,
     normalizeTableBorderColor,
     buildTableStyleAttribute,

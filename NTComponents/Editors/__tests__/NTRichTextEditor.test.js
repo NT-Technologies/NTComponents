@@ -108,6 +108,8 @@ function createEditorFixture({
           <div class="nt-rich-text-editor-value" hidden>${encodedValueText}</div>
           <div class="nt-rich-text-editor-toolbar" role="toolbar">
             <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="bold" aria-keyshortcuts="Control+B" aria-pressed="false"></button>
+            <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="italic" aria-pressed="false"></button>
+            <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="codeBlock" aria-pressed="false"></button>
             <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="unorderedList" aria-keyshortcuts="Control+Alt+7" aria-pressed="false"></button>
             <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="image" aria-keyshortcuts="Control+Alt+M" aria-pressed="false"></button>
             <button type="button" class="nt-rich-text-editor-toolbar-button" data-command="table" aria-keyshortcuts="Control+Alt+T" aria-pressed="false"></button>
@@ -1110,6 +1112,86 @@ describe('NTRichTextEditor runtime behavior', () => {
     expect(image.getAttribute('width')).toBe('640');
     expect(image.getAttribute('height')).toBe('360');
     expect(imagePanel.hidden).toBe(true);
+  });
+
+  test.each([['paste', 'clipboardData'], ['drop', 'dataTransfer']])('image tool opens for a %s image file so it can be edited before Insert', async (type, property) => {
+    const fixture = createEditorFixture();
+    editorModule.onLoad(fixture.element, createDotNetRef());
+    setSurfaceContent(fixture.surface, '<p><img src="https://old.example/image.png" alt="Old alt" width="320" /></p>');
+    const existingImage = fixture.surface.querySelector('img');
+    collapseBeforeNode(existingImage);
+
+    const event = new Event(type, { bubbles: true, cancelable: true });
+    const files = ['notes.pdf', 'diagram.png', 'chart.png', 'photo.png'].map((name) => new File(['image'], name, { type: name.endsWith('.pdf') ? 'application/pdf' : 'image/png' }));
+    // File managers can add the file names as plain text; the files still win.
+    Object.defineProperty(event, property, { value: { types: ['Files', 'text/plain'], getData: (format) => format === 'text/plain' ? 'diagram.png' : '', files } });
+    fixture.surface.dispatchEvent(event);
+    await settleAsync();
+
+    const imagePanel = fixture.element.querySelector('[data-tool-command="image"]');
+    const altInput = fixture.element.querySelector('[data-role="image-alt"]');
+    const widthInput = fixture.element.querySelector('[data-role="image-width"]');
+    expect(event.defaultPrevented).toBe(true);
+    expect(imagePanel.hidden).toBe(false);
+    expect(fixture.element.querySelector('[data-role="image-url"]').value).toBe('');
+    expect(altInput.value).toBe('diagram');
+    expect(widthInput.value).toBe('');
+    expect(document.activeElement).toBe(altInput);
+    expect(document.execCommand).not.toHaveBeenCalledWith('insertHTML', expect.anything(), expect.anything());
+
+    widthInput.value = '640';
+    click(fixture.element.querySelector('[data-role="image-apply"]'));
+    await settleAsync();
+
+    // The caret sat beside an existing image, which keeps its settings: the file becomes a new image.
+    expect(existingImage.getAttribute('src')).toBe('https://old.example/image.png');
+    expect(document.execCommand).toHaveBeenCalledWith('insertHTML', false, '<img src="data:image/png;base64,ZmFrZQ==" alt="diagram" width="640" />');
+
+    // The next image file opens in the panel as a new image; Cancel skips it and the files after it.
+    expect(imagePanel.hidden).toBe(false);
+    expect(altInput.value).toBe('chart');
+    expect(widthInput.value).toBe('');
+    click(fixture.element.querySelector('[data-role="image-cancel"]'));
+    await settleAsync();
+    expect(imagePanel.hidden).toBe(true);
+
+    click(fixture.element.querySelector('[data-command="image"]'));
+    fixture.element.querySelector('[data-role="image-url"]').value = 'https://example.com/typed.png';
+    click(fixture.element.querySelector('[data-role="image-apply"]'));
+    await settleAsync();
+    expect(imagePanel.hidden).toBe(true);
+  });
+
+  test('image tool ignores a file read that finishes after another file arrived', async () => {
+    const readers = [];
+    global.FileReader = class DeferredFileReader {
+      readAsDataURL(file) {
+        this.finish = () => {
+          this.result = `data:${file.type};base64,${btoa(file.name)}`;
+          this.onload?.({ target: this });
+        };
+        readers.push(this);
+      }
+    };
+    const fixture = createEditorFixture();
+    editorModule.onLoad(fixture.element, createDotNetRef());
+    setSurfaceContent(fixture.surface, '<p>text</p>');
+    collapseBeforeNode(fixture.surface.querySelector('p').firstChild);
+    const send = (type, property, name) => {
+      const event = new Event(type, { bubbles: true, cancelable: true });
+      Object.defineProperty(event, property, { value: { types: ['Files'], getData: () => '', files: [new File(['image'], name, { type: 'image/png' })] } });
+      fixture.surface.dispatchEvent(event);
+    };
+
+    send('paste', 'clipboardData', 'diagram.png');
+    send('drop', 'dataTransfer', 'photo.png');
+    readers[1].finish();
+    readers[0].finish();
+
+    expect(fixture.element.querySelector('[data-role="image-alt"]').value).toBe('photo');
+    click(fixture.element.querySelector('[data-role="image-apply"]'));
+    await settleAsync();
+    expect(document.execCommand).toHaveBeenCalledWith('insertHTML', false, `<img src="data:image/png;base64,${btoa('photo.png')}" alt="photo" />`);
   });
 
   test('table tool inserts a table sized from the grid with the first row as the header', () => {
