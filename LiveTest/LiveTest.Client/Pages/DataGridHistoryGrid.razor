@@ -1,7 +1,7 @@
 @using NTComponents
 
 @* Logs every provider request so E2E tests can assert that each page, sort, or history step loads exactly once. *@
-<NTDataGrid TItem="HistoryItem" ItemsProvider="Provider" Caption="History grid" ShowPagination="true" PageSize="5" PushHistoryEntries="PushHistoryEntries">
+<NTDataGrid TItem="HistoryItem" ItemsProvider="Provider" Caption="History grid" ShowPagination="true" PageSize="5" PushHistoryEntries="PushHistoryEntries" QueryParameterPrefix="@QueryParameterPrefix">
     <NTPropertyColumn TItem="HistoryItem" TValue="int" Title="Id" Property="item => item.Id" />
     <NTPropertyColumn TItem="HistoryItem" TValue="string" Title="Customer" Property="item => item.Customer" InitialSortDirection="SortDirection.Ascending" />
 </NTDataGrid>
@@ -18,6 +18,9 @@
 
     [Parameter]
     public bool PushHistoryEntries { get; set; }
+
+    [Parameter]
+    public string QueryParameterPrefix { get; set; } = "ntdg";
 
     private ValueTask<NTItemsProviderResult<HistoryItem>> Provider(NTDataGridItemsProviderRequest<HistoryItem> request) {
         _log.Add($"start={request.StartIndex};sort={string.Join(",", request.Sorts.Select(sort => $"{sort.PropertyName}:{sort.Direction}"))}");

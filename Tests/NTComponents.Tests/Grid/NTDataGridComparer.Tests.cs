@@ -8,7 +8,7 @@ public class NTDataGridComparer_Tests : BunitContext {
         SetRendererInfo(new RendererInfo("Server", true));
         var module = JSInterop.SetupModule("./_content/NTComponents/Virtualization/NTVirtualize.razor.js");
         module.SetupVoid().SetVoidResult();
-        JSInterop.SetupVoid("NTComponents.updateUri", _ => true).SetVoidResult();
+        JSInterop.SetupVoid("NTComponents.updateGridUri", _ => true).SetVoidResult();
     }
 
     [Fact]

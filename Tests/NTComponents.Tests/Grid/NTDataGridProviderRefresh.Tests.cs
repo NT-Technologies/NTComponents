@@ -17,7 +17,8 @@ public class NTDataGridProviderRefresh_Tests : BunitContext {
         module.SetupVoid("updateRenderState", _ => true).SetVoidResult();
         module.SetupVoid("updateOptions", _ => true).SetVoidResult();
         module.SetupVoid("scrollToItem", _ => true).SetVoidResult();
-        JSInterop.SetupVoid("NTComponents.updateUri", _ => true).SetVoidResult();
+        JSInterop.SetupVoid("NTComponents.updateGridUri", _ => true).SetVoidResult();
+        JSInterop.Setup<string>("NTComponents.getCurrentLocation").SetResult("http://localhost/");
     }
 
     [Fact]
@@ -211,7 +212,7 @@ public class NTDataGridProviderRefresh_Tests : BunitContext {
         var provider = TrackRequests(calls);
         var cut = Render<NTDataGrid<GridItem>>(parameters => AddPagedParameters(parameters, provider, pushHistoryEntries: false));
         cut.WaitForAssertion(() => calls.Should().HaveCount(1));
-        var uriUpdate = JSInterop.SetupVoid("NTComponents.updateUri", _ => true);
+        var uriUpdate = JSInterop.SetupVoid("NTComponents.updateGridUri", _ => true);
 
         cut.Find(".pagination-next-page").Click();
         cut.WaitForAssertion(() => calls.Should().HaveCount(2));
@@ -268,6 +269,35 @@ public class NTDataGridProviderRefresh_Tests : BunitContext {
         cut.WaitForAssertion(() => calls.Should().HaveCount(2));
         calls[1].Count.Should().Be(3);
         cut.FindAll("tbody tr.nt-data-grid-row").Should().HaveCount(3);
+    }
+
+    [Fact]
+    public void ParentRenderAfterPageSizeChange_KeepsNewSize() {
+        var calls = new List<NTDataGridItemsProviderRequest<GridItem>>();
+        var provider = TrackRequests(calls);
+        var cut = Render<NTDataGrid<GridItem>>(parameters => AddPagedParameters(parameters, provider, pushHistoryEntries: false));
+        cut.WaitForAssertion(() => calls.Should().HaveCount(1));
+        cut.Find(".nt-data-grid-page-size select").Change("3");
+        cut.WaitForAssertion(() => calls.Should().HaveCount(2));
+
+        // A parent that doesn't bind PageSize renders again with the value it passed before.
+        cut.Render(parameters => AddPagedParameters(parameters, provider, pushHistoryEntries: false));
+
+        calls.Should().HaveCount(2);
+        cut.FindAll("tbody tr.nt-data-grid-row").Should().HaveCount(3);
+    }
+
+    [Fact]
+    public void HistoryEntries_KeepKeysWrittenOutsideBlazor() {
+        // Another grid's replaceState put other-page in the address bar, which NavigationManager never sees.
+        JSInterop.Setup<string>("NTComponents.getCurrentLocation").SetResult("http://localhost/?tab=open&other-page=3");
+        var calls = new List<NTDataGridItemsProviderRequest<GridItem>>();
+        var cut = Render<NTDataGrid<GridItem>>(parameters => AddPagedParameters(parameters, TrackRequests(calls), pushHistoryEntries: true));
+        cut.WaitForAssertion(() => calls.Should().HaveCount(1));
+
+        cut.Find(".pagination-next-page").Click();
+
+        cut.WaitForAssertion(() => Services.GetRequiredService<NavigationManager>().Uri.Should().Be("http://localhost/?tab=open&other-page=3&ntdg-page=2&ntdg-sort=Name%3Aasc"));
     }
 
     [Fact]

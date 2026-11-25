@@ -9,7 +9,7 @@ public class NTDataGridQueryParameters_Tests : BunitContext {
 
     public NTDataGridQueryParameters_Tests() {
         SetRendererInfo(new RendererInfo("Server", true));
-        JSInterop.SetupVoid("NTComponents.updateUri", _ => true).SetVoidResult();
+        JSInterop.SetupVoid("NTComponents.updateGridUri", _ => true).SetVoidResult();
     }
 
     [Fact]
@@ -26,6 +26,20 @@ public class NTDataGridQueryParameters_Tests : BunitContext {
         // Assert: NavigationManager.Uri misses the sort, but a host URL built with QueryParameters keeps it.
         navigation.Uri.Should().NotContain("ntdg-sort");
         hostUri.Should().Be("https://example.test/orders?status=closed&ntdg-page=1&ntdg-sort=Name%3Aasc");
+    }
+
+    [Fact]
+    public void PageLinks_KeepOtherQueryPartsAsWrittenAndInPlace() {
+        // Arrange
+        Services.GetRequiredService<NavigationManager>().NavigateTo("https://example.test/orders?tag=x&ntdg-page=1&tag=y&q=a+b%26c#details");
+
+        // Act
+        var cut = RenderGrid(NameColumn(initialSort: null), parameters => parameters
+            .Add(grid => grid.ShowPagination, true)
+            .Add(grid => grid.PageSize, 1));
+
+        // Assert: repeated keys, original encoding, and the grid key's position all survive.
+        cut.Find(".pagination-next-page").GetAttribute("href").Should().Be("https://example.test/orders?tag=x&ntdg-page=2&tag=y&q=a+b%26c#details");
     }
 
     [Fact]
@@ -86,10 +100,11 @@ public class NTDataGridQueryParameters_Tests : BunitContext {
         var cut = RenderGrid(NameColumn(initialSort: null), parameters => parameters.Add(grid => grid.QueryParameterPrefix, prefix));
 
         // Act
-        var parameters = cut.Instance.QueryParameters;
+        cut.Find(".nt-data-grid-sort-link").Click();
 
-        // Assert
-        parameters.Keys.Should().BeEquivalentTo(page, sort, pageSize);
+        // Assert: the reported names and the keys the browser URL update replaces are the same prefixed names.
+        cut.Instance.QueryParameters.Keys.Should().BeEquivalentTo(page, sort, pageSize);
+        JSInterop.Invocations.Single(invocation => invocation.Identifier == "NTComponents.updateGridUri").Arguments[1].Should().BeEquivalentTo(new[] { page, pageSize, sort });
     }
 
     private IRenderedComponent<NTDataGrid<Item>> RenderGrid(RenderFragment columns, Action<ComponentParameterCollectionBuilder<NTDataGrid<Item>>>? configure = null) =>

@@ -68,7 +68,7 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     private (IQueryable<TItem>? Items, NTDataGridItemsProvider<TItem>? Provider, Func<TItem, object>? RowKey, bool Paginated, bool Virtualized, bool MultiSort)? _previousParameters;
     private IReadOnlyList<int>? _pageSizeOptionsSource;
     private IReadOnlyList<int> _resolvedPageSizeOptions = [];
-    private int _resolvedPageSizeOptionsPageSize;
+    private (int Current, int Starting) _resolvedPageSizeOptionsKey;
     private string? _class;
     private string? _currentUri;
     private string? _lastNavigationManagerUri;
@@ -85,6 +85,7 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
     private SortPlan? _sortPlan;
     private int _currentPageIndex;
     private int _currentPageSize;
+    private int? _appliedPageSize;
     private int _totalItemCount;
     private int _virtualizeVersion;
     private NTVirtualize<TItem>? _virtualizer;
@@ -398,6 +399,8 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
 
     private int CurrentPageSize => Math.Max(1, _currentPageSize);
 
+    private int StartingPageSize => PageSize > 0 ? PageSize : 10;
+
     private int PageCount => Math.Max(1, (int)Math.Ceiling(_totalItemCount / (double)CurrentPageSize));
 
     private bool CanGoToPreviousPage => ShowPagination && CurrentPageIndex > 0;
@@ -498,7 +501,7 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
                 _currentPageIndex = Math.Max(0, PageIndex);
                 // Without the size in the URL, history doesn't track it, so keep the size the grid is showing.
                 if (PersistPageSizeInQuery) {
-                    _currentPageSize = PageSize > 0 ? PageSize : 10;
+                    _currentPageSize = StartingPageSize;
                 }
                 ResetSorts();
                 ApplyQueryState();
@@ -543,7 +546,11 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
         CaptureRootAttributes();
         _detailStyle = RowDetailTemplate is null ? null : $"max-height: {RowDetailMaxHeight};";
         var shownViewState = GetViewState();
-        _currentPageSize = PageSize > 0 ? PageSize : 10;
+        // Apply PageSize only when it changes, so a parent that doesn't bind it can't undo the user's pick by rendering again.
+        if (_appliedPageSize != PageSize) {
+            _appliedPageSize = PageSize;
+            _currentPageSize = StartingPageSize;
+        }
         _currentPageIndex = Math.Max(0, PageIndex);
         ApplyQueryState();
         if ((CaptureParametersChanged() || shownViewState != GetViewState()) && (Virtualize || _initialColumnConfigurationComplete && _columns.Count > 0 && !_refreshQueued)) {
@@ -881,14 +888,18 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
 
     private async ValueTask UpdateBrowserUriAsync() {
         if (!_disposed && RendererInfo.IsInteractive) {
-            var uri = BuildPageHref(CurrentPageIndex);
             // Record the URL before awaiting the browser, so a parent render in between reads the page the grid is already showing.
-            _currentUri = uri;
+            _currentUri = BuildPageHref(CurrentPageIndex);
             if (PushesHistoryEntries) {
-                _navManager.NavigateTo(uri);
+                // Another grid's replaceState may have written keys NavigationManager never saw, so rebuild on the address bar.
+                _currentUri = await _jsRuntime.InvokeAsync<string>("NTComponents.getCurrentLocation");
+                _currentUri = BuildPageHref(CurrentPageIndex);
+                if (!_disposed) {
+                    _navManager.NavigateTo(_currentUri);
+                }
             }
             else {
-                await _jsRuntime.UpdateUriAsync(uri);
+                await _jsRuntime.InvokeVoidAsync("NTComponents.updateGridUri", _currentUri, GridQueryNames);
             }
         }
     }
@@ -902,7 +913,7 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
 
     private string BuildHref(string pageValue, IReadOnlyList<NTSortDescriptor> sorts, int? pageSize = null) {
         var uriState = GetUriState();
-        var href = uriState.PageHrefPrefix + pageValue;
+        var href = $"{uriState.HrefPrefix}{Uri.EscapeDataString(GetQueryName("page"))}={pageValue}";
         if (GetSortQueryValue(sorts) is { } sortValue) {
             href += $"&{Uri.EscapeDataString(GetQueryName("sort"))}={Uri.EscapeDataString(sortValue)}";
         }
@@ -910,7 +921,7 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
         if (PersistPageSizeInQuery) {
             href += $"&{Uri.EscapeDataString(GetQueryName("pageSize"))}={(pageSize ?? CurrentPageSize).ToString(CultureInfo.InvariantCulture)}";
         }
-        return href + uriState.Fragment;
+        return href + uriState.HrefSuffix;
     }
 
     // A missing sort means "use the initial sort", so an unsorted grid with an initial sort needs an explicit empty value.
@@ -926,14 +937,21 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
         }
 
         var uri = _navManager.ToAbsoluteUri(currentUri);
-        var query = ParseQuery(uri.Query);
-        var pageParameter = GetQueryName("page");
-        string[] gridParameters = [pageParameter, GetQueryName("pageSize"), GetQueryName("sort")];
-        var baseQuery = string.Concat(query
-            .Where(pair => !gridParameters.Contains(pair.Key, StringComparer.OrdinalIgnoreCase))
-            .Select(pair => $"{Uri.EscapeDataString(pair.Key)}={Uri.EscapeDataString(pair.Value)}&"));
-        return _uriState = new UriState(currentUri, QueryParameterPrefix, $"{uri.GetLeftPart(UriPartial.Path)}?{baseQuery}{Uri.EscapeDataString(pageParameter)}=", uri.Fragment, query);
+        var gridQueryNames = GridQueryNames;
+        // Keep the other parts as written, in order and with repeated keys, and put the grid's parts where its first part was.
+        var parts = uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries);
+        var splitIndex = parts.TakeWhile(part => !IsGridPart(part)).Count();
+        return _uriState = new UriState(
+            currentUri,
+            QueryParameterPrefix,
+            $"{uri.GetLeftPart(UriPartial.Path)}?{string.Concat(parts[..splitIndex].Select(part => part + "&"))}",
+            string.Concat(parts[splitIndex..].Where(part => !IsGridPart(part)).Select(part => "&" + part)) + uri.Fragment,
+            ParseQuery(uri.Query));
+
+        bool IsGridPart(string part) => gridQueryNames.Contains(UnescapeQueryPart(part.Split('=', 2)[0]), StringComparer.OrdinalIgnoreCase);
     }
+
+    private string[] GridQueryNames => [GetQueryName("page"), GetQueryName("pageSize"), GetQueryName("sort")];
 
     private string GetCurrentUri() {
         if (_lastNavigationManagerUri != _navManager.Uri) {
@@ -1004,13 +1022,13 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var part in query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries)) {
             var split = part.Split('=', 2);
-            result[Unescape(split[0])] = split.Length > 1 ? Unescape(split[1]) : string.Empty;
+            result[UnescapeQueryPart(split[0])] = split.Length > 1 ? UnescapeQueryPart(split[1]) : string.Empty;
         }
 
         return result;
-
-        static string Unescape(string value) => Uri.UnescapeDataString(value.Replace("+", " ", StringComparison.Ordinal));
     }
+
+    private static string UnescapeQueryPart(string value) => Uri.UnescapeDataString(value.Replace("+", " ", StringComparison.Ordinal));
 
     private static IReadOnlyList<NTSortDescriptor> ParseSorts(string value) =>
         value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -1036,10 +1054,12 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
         .Build();
 
     private IReadOnlyList<int> GetResolvedPageSizeOptions() {
-        if (!ReferenceEquals(_pageSizeOptionsSource, PageSizeOptions) || _resolvedPageSizeOptionsPageSize != CurrentPageSize) {
+        var key = (CurrentPageSize, StartingPageSize);
+        if (!ReferenceEquals(_pageSizeOptionsSource, PageSizeOptions) || _resolvedPageSizeOptionsKey != key) {
             _pageSizeOptionsSource = PageSizeOptions;
-            _resolvedPageSizeOptionsPageSize = CurrentPageSize;
-            _resolvedPageSizeOptions = PageSizeOptions.Where(option => option > 0).Append(CurrentPageSize).Distinct().Order().ToArray();
+            _resolvedPageSizeOptionsKey = key;
+            // The starting size stays selectable, so the user can go back to it after picking another size.
+            _resolvedPageSizeOptions = PageSizeOptions.Where(option => option > 0).Append(CurrentPageSize).Append(StartingPageSize).Distinct().Order().ToArray();
         }
 
         return _resolvedPageSizeOptions;
@@ -1195,7 +1215,7 @@ public partial class NTDataGrid<[DynamicallyAccessedMembers(DynamicallyAccessedM
 
     private sealed record SortPlan(ResolvedSort[] ResolvedSorts, IReadOnlyList<NTSortDescriptor> ProviderDescriptors);
 
-    private sealed record UriState(string SourceUri, string? GridQueryPrefix, string PageHrefPrefix, string Fragment, IReadOnlyDictionary<string, string> Query);
+    private sealed record UriState(string SourceUri, string? GridQueryPrefix, string HrefPrefix, string HrefSuffix, IReadOnlyDictionary<string, string> Query);
 
     private sealed class NTDataGridObjectComparer : IComparer<object?> {
         public static readonly NTDataGridObjectComparer Instance = new();

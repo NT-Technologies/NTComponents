@@ -1,0 +1,16 @@
+@page "/dataGridMultiQuery/{Mode}"
+@page "/dataGridMultiQuery/{Mode}/{PushSecond:bool}"
+
+@* Two prefixed grids on one page, so each grid's URL updates must keep the other grid's query keys. PushSecond mixes a history grid with a replace grid. *@
+<DataGridHistoryGrid QueryParameterPrefix="a" @rendermode="GridRenderMode" />
+<DataGridHistoryGrid QueryParameterPrefix="b" PushHistoryEntries="PushSecond" @rendermode="GridRenderMode" />
+
+@code {
+    [Parameter]
+    public string Mode { get; set; } = "server";
+
+    [Parameter]
+    public bool PushSecond { get; set; }
+
+    private IComponentRenderMode GridRenderMode => Mode == "wasm" ? new InteractiveWebAssemblyRenderMode(prerender: false) : new InteractiveServerRenderMode(prerender: false);
+}
