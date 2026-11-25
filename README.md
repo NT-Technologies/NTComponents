@@ -2,10 +2,27 @@
 
 [![PR Build](https://github.com/NT-Technologies/NTComponents/actions/workflows/pr-build.yml/badge.svg)](https://github.com/NT-Technologies/NTComponents/actions/workflows/pr-build.yml)
 [![AOT Compatibility](https://github.com/NT-Technologies/NTComponents/actions/workflows/ensure-aot-build.yml/badge.svg)](https://github.com/NT-Technologies/NTComponents/actions/workflows/ensure-aot-build.yml)
+[![NuGet](https://img.shields.io/nuget/v/NTComponents.svg)](https://www.nuget.org/packages/NTComponents)
+[![NuGet downloads](https://img.shields.io/nuget/dt/NTComponents.svg)](https://www.nuget.org/packages/NTComponents)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/NT-Technologies/NTComponents/blob/main/LICENSE.txt)
+[![GitHub stars](https://img.shields.io/github/stars/NT-Technologies/NTComponents?style=social)](https://github.com/NT-Technologies/NTComponents)
 
 NTComponents is a Material 3 inspired Blazor component library for .NET 10 and .NET 11 applications. The current component model is `NT*` first, with source-generated documentation metadata, render-compatibility guidance, static web assets, scoped CSS, optional JavaScript enhancement, and analyzer coverage for component usage rules.
 
 The package is designed for Blazor Web Apps, Blazor WebAssembly, interactive render modes, and static SSR scenarios where components can render useful HTML before browser enhancement.
+
+**[Live documentation and examples](https://ntcomponents.nttechnologies.dev/)** · **[NuGet](https://www.nuget.org/packages/NTComponents)** · **[Discussions](https://github.com/NT-Technologies/NTComponents/discussions)**
+
+[![NTComponents documentation site](https://raw.githubusercontent.com/NT-Technologies/NTComponents/main/.github/images/docs-home.png)](https://ntcomponents.nttechnologies.dev/)
+
+## Why NTComponents?
+
+- **Material 3, not Material 2.** Structure, states, spacing, shape, and color tokens follow the current Material 3 design system.
+- **Static SSR first.** Many components render useful HTML without an interactive circuit and enhance later, and every component's documentation says whether it is SSR compatible, progressively enhanced, or interactive only.
+- **Native AOT and trimming checked in CI.** Every pull request publishes an AOT test app, so trimming regressions are caught before release.
+- **Analyzers catch misuse at compile time.** Missing required parameters, invalid parameter combinations, and accessibility problems show up as build diagnostics with code fixes.
+- **Built for AI coding assistants.** A free, hosted MCP server lets Claude Code, Codex, VS Code, and other MCP clients look up components, parameters, and examples while they write your code.
+- **Theming built in.** Light, dark, and system themes with default, medium, and high contrast variants, plus a [Material theme creator](https://ntcomponents.nttechnologies.dev/tools/material-theme).
 
 ## Documentation And MCP
 
@@ -249,7 +266,7 @@ dotnet restore
 npm ci
 npm run build:ts:release
 dotnet build NTComponents.slnx -c Release
-dotnet test Tests/NTComponents.Tests/NTComponents.Tests.csproj -c Release --no-build
+dotnet test --project Tests/NTComponents.Tests/NTComponents.Tests.csproj -c Release --no-build
 npm test
 ```
 
@@ -264,6 +281,14 @@ pwsh ./test-aot-compatibility.ps1
 Component design work follows the Material 3 source file and repo-local Material 3 reference notes. Public components use XML documentation and `NTDocumentationAttribute` metadata so documentation pages can show summaries, API members, render compatibility, and related enum or constant references directly from source.
 
 The sample and documentation hosts in this repository are development aids for validating the package surface. Consumer setup should start with the quick setup guide above.
+
+## Contributing And Support
+
+- Questions, ideas, and show-and-tell: [GitHub Discussions](https://github.com/NT-Technologies/NTComponents/discussions).
+- Bugs and feature requests: [GitHub Issues](https://github.com/NT-Technologies/NTComponents/issues).
+- Pull requests are welcome. See [CONTRIBUTING.md](https://github.com/NT-Technologies/NTComponents/blob/main/CONTRIBUTING.md) to get set up.
+
+If NTComponents saves you time, [star the repository](https://github.com/NT-Technologies/NTComponents) so other Blazor developers can find it.
 
 ## License
 
