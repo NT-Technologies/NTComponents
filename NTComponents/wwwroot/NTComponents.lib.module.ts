@@ -1160,6 +1160,27 @@ window.NTComponents = Object.assign(window.NTComponents || {}, {
     updateUri: (newUri) => {
         history.replaceState(history.state, '', newUri);
     },
+    // Replaces only the grid's own query keys, so keys written by other grids or scripts stay in the address bar untouched.
+    updateGridUri: (newUri, gridKeys) => {
+        const keys = new Set(gridKeys.map(key => key.toLowerCase()));
+        const isGridPart = (part) => {
+            const key = part.split('=')[0].replace(/\+/g, ' ');
+            try {
+                return keys.has(decodeURIComponent(key).toLowerCase());
+            }
+            catch {
+                return keys.has(key.toLowerCase());
+            }
+        };
+        const queryParts = (search) => search.slice(1).split('&').filter(Boolean);
+        const url = new URL(window.location.href);
+        const parts = queryParts(url.search);
+        const index = parts.findIndex(isGridPart);
+        const at = index < 0 ? parts.length : index;
+        // The grid's parts go where its first part was, so the address bar keeps its order.
+        url.search = [...parts.slice(0, at), ...queryParts(new URL(newUri, url).search).filter(isGridPart), ...parts.slice(at).filter(part => !isGridPart(part))].join('&');
+        history.replaceState(history.state, '', url.href);
+    },
     setupRipple: () => {
         ensureRippleHandlers();
 

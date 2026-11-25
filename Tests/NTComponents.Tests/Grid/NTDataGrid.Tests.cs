@@ -23,7 +23,7 @@ public class NTDataGrid_Tests : BunitContext {
         module.SetupVoid("updateRenderState", _ => true).SetVoidResult();
         module.SetupVoid("updateOptions", _ => true).SetVoidResult();
         module.SetupVoid("scrollToItem", _ => true).SetVoidResult();
-        JSInterop.SetupVoid("NTComponents.updateUri", _ => true).SetVoidResult();
+        JSInterop.SetupVoid("NTComponents.updateGridUri", _ => true).SetVoidResult();
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public class NTDataGrid_Tests : BunitContext {
         cut.Find("select[aria-label='Go to page']").Change("3");
 
         cut.WaitForAssertion(() => {
-            var invocation = JSInterop.Invocations.Last(invocation => invocation.Identifier == "NTComponents.updateUri");
+            var invocation = JSInterop.Invocations.Last(invocation => invocation.Identifier == "NTComponents.updateGridUri");
             invocation.Arguments[0].Should().BeOfType<string>().Subject.Should().Contain("ntdg-page=3");
         });
     }
@@ -405,6 +405,7 @@ public class NTDataGrid_Tests : BunitContext {
     public async Task HistoryOptIn_NavigatesAndRestoresPageOnLocationChange() {
         var navigation = Services.GetRequiredService<NavigationManager>();
         navigation.NavigateTo("https://example.test/orders");
+        JSInterop.Setup<string>("NTComponents.getCurrentLocation").SetResult("https://example.test/orders");
         var cut = Render<NTDataGrid<TestGridItem>>(parameters => parameters
             .Add(grid => grid.Items, _items)
             .Add(grid => grid.ShowPagination, true)
@@ -733,7 +734,7 @@ public class NTDataGrid_Tests : BunitContext {
         cut.Find(".nt-data-grid-sort-link").Click();
 
         cut.WaitForAssertion(() => {
-            var invocation = JSInterop.Invocations.Last(invocation => invocation.Identifier == "NTComponents.updateUri");
+            var invocation = JSInterop.Invocations.Last(invocation => invocation.Identifier == "NTComponents.updateGridUri");
             var uri = invocation.Arguments[0].Should().BeOfType<string>().Subject;
             uri.Should().Contain("existing=true");
             uri.Should().Contain("ntdg-page=1");
@@ -971,8 +972,8 @@ public class NTDataGrid_Tests : BunitContext {
             captured.Last().StartIndex.Should().Be(2);
             captured.Last().Sorts.Should().Equal(new NTSortDescriptor("Unknown", SortDirection.Descending));
             var href = cut.Find(".pagination-previous-page").GetAttribute("href");
-            href.Should().Contain("flag=").And.Contain("search=hello%20world").And.Contain("page=1");
-            href.Should().NotContain("ntdg-");
+            // Other query entries stay exactly as written, including the valueless flag.
+            href.Should().Be("https://example.test/orders?flag&search=hello+world&page=1&sort=Unknown%3Adesc");
         });
     }
 
@@ -1217,10 +1218,11 @@ public class NTDataGrid_Tests : BunitContext {
 
         cut.WaitForAssertion(() => {
             captured.Should().Contain(request => request.StartIndex == 2 && request.Count == 2);
-            var invocation = JSInterop.Invocations.Last(invocation => invocation.Identifier == "NTComponents.updateUri");
+            var invocation = JSInterop.Invocations.Last(invocation => invocation.Identifier == "NTComponents.updateGridUri");
             var uri = invocation.Arguments[0].Should().BeOfType<string>().Subject;
             uri.Should().Contain("existing=true");
             uri.Should().Contain("ntdg-page=2");
+            invocation.Arguments[1].Should().BeEquivalentTo(new[] { "ntdg-page", "ntdg-pageSize", "ntdg-sort" });
             navigationManager.History.Should().HaveCount(navigationCount);
         });
     }
@@ -1251,9 +1253,26 @@ public class NTDataGrid_Tests : BunitContext {
             pageSizeChanged.Should().Be(3);
             pageIndexChanged.Should().Be(0);
             captured.Should().Contain(request => request.StartIndex == 0 && request.Count == 3);
-            var invocation = JSInterop.Invocations.Last(invocation => invocation.Identifier == "NTComponents.updateUri");
+            var invocation = JSInterop.Invocations.Last(invocation => invocation.Identifier == "NTComponents.updateGridUri");
             invocation.Arguments[0].Should().BeOfType<string>().Subject.Should().Contain("ntdg-page=1");
         });
+    }
+
+    [Fact]
+    public void AfterPageSizeChange_KeepsStartingSizeSelectable() {
+        // Arrange: the starting size 2 is not one of the configured options.
+        var cut = Render<NTDataGrid<TestGridItem>>(parameters => parameters
+            .Add(grid => grid.Items, _items)
+            .Add(grid => grid.ShowPagination, true)
+            .Add(grid => grid.PageSize, 2)
+            .Add(grid => grid.PageSizeOptions, [3])
+            .Add(grid => grid.ChildContent, DefaultColumns));
+
+        // Act
+        cut.Find(".nt-data-grid-page-size select").Change("3");
+
+        // Assert
+        cut.WaitForAssertion(() => cut.FindAll(".nt-data-grid-page-size select option").Select(option => option.GetAttribute("value")).Should().Equal("2", "3"));
     }
 
     [Fact]
