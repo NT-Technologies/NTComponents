@@ -23,7 +23,7 @@
     </section>
 
     @foreach (var group in FilteredComponents.GroupBy(component => component.GroupName).OrderBy(group => group.Key, StringComparer.Ordinal)) {
-        <section class="docs-section">
+        <section class="docs-section" id="@DocumentationCatalog.CreateSlug(group.Key)">
             <h2>@group.Key</h2>
             <div class="docs-component-grid">
                 @foreach (var component in group) {

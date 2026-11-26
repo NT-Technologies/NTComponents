@@ -604,6 +604,53 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
     }
 
     [Fact]
+    public async Task NavigationRail_LastDestinationStaysAboveTheDebugConsole() {
+        ArgumentNullException.ThrowIfNull(_page);
+        await _page.SetViewportSizeAsync(1440, 900);
+        await _page.GotoAsync(_baseUrl);
+        var navigation = _page.GetByRole(AriaRole.Navigation, new PageGetByRoleOptions { Name = "Documentation navigation", Exact = true });
+        var debugBar = _page.Locator(".nt-debug-console-bar");
+        await debugBar.WaitForAsync();
+
+        // Open the menus bottom-up so each trigger is still near the top of the rail when it is clicked.
+        foreach (var menu in new[] { "Constants", "Enums", "Components" }) {
+            // The Enums menu also holds a family named Enums; the top-level trigger comes first.
+            var trigger = navigation.GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { Name = menu, Exact = true }).First;
+            await trigger.ClickAsync();
+            await Assertions.Expect(trigger).ToHaveAttributeAsync("aria-expanded", "true");
+        }
+        await _page.EvaluateAsync("() => Promise.allSettled(document.getAnimations().filter(animation => animation.effect?.getTiming().iterations !== Infinity).map(animation => animation.finished))");
+        await navigation.Locator(".nt-navigation-rail-items").EvaluateAsync("items => items.scrollTop = items.scrollHeight");
+        var lastDestination = navigation.GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { Name = "Wizard", Exact = true }).Last;
+
+        var lastBottom = await lastDestination.EvaluateAsync<double>("element => element.getBoundingClientRect().bottom");
+        var barTop = await debugBar.EvaluateAsync<double>("element => element.getBoundingClientRect().top");
+        lastBottom.Should().BeLessThanOrEqualTo(barTop, "the end of the scrolled rail should sit above the debug console bar");
+        await lastDestination.ClickAsync(new LocatorClickOptions { Timeout = 5000 });
+        await Assertions.Expect(lastDestination).ToHaveAttributeAsync("aria-expanded", "true");
+        _browserDiagnostics.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HomeFamilyCard_OpensThatFamilyOnTheComponentsPage() {
+        ArgumentNullException.ThrowIfNull(_page);
+        _activeRoute = "/";
+        await _page.SetViewportSizeAsync(1440, 900);
+        await _page.GotoAsync(_baseUrl);
+        var card = _page.Locator(".docs-family-grid a", new PageLocatorOptions { Has = _page.GetByRole(AriaRole.Heading, new PageGetByRoleOptions { Name = "Charts", Exact = true }) });
+        await Assertions.Expect(card).ToContainTextAsync("11 components");
+        await Assertions.Expect(_page.Locator(".docs-family-grid a", new PageLocatorOptions { Has = _page.GetByRole(AriaRole.Heading, new PageGetByRoleOptions { Name = "Accordion", Exact = true }) }).Locator("p")).ToHaveTextAsync("1 component");
+
+        _activeRoute = "/components";
+        await card.ClickAsync();
+        await _page.WaitForURLAsync("**/components#charts");
+        var heading = _page.Locator("#charts h2");
+        await Assertions.Expect(heading).ToHaveTextAsync("Charts");
+        await Assertions.Expect(heading).ToBeInViewportAsync();
+        _browserDiagnostics.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task HeaderThemeSelector_ChangesAndPersistsTheme_AndFitsMobile() {
         ArgumentNullException.ThrowIfNull(_page);
         await OpenComponentPageAsync("ntbutton");

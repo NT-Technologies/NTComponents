@@ -70,7 +70,7 @@ public sealed partial class DocumentationCatalog {
             .Select(type => new ReferenceDocumentationEntry(type, CreateSlug(type.FullName), BuildReferenceGroupName(type), ResolveGroupName(type)))
             .OrderBy(reference => reference.GroupName, StringComparer.Ordinal)
             .ThenBy(reference => reference.FamilyName, StringComparer.Ordinal)
-            .ThenBy(reference => reference.Type.Name, StringComparer.Ordinal)];
+            .ThenBy(reference => NameSortKey(reference.Type.Name), StringComparer.OrdinalIgnoreCase)];
     }
 
     // The core library and the Charts library are documented by separate generated models that share the same model types.
@@ -92,6 +92,12 @@ public sealed partial class DocumentationCatalog {
 
     public IEnumerable<IGrouping<string, ReferenceDocumentationEntry>> ConstantGroups =>
         GetReferenceGroups("Constants");
+
+    public IEnumerable<IGrouping<string, ComponentDocumentationEntry>> ComponentMenu => OrderMenu(ComponentGroups, component => component.Type.Name);
+
+    public IEnumerable<IGrouping<string, ReferenceDocumentationEntry>> EnumMenu => OrderMenu(EnumGroups, reference => reference.Type.Name);
+
+    public IEnumerable<IGrouping<string, ReferenceDocumentationEntry>> ConstantMenu => OrderMenu(ConstantGroups, reference => reference.Type.Name);
 
     public ComponentDocumentationEntry? GetComponent(string? slug) =>
         string.IsNullOrWhiteSpace(slug)
@@ -149,7 +155,9 @@ public sealed partial class DocumentationCatalog {
             .FirstOrDefault();
         if (reference is not null) {
             var memberName = normalizedReference[(reference.Type.FullName.Length + 1)..];
-            return new DocumentationLink($"/reference/{reference.RouteKind}/{reference.Slug}#{CreateSlug(memberName)}", memberName);
+            // Reference pages list only fields, so any other member links to the top of its type's page.
+            var anchor = reference.Type.Fields.Any(field => field.Name == memberName && IsPublicOrProtected(field.Accessibility)) ? $"#{CreateSlug(memberName)}" : string.Empty;
+            return new DocumentationLink($"/reference/{reference.RouteKind}/{reference.Slug}{anchor}", memberName);
         }
 
         return null;
@@ -232,6 +240,13 @@ public sealed partial class DocumentationCatalog {
             "Views" => "Layout",
             _ => type.SourceFolder
         };
+
+    // A family with one entry renders in the menu as that entry, so it sorts by the entry's name rather than the family name.
+    private static IEnumerable<IGrouping<string, T>> OrderMenu<T>(IEnumerable<IGrouping<string, T>> groups, Func<T, string> name) =>
+        groups.OrderBy(group => NameSortKey(group.Count() == 1 ? name(group.First()) : group.Key), StringComparer.OrdinalIgnoreCase);
+
+    // Ignores the NT prefix so NTAccordion sorts under A next to unprefixed names such as ButtonAppearance.
+    private static string NameSortKey(string name) => name.Length > 2 && name.StartsWith("NT", StringComparison.Ordinal) && char.IsUpper(name[2]) ? name[2..] : name;
 
     private static string BuildComponentDisplayName(string name) => name.StartsWith("NT", StringComparison.Ordinal) && name.Length > 2 ? name[2..] : name;
 

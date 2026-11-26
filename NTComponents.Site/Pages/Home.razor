@@ -37,9 +37,9 @@
             <h2>Component Families</h2>
             <div class="docs-family-grid">
                 @foreach (var group in Catalog.ComponentGroups) {
-                    <NTCard AdditionalAttributes="@Href("/components")">
+                    <NTCard AdditionalAttributes="@Href($"/components#{DocumentationCatalog.CreateSlug(group.Key)}")">
                         <h3>@group.Key</h3>
-                        <p>@group.Count() components</p>
+                        <p>@group.Count() @(group.Count() == 1 ? "component" : "components")</p>
                     </NTCard>
                 }
             </div>
