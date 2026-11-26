@@ -4,27 +4,27 @@
 
 @switch (ResolvedTag) {
     case NTLayoutTag.Div:
-        <div @attributes="ElementAttributes" @ref="Element">@ChildContent</div>
+        <div @attributes="ElementAttributes" @ref="Element">@Content</div>
         break;
     case NTLayoutTag.Article:
-        <article @attributes="ElementAttributes" @ref="Element">@ChildContent</article>
+        <article @attributes="ElementAttributes" @ref="Element">@Content</article>
         break;
     case NTLayoutTag.Aside:
-        <aside @attributes="ElementAttributes" @ref="Element">@ChildContent</aside>
+        <aside @attributes="ElementAttributes" @ref="Element">@Content</aside>
         break;
     case NTLayoutTag.Footer:
-        <footer @attributes="ElementAttributes" @ref="Element">@ChildContent</footer>
+        <footer @attributes="ElementAttributes" @ref="Element">@Content</footer>
         break;
     case NTLayoutTag.Header:
-        <header @attributes="ElementAttributes" @ref="Element">@ChildContent</header>
+        <header @attributes="ElementAttributes" @ref="Element">@Content</header>
         break;
     case NTLayoutTag.Main:
-        <main @attributes="ElementAttributes" @ref="Element">@ChildContent</main>
+        <main @attributes="ElementAttributes" @ref="Element">@Content</main>
         break;
     case NTLayoutTag.Section:
-        <section @attributes="ElementAttributes" @ref="Element">@ChildContent</section>
+        <section @attributes="ElementAttributes" @ref="Element">@Content</section>
         break;
     default:
-        <div @attributes="ElementAttributes" @ref="Element">@ChildContent</div>
+        <div @attributes="ElementAttributes" @ref="Element">@Content</div>
         break;
 }
