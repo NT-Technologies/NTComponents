@@ -542,6 +542,22 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
     }
 
     [Fact]
+    public async Task NavigationRail_DeepLinkOpensTheGroupsAroundTheCurrentPage() {
+        ArgumentNullException.ThrowIfNull(_page);
+        _activeRoute = "/components/ntlineseries";
+        await _page.GotoAsync($"{_baseUrl}{_activeRoute}");
+        var navigation = _page.GetByRole(AriaRole.Navigation, new PageGetByRoleOptions { Name = "Documentation navigation", Exact = true });
+        var current = navigation.GetByRole(AriaRole.Link, new LocatorGetByRoleOptions { Name = "NTLineSeries", Exact = true });
+        await Assertions.Expect(current).ToHaveAttributeAsync("aria-current", "page");
+
+        // Charts appears under Components, Enums, and Constants; the Components one comes first.
+        await Assertions.Expect(navigation.GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { Name = "Components", Exact = true })).ToHaveAttributeAsync("aria-expanded", "true");
+        await Assertions.Expect(navigation.GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { Name = "Charts", Exact = true }).First).ToHaveAttributeAsync("aria-expanded", "true");
+        await Assertions.Expect(navigation.GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { Name = "Enums", Exact = true }).First).ToHaveAttributeAsync("aria-expanded", "false");
+        _browserDiagnostics.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task HeaderThemeSelector_ChangesAndPersistsTheme_AndFitsMobile() {
         ArgumentNullException.ThrowIfNull(_page);
         await OpenComponentPageAsync("ntbutton");

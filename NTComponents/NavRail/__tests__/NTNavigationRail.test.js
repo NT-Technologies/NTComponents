@@ -1989,4 +1989,112 @@ describe('NTNavigationRail module', () => {
     expect(adminIcon.classList.contains('nt-nav-rail-selected-icon')).toBe(false);
     expect(workspaceIcon.classList.contains('nt-nav-rail-selected-icon')).toBe(false);
   });
+
+  function renderNestedGroupRail(railAttributes = '') {
+    document.body.innerHTML = `
+      <nav class="nt-navigation-rail nt-navigation-rail-expanded" ${railAttributes}>
+        <a class="nt-navigation-rail-item" href="/" data-nt-navigation-rail-match="All">Home</a>
+        <div id="components-group" class="nt-navigation-rail-group" data-nt-navigation-rail-group-expanded="false">
+          <button class="nt-navigation-rail-group-trigger nt-navigation-rail-item"
+                  type="button"
+                  aria-expanded="false"
+                  aria-controls="components-panel"
+                  data-nt-navigation-rail-group-trigger="true">
+            Components
+          </button>
+          <div id="components-panel" class="nt-navigation-rail-group-panel">
+            <div class="nt-navigation-rail-group-items">
+              <div id="charts-group" class="nt-navigation-rail-group" data-nt-navigation-rail-group-expanded="false">
+                <button class="nt-navigation-rail-group-trigger nt-navigation-rail-item"
+                        type="button"
+                        aria-expanded="false"
+                        aria-controls="charts-panel"
+                        data-nt-navigation-rail-group-trigger="true">
+                  Charts
+                </button>
+                <div id="charts-panel" class="nt-navigation-rail-group-panel">
+                  <div class="nt-navigation-rail-group-items">
+                    <a class="nt-navigation-rail-item" href="/components/line" data-nt-navigation-rail-match="Prefix">Line</a>
+                    <a class="nt-navigation-rail-item" href="/components/pie" data-nt-navigation-rail-match="Prefix">Pie</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="reference-group" class="nt-navigation-rail-group" data-nt-navigation-rail-group-expanded="true">
+          <button class="nt-navigation-rail-group-trigger nt-navigation-rail-item"
+                  type="button"
+                  aria-expanded="true"
+                  aria-controls="reference-panel"
+                  data-nt-navigation-rail-group-trigger="true">
+            Reference
+          </button>
+          <div id="reference-panel" class="nt-navigation-rail-group-panel">
+            <div class="nt-navigation-rail-group-items">
+              <a class="nt-navigation-rail-item" href="/reference/colors" data-nt-navigation-rail-match="Prefix">Colors</a>
+            </div>
+          </div>
+        </div>
+      </nav>`;
+
+    return {
+      components: document.querySelector('#components-group > .nt-navigation-rail-group-trigger'),
+      charts: document.querySelector('#charts-group > .nt-navigation-rail-group-trigger'),
+      reference: document.querySelector('#reference-group > .nt-navigation-rail-group-trigger')
+    };
+  }
+
+  test('loading a route inside closed groups opens every group around the selected destination', () => {
+    window.history.pushState({}, '', '/components/line');
+
+    try {
+      const { components, charts } = renderNestedGroupRail();
+
+      module.onLoad();
+
+      expect(document.querySelector('a[href="/components/line"]').getAttribute('aria-current')).toBe('page');
+      expect(components.getAttribute('aria-expanded')).toBe('true');
+      expect(charts.getAttribute('aria-expanded')).toBe('true');
+    } finally {
+      window.history.pushState({}, '', '/');
+    }
+  });
+
+  test('a group closed on the current route stays closed across updates and reopens on the next route inside it', () => {
+    window.history.pushState({}, '', '/components/line');
+
+    try {
+      const { components, charts } = renderNestedGroupRail();
+      module.onLoad();
+
+      components.click();
+      module.onUpdate();
+
+      expect(components.getAttribute('aria-expanded')).toBe('false');
+
+      window.history.pushState({}, '', '/components/pie');
+      module.onUpdate();
+
+      expect(components.getAttribute('aria-expanded')).toBe('true');
+      expect(charts.getAttribute('aria-expanded')).toBe('true');
+    } finally {
+      window.history.pushState({}, '', '/');
+    }
+  });
+
+  test('limit-to-one-expanded keeps the group around the current route open', () => {
+    window.history.pushState({}, '', '/components/line');
+
+    try {
+      const { components, reference } = renderNestedGroupRail('data-nt-navigation-rail-limit-to-one-expanded="true"');
+
+      module.onLoad();
+
+      expect(components.getAttribute('aria-expanded')).toBe('true');
+      expect(reference.getAttribute('aria-expanded')).toBe('false');
+    } finally {
+      window.history.pushState({}, '', '/');
+    }
+  });
 });
