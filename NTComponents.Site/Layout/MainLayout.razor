@@ -2,7 +2,8 @@
 @inject DocumentationCatalog Catalog
 
 <NTLayout>
-    <NTNavigationRail AriaLabel="Documentation navigation" OpenByDefault="true" >
+    @* The rail scrolls on its own, so it also ends above the debug console bar. The rail's scoped styles outrank app.css, so this is inline. *@
+    <NTNavigationRail AriaLabel="Documentation navigation" OpenByDefault="true" style="padding-block-end: var(--nt-debug-console-inset, 0px)">
         <NTNavigationRailItem Label="Home"
                               Href="/"
                               Match="NavLinkMatch.All"
@@ -20,7 +21,7 @@
                                   Href="/components"
                                   Match="NavLinkMatch.All"
                                   Icon="MaterialIcon.GridView" />
-            @foreach (var group in Catalog.ComponentGroups) {
+            @foreach (var group in Catalog.ComponentMenu) {
                 var components = group.ToArray();
                 if (components.Length == 1) {
                     var component = components[0];
@@ -40,7 +41,7 @@
                                   Href="/reference/enums"
                                   Match="NavLinkMatch.All"
                                   Icon="MaterialIcon.ViewList" />
-            @foreach (var group in Catalog.EnumGroups) {
+            @foreach (var group in Catalog.EnumMenu) {
                 var references = group.ToArray();
                 if (references.Length == 1) {
                     var reference = references[0];
@@ -60,7 +61,7 @@
                                   Href="/reference/constants"
                                   Match="NavLinkMatch.All"
                                   Icon="MaterialIcon.List" />
-            @foreach (var group in Catalog.ConstantGroups) {
+            @foreach (var group in Catalog.ConstantMenu) {
                 var references = group.ToArray();
                 if (references.Length == 1) {
                     var reference = references[0];
