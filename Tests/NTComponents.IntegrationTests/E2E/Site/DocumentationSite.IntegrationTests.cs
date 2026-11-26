@@ -566,8 +566,8 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
         _activeRoute = "/components";
         await _page.SetViewportSizeAsync(1440, 900);
         await _page.GotoAsync($"{_baseUrl}{_activeRoute}");
-        // A user scrolls a page whose fonts and icons have loaded; the restore then lands on the same layout.
-        await _page.EvaluateAsync("() => document.fonts.ready.then(() => new Promise(requestAnimationFrame))");
+        // A user scrolls a page that has finished laying out, so wait for its fonts and for its height to hold still for 20 frames.
+        await _page.Locator("main.nt-body").EvaluateAsync("body => document.fonts.ready.then(() => new Promise(resolve => { let height = -1, stableFrames = 0; const check = () => { stableFrames = body.scrollHeight === height ? stableFrames + 1 : 0; height = body.scrollHeight; if (stableFrames >= 20) { resolve(); } else { requestAnimationFrame(check); } }; check(); }))");
         const string cardSelector = ".docs-component-grid a[href='/components/ntwizard']";
         var card = _page.Locator(cardSelector);
         // Centered, the card clears the debug console bar, so the click does not scroll the list again before it navigates.
@@ -584,6 +584,22 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
         await _page.WaitForURLAsync("**/components");
         // Examples above the card can finish rendering after the restore, so compare where the card sits on screen rather than the offset.
         await _page.WaitForFunctionAsync("([selector, top]) => Math.abs(document.querySelector(selector)?.getBoundingClientRect().top - top) < 2", new object[] { cardSelector, cardTop }, new PageWaitForFunctionOptions { Timeout = 10_000 });
+        _browserDiagnostics.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task NavigationRail_DeepLinkOpensTheGroupsAroundTheCurrentPage() {
+        ArgumentNullException.ThrowIfNull(_page);
+        _activeRoute = "/components/ntlineseries";
+        await _page.GotoAsync($"{_baseUrl}{_activeRoute}");
+        var navigation = _page.GetByRole(AriaRole.Navigation, new PageGetByRoleOptions { Name = "Documentation navigation", Exact = true });
+        var current = navigation.GetByRole(AriaRole.Link, new LocatorGetByRoleOptions { Name = "NTLineSeries", Exact = true });
+        await Assertions.Expect(current).ToHaveAttributeAsync("aria-current", "page");
+
+        // Charts appears under Components, Enums, and Constants; the Components one comes first.
+        await Assertions.Expect(navigation.GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { Name = "Components", Exact = true })).ToHaveAttributeAsync("aria-expanded", "true");
+        await Assertions.Expect(navigation.GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { Name = "Charts", Exact = true }).First).ToHaveAttributeAsync("aria-expanded", "true");
+        await Assertions.Expect(navigation.GetByRole(AriaRole.Button, new LocatorGetByRoleOptions { Name = "Enums", Exact = true }).First).ToHaveAttributeAsync("aria-expanded", "false");
         _browserDiagnostics.Should().BeEmpty();
     }
 

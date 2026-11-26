@@ -27,6 +27,7 @@ interface NavigationRailState {
     popoverPositionFrame?: number;
     responsiveModalQuery?: MediaQueryList;
     restoreFocusAfterModalClose?: boolean;
+    revealedPath?: string;
     scrollContainer?: HTMLElement | null;
     smallScreenMediaQuery?: MediaQueryList;
     transitionTimeout?: number;
@@ -974,6 +975,7 @@ function clearTransitionState(rail: NavigationRailElement): void {
 
 function applyExpandedState(rail: NavigationRailElement, expanded: boolean): void {
     syncItemSelection(rail);
+    revealSelectedItems(rail);
     rail.classList.toggle('nt-navigation-rail-expanded', expanded);
     rail.classList.toggle('nt-navigation-rail-collapsed', !expanded);
 
@@ -1108,6 +1110,34 @@ function getStoredGroupOpen(group: HTMLElement): boolean {
 
 function storeGroupOpen(group: HTMLElement, open: boolean): void {
     group.dataset.ntNavigationRailGroupOpen = open ? 'true' : 'false';
+}
+
+// Opens the groups around the selected destination once per route, so a deep link or a navigation shows where the user is while a
+// group the user closes on that route stays closed.
+function revealSelectedItems(rail: NavigationRailElement): void {
+    const state = rail.__ntNavigationRailState;
+    const path = window.location.pathname;
+
+    if (!state || state.revealedPath === path) {
+        return;
+    }
+
+    state.revealedPath = path;
+    getItems(rail)
+        .filter(item => item.getAttribute('aria-current') === 'page')
+        .forEach(item => {
+            let group = item.closest<HTMLElement>('.nt-navigation-rail-group');
+
+            while (group && rail.contains(group)) {
+                storeGroupOpen(group, true);
+
+                if (rail.dataset.ntNavigationRailLimitToOneExpanded === 'true' && isTopLevelGroup(rail, group)) {
+                    getTopLevelGroups(rail).filter(other => other !== group).forEach(other => storeGroupOpen(other, false));
+                }
+
+                group = group.parentElement?.closest<HTMLElement>('.nt-navigation-rail-group') ?? null;
+            }
+        });
 }
 
 function setInlineGroupOpen(group: HTMLElement, trigger: HTMLButtonElement, open: boolean): void {
