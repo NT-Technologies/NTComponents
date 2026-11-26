@@ -13,6 +13,11 @@
     @include region.body-scroll-container;
     @include scrollbar.nt-scrollbar;
 
+    // The marker is rendered by NTPageScript, so it does not carry this component's scope attribute.
+    ::deep > nt-page-script {
+        display: none;
+    }
+
     &.nt-body-rounded {
         border-radius: layout.$nt-layout-body-corner-radius;
     }

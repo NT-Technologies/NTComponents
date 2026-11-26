@@ -34,6 +34,21 @@ public class NTLayout_Tests : BunitContext {
     }
 
     [Fact]
+    public void Body_LoadsTheNavigationScrollScript_ByDefault() {
+        var cut = Render<NTBody>(p => p.AddChildContent("Body content"));
+
+        cut.Find("main.nt-body > nt-page-script").GetAttribute("src").Should().Be("./_content/NTComponents/Layout/NTBody.razor.js");
+    }
+
+    [Fact]
+    public void Body_KeepScrollPositionOnNavigation_LeavesOutTheScript() {
+        var cut = Render<NTBody>(p => p.Add(c => c.KeepScrollPositionOnNavigation, true).AddChildContent("Body content"));
+
+        cut.FindAll("nt-page-script").Should().BeEmpty();
+        cut.Find("main.nt-body").TextContent.Should().Be("Body content");
+    }
+
+    [Fact]
     public void Body_Can_Disable_Rounded_Corners() {
         var cut = Render<NTBody>(p => p.Add(c => c.RoundedCorners, false).AddChildContent("Body content"));
 

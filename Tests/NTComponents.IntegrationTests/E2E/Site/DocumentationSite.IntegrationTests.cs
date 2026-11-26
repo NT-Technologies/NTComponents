@@ -542,6 +542,52 @@ public sealed class DocumentationSite_IntegrationTests : IAsyncLifetime {
     }
 
     [Fact]
+    public async Task ComponentCardNearTheBottom_OpensTheComponentPageAtTheTop() {
+        ArgumentNullException.ThrowIfNull(_page);
+        _activeRoute = "/components";
+        await _page.SetViewportSizeAsync(1440, 900);
+        await _page.GotoAsync($"{_baseUrl}{_activeRoute}");
+        var card = _page.Locator(".docs-component-grid a[href='/components/ntwizard']");
+        await card.ScrollIntoViewIfNeededAsync();
+        (await _page.Locator("main.nt-body").EvaluateAsync<double>("body => body.scrollTop")).Should().BeGreaterThan(1000, "the card should be far enough down that a kept scroll position would hide the next page's heading");
+
+        _activeRoute = "/components/ntwizard";
+        await card.ClickAsync();
+        await _page.WaitForURLAsync("**/components/ntwizard");
+        var heading = _page.Locator(".docs-page h1").First;
+        await Assertions.Expect(heading).ToHaveTextAsync("NTWizard");
+        await Assertions.Expect(heading).ToBeInViewportAsync();
+        _browserDiagnostics.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task BackFromAComponentPage_ReturnsToWhereTheListWasLeft() {
+        ArgumentNullException.ThrowIfNull(_page);
+        _activeRoute = "/components";
+        await _page.SetViewportSizeAsync(1440, 900);
+        await _page.GotoAsync($"{_baseUrl}{_activeRoute}");
+        // A user scrolls a page that has finished laying out, so wait for its fonts and for its height to hold still for 20 frames.
+        await _page.Locator("main.nt-body").EvaluateAsync("body => document.fonts.ready.then(() => new Promise(resolve => { let height = -1, stableFrames = 0; const check = () => { stableFrames = body.scrollHeight === height ? stableFrames + 1 : 0; height = body.scrollHeight; if (stableFrames >= 20) { resolve(); } else { requestAnimationFrame(check); } }; check(); }))");
+        const string cardSelector = ".docs-component-grid a[href='/components/ntwizard']";
+        var card = _page.Locator(cardSelector);
+        // Centered, the card clears the debug console bar, so the click does not scroll the list again before it navigates.
+        await card.EvaluateAsync("card => card.scrollIntoView({ block: 'center' })");
+        (await _page.Locator("main.nt-body").EvaluateAsync<double>("body => body.scrollTop")).Should().BeGreaterThan(1000, "the card should be far enough down that starting at the top would hide it");
+        var cardTop = await card.EvaluateAsync<double>("card => card.getBoundingClientRect().top");
+
+        _activeRoute = "/components/ntwizard";
+        await card.ClickAsync();
+        await Assertions.Expect(_page.Locator(".docs-page h1").First).ToHaveTextAsync("NTWizard");
+
+        _activeRoute = "/components";
+        await _page.GoBackAsync();
+        await _page.WaitForURLAsync("**/components");
+        // Examples above the card can finish rendering after the restore, so compare where the card sits on screen rather than the offset.
+        await _page.WaitForFunctionAsync("([selector, top]) => Math.abs(document.querySelector(selector)?.getBoundingClientRect().top - top) < 2", new object[] { cardSelector, cardTop }, new PageWaitForFunctionOptions { Timeout = 10_000 });
+        _browserDiagnostics.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task NavigationRail_DeepLinkOpensTheGroupsAroundTheCurrentPage() {
         ArgumentNullException.ThrowIfNull(_page);
         _activeRoute = "/components/ntlineseries";

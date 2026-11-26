@@ -428,3 +428,4 @@ coverlet.runsettings
 /NTComponents/Theming/.generated/
 /NTComponents/Form/NTColorPicker.razor.js
 /NTComponents/Form/NTInputColor.razor.js
+/NTComponents/Layout/NTBody.razor.js
